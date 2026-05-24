@@ -82,6 +82,7 @@
 
                     <Button Style="{StaticResource PrimaryButton}"
                             HorizontalAlignment="Stretch"
+                            IsDefault="True"
                             Click="LoginButton_Click"
                             Content="Entrar" />
                 </StackPanel>
