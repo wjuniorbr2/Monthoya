@@ -27,7 +27,7 @@ public partial class SetupAdminWindow : Window
         try
         {
             var result = await _authService.CreateFirstAdminAsync(
-                new CreateUserRequest(NameBox.Text, EmailBox.Text, PasswordBox.Password, UserRole.Administrador));
+                new CreateUserRequest(NameBox.Text, LoginNameBox.Text, EmailBox.Text, PasswordBox.Password, UserRole.Administrador));
 
             if (!result.Succeeded)
             {

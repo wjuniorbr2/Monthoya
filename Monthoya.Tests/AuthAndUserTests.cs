@@ -19,7 +19,7 @@ public sealed class AuthAndUserTests
         var authService = new AuthService(dbContext, userService, passwordHasher);
 
         var setupResult = await authService.CreateFirstAdminAsync(
-            new CreateUserRequest("Admin", "admin@monthoya.local", "strongpass123", UserRole.Usuario));
+            new CreateUserRequest("Admin", "admin", "admin@monthoya.local", "strongpass123", UserRole.Usuario));
 
         Assert.True(setupResult.Succeeded);
         Assert.True(await userService.HasAnyUsersAsync());
@@ -28,7 +28,7 @@ public sealed class AuthAndUserTests
         Assert.NotEqual("strongpass123", user.PasswordHash);
         Assert.Equal(UserRole.Administrador, user.Role);
 
-        var loginResult = await authService.SignInAsync("admin@monthoya.local", "strongpass123");
+        var loginResult = await authService.SignInAsync("admin", "strongpass123");
 
         Assert.True(loginResult.Succeeded);
         Assert.NotNull(loginResult.User);
@@ -43,13 +43,13 @@ public sealed class AuthAndUserTests
         var authService = new AuthService(dbContext, userService, passwordHasher);
 
         await authService.CreateFirstAdminAsync(
-            new CreateUserRequest("Admin", "admin@monthoya.local", "strongpass123", UserRole.Administrador));
+            new CreateUserRequest("Admin", "admin", "admin@monthoya.local", "strongpass123", UserRole.Administrador));
 
-        var result = await authService.SignInAsync("admin@monthoya.local", "wrong-password");
+        var result = await authService.SignInAsync("admin", "wrong-password");
 
         Assert.False(result.Succeeded);
         Assert.Null(result.User);
-        Assert.Equal("E-mail ou senha invalidos.", result.ErrorMessage);
+        Assert.Equal("Login ou senha invalidos.", result.ErrorMessage);
     }
 
     [Fact]

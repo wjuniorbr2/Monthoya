@@ -10,17 +10,17 @@ public sealed class AuthService(
     IUserService userService,
     PasswordHasher<AppUser> passwordHasher) : IAuthService
 {
-    private const string SafeLoginError = "E-mail ou senha invalidos.";
+    private const string SafeLoginError = "Login ou senha invalidos.";
 
-    public async Task<AuthResult> SignInAsync(string email, string password, CancellationToken cancellationToken = default)
+    public async Task<AuthResult> SignInAsync(string loginName, string password, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        if (string.IsNullOrWhiteSpace(loginName) || string.IsNullOrWhiteSpace(password))
         {
             return new AuthResult(false, null, SafeLoginError);
         }
 
-        var normalizedEmail = UserInputValidator.NormalizeEmail(email);
-        var user = await dbContext.Users.SingleOrDefaultAsync(x => x.NormalizedEmail == normalizedEmail, cancellationToken);
+        var normalizedLoginName = UserInputValidator.NormalizeLoginName(loginName);
+        var user = await dbContext.Users.SingleOrDefaultAsync(x => x.NormalizedLoginName == normalizedLoginName, cancellationToken);
 
         if (user is null || !user.IsActive)
         {
@@ -49,7 +49,7 @@ public sealed class AuthService(
 
         var adminRequest = request with { Role = UserRole.Administrador };
         var user = await userService.CreateUserAsync(adminRequest, cancellationToken);
-        var authenticatedUser = new AuthenticatedUser(user.Id, user.DisplayName, user.Email, user.Role);
+        var authenticatedUser = new AuthenticatedUser(user.Id, user.DisplayName, user.LoginName, user.Email, user.Role);
 
         return new AuthResult(true, authenticatedUser, null);
     }

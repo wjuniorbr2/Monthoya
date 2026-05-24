@@ -31,7 +31,7 @@ public partial class ShellWindow : Window
         DiagnosticsNavButton.Visibility = RolePermissions.CanAccessDiagnostics(currentUser.Role) ? Visibility.Visible : Visibility.Collapsed;
         UserRoleBox.ItemsSource = Enum.GetValues<UserRole>();
         UserRoleBox.SelectedItem = UserRole.Usuario;
-        DiagnosticsText.Text = $"Usuario: {currentUser.Email}{Environment.NewLine}Perfil: {currentUser.Role}{Environment.NewLine}Banco: configurado via secrets/appsettings";
+        DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {currentUser.Role}{Environment.NewLine}Banco: configurado via secrets/appsettings";
 
         Loaded += async (_, _) => await LoadDashboardAsync();
     }
@@ -170,6 +170,7 @@ public partial class ShellWindow : Window
 
         _editingUserId = selected.Id;
         UserNameBox.Text = selected.DisplayName;
+        UserLoginNameBox.Text = selected.LoginName;
         UserEmailBox.Text = selected.Email;
         UserRoleBox.SelectedItem = selected.Role;
         UserPasswordBox.Clear();
@@ -187,12 +188,12 @@ public partial class ShellWindow : Window
             if (_editingUserId is null)
             {
                 await _userService.CreateUserAsync(
-                    new CreateUserRequest(UserNameBox.Text, UserEmailBox.Text, UserPasswordBox.Password, selectedRole));
+                    new CreateUserRequest(UserNameBox.Text, UserLoginNameBox.Text, UserEmailBox.Text, UserPasswordBox.Password, selectedRole));
             }
             else
             {
                 await _userService.UpdateUserAsync(
-                    new UpdateUserRequest(_editingUserId.Value, UserNameBox.Text, UserEmailBox.Text, selectedRole));
+                    new UpdateUserRequest(_editingUserId.Value, UserNameBox.Text, UserLoginNameBox.Text, UserEmailBox.Text, selectedRole));
             }
 
             ClearUserForm();
@@ -228,6 +229,7 @@ public partial class ShellWindow : Window
         _editingUserId = null;
         UsersGrid.SelectedItem = null;
         UserNameBox.Clear();
+        UserLoginNameBox.Clear();
         UserEmailBox.Clear();
         UserPasswordBox.Clear();
         UserRoleBox.SelectedItem = UserRole.Usuario;

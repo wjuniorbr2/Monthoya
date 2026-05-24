@@ -17,7 +17,7 @@ public sealed class UserService(
         var users = await dbContext.Users
             .AsNoTracking()
             .OrderByDescending(x => x.Role)
-            .ThenBy(x => x.DisplayName)
+            .ThenBy(x => x.LoginName)
             .ToListAsync(cancellationToken);
 
         return users.Select(UserMapper.ToSummary).ToList();
@@ -26,6 +26,13 @@ public sealed class UserService(
     public async Task<UserSummary> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
         UserInputValidator.ValidateCreate(request);
+
+        var normalizedLoginName = UserInputValidator.NormalizeLoginName(request.LoginName);
+        var loginExists = await dbContext.Users.AnyAsync(x => x.NormalizedLoginName == normalizedLoginName, cancellationToken);
+        if (loginExists)
+        {
+            throw new InvalidOperationException("Ja existe um usuario com este login.");
+        }
 
         var normalizedEmail = UserInputValidator.NormalizeEmail(request.Email);
         var emailExists = await dbContext.Users.AnyAsync(x => x.NormalizedEmail == normalizedEmail, cancellationToken);
@@ -37,6 +44,8 @@ public sealed class UserService(
         var user = new AppUser
         {
             DisplayName = request.DisplayName.Trim(),
+            LoginName = request.LoginName.Trim(),
+            NormalizedLoginName = normalizedLoginName,
             Email = request.Email.Trim(),
             NormalizedEmail = normalizedEmail,
             Role = request.Role,
@@ -58,6 +67,16 @@ public sealed class UserService(
         var user = await dbContext.Users.SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
             ?? throw new InvalidOperationException("Usuario nao encontrado.");
 
+        var normalizedLoginName = UserInputValidator.NormalizeLoginName(request.LoginName);
+        var loginExists = await dbContext.Users.AnyAsync(
+            x => x.Id != request.Id && x.NormalizedLoginName == normalizedLoginName,
+            cancellationToken);
+
+        if (loginExists)
+        {
+            throw new InvalidOperationException("Ja existe um usuario com este login.");
+        }
+
         var normalizedEmail = UserInputValidator.NormalizeEmail(request.Email);
         var emailExists = await dbContext.Users.AnyAsync(
             x => x.Id != request.Id && x.NormalizedEmail == normalizedEmail,
@@ -69,6 +88,8 @@ public sealed class UserService(
         }
 
         user.DisplayName = request.DisplayName.Trim();
+        user.LoginName = request.LoginName.Trim();
+        user.NormalizedLoginName = normalizedLoginName;
         user.Email = request.Email.Trim();
         user.NormalizedEmail = normalizedEmail;
         user.Role = request.Role;

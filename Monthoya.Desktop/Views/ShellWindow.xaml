@@ -245,6 +245,7 @@
                                   BorderThickness="0">
                             <DataGrid.Columns>
                                 <DataGridTextColumn Header="Nome" Binding="{Binding DisplayName}" Width="*" />
+                                <DataGridTextColumn Header="Login" Binding="{Binding LoginName}" Width="150" />
                                 <DataGridTextColumn Header="E-mail" Binding="{Binding Email}" Width="2*" />
                                 <DataGridTextColumn Header="Perfil" Binding="{Binding Role}" Width="140" />
                                 <DataGridCheckBoxColumn Header="Ativo" Binding="{Binding IsActive}" Width="90" />
@@ -266,6 +267,9 @@
 
                             <TextBlock Text="Nome" FontWeight="SemiBold" />
                             <TextBox x:Name="UserNameBox" Margin="0,6,0,12" />
+
+                            <TextBlock Text="Login" FontWeight="SemiBold" />
+                            <TextBox x:Name="UserLoginNameBox" Margin="0,6,0,12" />
 
                             <TextBlock Text="E-mail" FontWeight="SemiBold" />
                             <TextBox x:Name="UserEmailBox" Margin="0,6,0,12" />

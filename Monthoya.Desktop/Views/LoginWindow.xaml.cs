@@ -19,10 +19,10 @@ public partial class LoginWindow : Window
     {
         ErrorText.Text = string.Empty;
 
-        var result = await _authService.SignInAsync(EmailBox.Text, PasswordBox.Password);
+        var result = await _authService.SignInAsync(LoginNameBox.Text, PasswordBox.Password);
         if (!result.Succeeded || result.User is null)
         {
-            ErrorText.Text = result.ErrorMessage ?? "E-mail ou senha invalidos.";
+            ErrorText.Text = result.ErrorMessage ?? "Login ou senha invalidos.";
             return;
         }
 

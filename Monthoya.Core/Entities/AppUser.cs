@@ -4,6 +4,10 @@ public sealed class AppUser : BaseEntity
 {
     public string DisplayName { get; set; } = string.Empty;
 
+    public string LoginName { get; set; } = string.Empty;
+
+    public string NormalizedLoginName { get; set; } = string.Empty;
+
     public string Email { get; set; } = string.Empty;
 
     public string NormalizedEmail { get; set; } = string.Empty;
