@@ -20,6 +20,12 @@ public sealed class Property : BaseEntity
 
     public decimal? RentalPrice { get; set; }
 
+    public decimal? Latitude { get; set; }
+
+    public decimal? Longitude { get; set; }
+
+    public PropertyAvailabilityStatus AvailabilityStatus { get; set; } = PropertyAvailabilityStatus.Indisponivel;
+
     public string? Notes { get; set; }
 
     public ICollection<PropertyImage> Images { get; set; } = new List<PropertyImage>();

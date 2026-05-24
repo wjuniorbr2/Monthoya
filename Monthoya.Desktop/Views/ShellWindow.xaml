@@ -1,0 +1,307 @@
+<Window x:Class="Monthoya.Desktop.Views.ShellWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Monthoya"
+        Width="1280"
+        Height="780"
+        MinWidth="1120"
+        MinHeight="700"
+        WindowStartupLocation="CenterScreen">
+    <Grid Background="#F5F8F6">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Background="#F9FFFC"
+                BorderBrush="#DDE9E4"
+                BorderThickness="0,0,1,0"
+                Padding="18">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel>
+                    <TextBlock Text="Monthoya"
+                               FontSize="26"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="Gestao imobiliaria"
+                               Foreground="{StaticResource MutedBrush}"
+                               Margin="0,4,0,24" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="1" Margin="0,18,0,0">
+                    <Button x:Name="DashboardNavButton"
+                            Style="{StaticResource PrimaryButton}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,10"
+                            Click="DashboardNavButton_Click"
+                            Content="Dashboard" />
+                    <Button x:Name="UsersNavButton"
+                            Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,10"
+                            Click="UsersNavButton_Click"
+                            Content="Usuarios" />
+                    <Button x:Name="DiagnosticsNavButton"
+                            Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,0,0,10"
+                            Click="DiagnosticsNavButton_Click"
+                            Content="Diagnosticos" />
+                </StackPanel>
+
+                <StackPanel Grid.Row="2">
+                    <TextBlock x:Name="CurrentUserText"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+                    <TextBlock x:Name="CurrentRoleText"
+                               Foreground="{StaticResource MutedBrush}"
+                               Margin="0,4,0,14" />
+                    <Button Style="{StaticResource SecondaryButton}"
+                            HorizontalAlignment="Stretch"
+                            Click="LogoutButton_Click"
+                            Content="Sair" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="24">
+            <Grid x:Name="DashboardPanel">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left">
+                        <TextBlock Text="Dashboard"
+                                   FontSize="30"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="Mapa de locacoes em Paranavai e indicadores iniciais."
+                                   Foreground="{StaticResource MutedBrush}"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                    <Button Style="{StaticResource SecondaryButton}"
+                            DockPanel.Dock="Right"
+                            HorizontalAlignment="Right"
+                            Click="RefreshDashboardButton_Click"
+                            Content="Atualizar" />
+                </DockPanel>
+
+                <UniformGrid Grid.Row="1"
+                             Columns="4"
+                             Margin="0,22,0,22">
+                    <Border Style="{StaticResource CardBorder}" Margin="0,0,12,0">
+                        <StackPanel>
+                            <TextBlock Text="Imoveis"
+                                       Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock x:Name="TotalPropertiesText"
+                                       FontSize="26"
+                                       FontWeight="SemiBold"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardBorder}" Margin="0,0,12,0">
+                        <StackPanel>
+                            <TextBlock Text="Para locacao"
+                                       Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock x:Name="AvailableRentalsText"
+                                       FontSize="26"
+                                       FontWeight="SemiBold"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardBorder}" Margin="0,0,12,0">
+                        <StackPanel>
+                            <TextBlock Text="Contratos ativos"
+                                       Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock x:Name="ActiveContractsText"
+                                       FontSize="26"
+                                       FontWeight="SemiBold"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardBorder}">
+                        <StackPanel>
+                            <TextBlock Text="Alugueis pendentes"
+                                       Foreground="{StaticResource MutedBrush}" />
+                            <TextBlock x:Name="PendingRentText"
+                                       FontSize="26"
+                                       FontWeight="SemiBold"
+                                       Margin="0,8,0,0" />
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*" />
+                        <ColumnDefinition Width="360" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource CardBorder}" Padding="0">
+                        <Grid>
+                            <wv2:WebView2 x:Name="PropertyMap" />
+                            <Border x:Name="MapFallback"
+                                    Visibility="Collapsed"
+                                    Background="{StaticResource SoftBrush}"
+                                    Padding="24">
+                                <TextBlock x:Name="MapFallbackText"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedBrush}" />
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="1"
+                            Style="{StaticResource CardBorder}"
+                            Margin="18,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Imoveis no mapa"
+                                       FontSize="18"
+                                       FontWeight="SemiBold" />
+                            <TextBlock x:Name="DashboardStatusText"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,14" />
+                            <ListBox x:Name="MapPropertiesList"
+                                     BorderThickness="0"
+                                     MinHeight="360">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#E1EAE6"
+                                                BorderThickness="0,0,0,1"
+                                                Padding="0,10">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Code}"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding AddressLine}"
+                                                           Foreground="{StaticResource MutedBrush}"
+                                                           TextWrapping="Wrap" />
+                                                <TextBlock Text="{Binding RentalPrice, StringFormat=R$ {0:N2}}"
+                                                           Foreground="{StaticResource AccentBrush}"
+                                                           Margin="0,4,0,0" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="UsersPanel" Visibility="Collapsed">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left">
+                        <TextBlock Text="Usuarios"
+                                   FontSize="30"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="Gerencie acessos do sistema."
+                                   Foreground="{StaticResource MutedBrush}"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+                    <Button Style="{StaticResource SecondaryButton}"
+                            DockPanel.Dock="Right"
+                            HorizontalAlignment="Right"
+                            Click="NewUserButton_Click"
+                            Content="Novo usuario" />
+                </DockPanel>
+
+                <Grid Grid.Row="1" Margin="0,22,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="360" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource CardBorder}" Padding="0">
+                        <DataGrid x:Name="UsersGrid"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionChanged="UsersGrid_SelectionChanged"
+                                  BorderThickness="0">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Nome" Binding="{Binding DisplayName}" Width="*" />
+                                <DataGridTextColumn Header="E-mail" Binding="{Binding Email}" Width="2*" />
+                                <DataGridTextColumn Header="Perfil" Binding="{Binding Role}" Width="140" />
+                                <DataGridCheckBoxColumn Header="Ativo" Binding="{Binding IsActive}" Width="90" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <Border Grid.Column="1"
+                            Style="{StaticResource CardBorder}"
+                            Margin="18,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Cadastro"
+                                       FontSize="20"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="Senha obrigatoria somente para novo usuario."
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,16" />
+
+                            <TextBlock Text="Nome" FontWeight="SemiBold" />
+                            <TextBox x:Name="UserNameBox" Margin="0,6,0,12" />
+
+                            <TextBlock Text="E-mail" FontWeight="SemiBold" />
+                            <TextBox x:Name="UserEmailBox" Margin="0,6,0,12" />
+
+                            <TextBlock Text="Perfil" FontWeight="SemiBold" />
+                            <ComboBox x:Name="UserRoleBox" Margin="0,6,0,12" />
+
+                            <TextBlock Text="Senha inicial" FontWeight="SemiBold" />
+                            <PasswordBox x:Name="UserPasswordBox" Margin="0,6,0,14" />
+
+                            <TextBlock x:Name="UserErrorText"
+                                       Foreground="#B42318"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,14" />
+
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    HorizontalAlignment="Stretch"
+                                    Click="SaveUserButton_Click"
+                                    Content="Salvar" />
+                            <Button x:Name="ToggleUserActiveButton"
+                                    Style="{StaticResource SecondaryButton}"
+                                    HorizontalAlignment="Stretch"
+                                    Margin="0,10,0,0"
+                                    Click="ToggleUserActiveButton_Click"
+                                    Content="Ativar/Desativar" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <Grid x:Name="DiagnosticsPanel" Visibility="Collapsed">
+                <Border Style="{StaticResource CardBorder}" Width="620" HorizontalAlignment="Left" VerticalAlignment="Top">
+                    <StackPanel>
+                        <TextBlock Text="Diagnosticos"
+                                   FontSize="28"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="Area tecnica disponivel apenas para o perfil Desenvolvedor."
+                                   Foreground="{StaticResource MutedBrush}"
+                                   Margin="0,6,0,18" />
+                        <TextBlock x:Name="DiagnosticsText"
+                                   FontFamily="Consolas"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

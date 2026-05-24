@@ -50,6 +50,8 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.PostalCode).HasMaxLength(20);
             entity.Property(x => x.ListingPrice).HasPrecision(18, 2);
             entity.Property(x => x.RentalPrice).HasPrecision(18, 2);
+            entity.Property(x => x.Latitude).HasPrecision(9, 6);
+            entity.Property(x => x.Longitude).HasPrecision(9, 6);
             entity.Property(x => x.Notes).HasMaxLength(2000);
             entity.HasIndex(x => x.Code).IsUnique();
             entity.HasOne(x => x.Owner).WithMany().HasForeignKey(x => x.OwnerId).OnDelete(DeleteBehavior.SetNull);
@@ -104,7 +106,9 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.ToTable("users");
             entity.Property(x => x.DisplayName).HasMaxLength(200).IsRequired();
             entity.Property(x => x.Email).HasMaxLength(320).IsRequired();
-            entity.HasIndex(x => x.Email).IsUnique();
+            entity.Property(x => x.NormalizedEmail).HasMaxLength(320).IsRequired();
+            entity.Property(x => x.PasswordHash).HasMaxLength(1000).IsRequired();
+            entity.HasIndex(x => x.NormalizedEmail).IsUnique();
         });
 
         modelBuilder.Entity<AuditLog>(entity =>

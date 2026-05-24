@@ -1,9 +1,80 @@
-﻿<Application x:Class="Monthoya.Desktop.App"
+<Application x:Class="Monthoya.Desktop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:Monthoya.Desktop"
-             StartupUri="MainWindow.xaml">
+             ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
-         
+        <ResourceDictionary>
+            <Color x:Key="MonthoyaInkColor">#142521</Color>
+            <Color x:Key="MonthoyaMutedColor">#66756F</Color>
+            <Color x:Key="MonthoyaAccentColor">#008A78</Color>
+            <Color x:Key="MonthoyaAccentDarkColor">#006E60</Color>
+            <Color x:Key="MonthoyaSurfaceColor">#FFFFFF</Color>
+            <Color x:Key="MonthoyaSoftColor">#EEF7F4</Color>
+
+            <SolidColorBrush x:Key="InkBrush" Color="{StaticResource MonthoyaInkColor}" />
+            <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource MonthoyaMutedColor}" />
+            <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource MonthoyaAccentColor}" />
+            <SolidColorBrush x:Key="AccentDarkBrush" Color="{StaticResource MonthoyaAccentDarkColor}" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="{StaticResource MonthoyaSurfaceColor}" />
+            <SolidColorBrush x:Key="SoftBrush" Color="{StaticResource MonthoyaSoftColor}" />
+
+            <Style TargetType="Window">
+                <Setter Property="FontFamily" Value="Segoe UI" />
+                <Setter Property="Background" Value="#F5F8F6" />
+            </Style>
+
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+            </Style>
+
+            <Style TargetType="TextBox">
+                <Setter Property="MinHeight" Value="38" />
+                <Setter Property="Padding" Value="10,6" />
+                <Setter Property="BorderBrush" Value="#D7E3DF" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+
+            <Style TargetType="PasswordBox">
+                <Setter Property="MinHeight" Value="38" />
+                <Setter Property="Padding" Value="10,6" />
+                <Setter Property="BorderBrush" Value="#D7E3DF" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+
+            <Style TargetType="ComboBox">
+                <Setter Property="MinHeight" Value="38" />
+                <Setter Property="Padding" Value="8,4" />
+            </Style>
+
+            <Style x:Key="PrimaryButton" TargetType="Button">
+                <Setter Property="MinHeight" Value="40" />
+                <Setter Property="Padding" Value="18,8" />
+                <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Cursor" Value="Hand" />
+            </Style>
+
+            <Style x:Key="SecondaryButton" TargetType="Button">
+                <Setter Property="MinHeight" Value="38" />
+                <Setter Property="Padding" Value="14,7" />
+                <Setter Property="Background" Value="White" />
+                <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
+                <Setter Property="BorderBrush" Value="#D7E3DF" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="Cursor" Value="Hand" />
+            </Style>
+
+            <Style x:Key="CardBorder" TargetType="Border">
+                <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+                <Setter Property="BorderBrush" Value="#E1EAE6" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="18" />
+            </Style>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

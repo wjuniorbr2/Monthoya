@@ -33,17 +33,46 @@ dotnet build
 
 The data layer uses Entity Framework Core with PostgreSQL. The same connection string shape can point to Supabase PostgreSQL, a local PostgreSQL server, or a future VPS/cloud PostgreSQL server.
 
-For local development, prefer user secrets or environment variables:
+For local API development, prefer user secrets or environment variables:
 
 ```powershell
 dotnet user-secrets init --project .\Monthoya.Api
 dotnet user-secrets set "Database:ConnectionString" "Host=<host>;Port=5432;Database=<database>;Username=<username>;Password=<password>" --project .\Monthoya.Api
 ```
 
+For the WPF desktop app, configure the desktop project too:
+
+```powershell
+dotnet user-secrets set "Database:ConnectionString" "<connection-string>" --project .\Monthoya.Desktop
+```
+
+Restore local EF tooling before creating migrations:
+
+```powershell
+dotnet tool restore
+dotnet tool run dotnet-ef migrations add MigrationName --project .\Monthoya.Data --startup-project .\Monthoya.Data --output-dir Migrations
+```
+
 The API includes:
 
 - `/health` - app health check.
 - `/health/database` - database connectivity check. It returns `503` until a local connection string is configured.
+
+## Desktop Foundation
+
+The desktop app starts in Portuguese and routes through:
+
+- database configuration guidance when no connection string is available;
+- first-run administrator setup when no users exist;
+- login with local password hashing;
+- a role-aware shell with dashboard, user management, and developer diagnostics;
+- a Paranavai map area using WebView2 + OpenStreetMap/Leaflet for available rental properties with coordinates.
+
+Roles:
+
+- `Administrador` - user management and business operations.
+- `Usuario` - regular business use without user management.
+- `Desenvolvedor` - administrator access plus diagnostics.
 
 ## Notes
 

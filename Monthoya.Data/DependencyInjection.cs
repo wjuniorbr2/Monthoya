@@ -1,6 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Monthoya.Core.Entities;
+using Monthoya.Core.Services;
+using Monthoya.Data.Dashboard;
+using Monthoya.Data.Users;
+using Microsoft.AspNetCore.Identity;
 
 namespace Monthoya.Data;
 
@@ -16,6 +21,11 @@ public static class DependencyInjection
         {
             services.AddDbContext<MonthoyaDbContext>(options => options.UseNpgsql(connectionString));
         }
+
+        services.AddScoped<PasswordHasher<AppUser>>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         return services;
     }
