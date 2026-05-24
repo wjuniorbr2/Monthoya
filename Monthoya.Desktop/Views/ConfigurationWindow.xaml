@@ -1,7 +1,7 @@
 <Window x:Class="Monthoya.Desktop.Views.ConfigurationWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Configurar Monthoya"
+        Title="Monthoya Consultoria Imobiliária"
         Width="680"
         Height="430"
         WindowStartupLocation="CenterScreen"

@@ -36,15 +36,24 @@
                               Opacity="0.16"
                               Color="#0A3472" />
             <DropShadowEffect x:Key="NavTextOutline"
-                              BlurRadius="1.2"
+                              BlurRadius="1.8"
                               ShadowDepth="0"
-                              Opacity="0.72"
-                              Color="#001229" />
+                              Opacity="0.95"
+                              Color="#000711" />
 
             <Style TargetType="Window">
                 <Setter Property="FontFamily" Value="Segoe UI" />
                 <Setter Property="Background" Value="#F5F8FF" />
                 <Setter Property="Icon" Value="Assets/Monthoya.ico" />
+            </Style>
+
+            <Style x:Key="NavLabelText" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="FontWeight" Value="ExtraBold" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Effect" Value="{StaticResource NavTextOutline}" />
+                <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+                <Setter Property="TextOptions.TextRenderingMode" Value="ClearType" />
             </Style>
 
             <Style TargetType="TextBlock">
@@ -154,7 +163,7 @@
                 <Setter Property="Foreground" Value="White" />
                 <Setter Property="BorderBrush" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="FontWeight" Value="ExtraBold" />
                 <Setter Property="HorizontalContentAlignment" Value="Left" />
                 <Setter Property="Cursor" Value="Hand" />
                 <Setter Property="Template">
@@ -167,7 +176,6 @@
                                     TextElement.Foreground="{TemplateBinding Foreground}">
                                 <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                   VerticalAlignment="Center"
-                                                  Effect="{StaticResource NavTextOutline}"
                                                   RecognizesAccessKey="True" />
                             </Border>
                             <ControlTemplate.Triggers>
@@ -198,7 +206,6 @@
                                                   TextElement.Foreground="{TemplateBinding Foreground}"
                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                   VerticalAlignment="Center"
-                                                  Effect="{StaticResource NavTextOutline}"
                                                   RecognizesAccessKey="True" />
                             </Grid>
                         </ControlTemplate>
