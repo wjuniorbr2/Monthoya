@@ -49,7 +49,7 @@ public sealed class AuthService(
 
         var adminRequest = request with { Role = UserRole.Administrador };
         var user = await userService.CreateUserAsync(adminRequest, cancellationToken);
-        var authenticatedUser = new AuthenticatedUser(user.Id, user.DisplayName, user.LoginName, user.Email, user.Role);
+        var authenticatedUser = new AuthenticatedUser(user.Id, user.DisplayName, user.LoginName, user.Email, user.Role, user.Access);
 
         return new AuthResult(true, authenticatedUser, null);
     }

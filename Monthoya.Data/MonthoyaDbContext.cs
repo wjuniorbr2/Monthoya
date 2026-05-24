@@ -110,6 +110,7 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.Email).HasMaxLength(320).IsRequired();
             entity.Property(x => x.NormalizedEmail).HasMaxLength(320).IsRequired();
             entity.Property(x => x.PasswordHash).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.Access).HasConversion<int>().IsRequired();
             entity.HasIndex(x => x.NormalizedLoginName).IsUnique();
             entity.HasIndex(x => x.NormalizedEmail).IsUnique();
         });

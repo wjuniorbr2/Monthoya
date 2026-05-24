@@ -27,11 +27,13 @@ public sealed class AuthAndUserTests
         var user = await dbContext.Users.SingleAsync();
         Assert.NotEqual("strongpass123", user.PasswordHash);
         Assert.Equal(UserRole.Administrador, user.Role);
+        Assert.Equal(RolePermissions.AdministratorAccess, user.Access);
 
         var loginResult = await authService.SignInAsync("admin", "strongpass123");
 
         Assert.True(loginResult.Succeeded);
         Assert.NotNull(loginResult.User);
+        Assert.Equal(RolePermissions.AdministratorAccess, loginResult.User.Access);
     }
 
     [Fact]
@@ -62,6 +64,32 @@ public sealed class AuthAndUserTests
         Assert.False(RolePermissions.CanAccessDiagnostics(UserRole.Usuario));
         Assert.False(RolePermissions.CanAccessDiagnostics(UserRole.Administrador));
         Assert.True(RolePermissions.CanAccessDiagnostics(UserRole.Desenvolvedor));
+
+        Assert.True(RolePermissions.CanAccess(UserRole.Usuario, UserAccess.Dashboard, UserAccess.Dashboard));
+        Assert.False(RolePermissions.CanAccess(UserRole.Usuario, UserAccess.Dashboard, UserAccess.Documents));
+        Assert.True(RolePermissions.CanAccess(UserRole.Administrador, UserAccess.None, UserAccess.UserManagement));
+        Assert.True(RolePermissions.CanAccess(UserRole.Desenvolvedor, UserAccess.None, UserAccess.Diagnostics));
+    }
+
+    [Fact]
+    public async Task CreateUser_StoresRestrictedNormalUserAccess()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+
+        var user = await userService.CreateUserAsync(
+            new CreateUserRequest(
+                "Atendente",
+                "atendente",
+                "atendente@monthoya.local",
+                "strongpass123",
+                UserRole.Usuario,
+                UserAccess.Dashboard | UserAccess.Properties));
+
+        Assert.Equal(UserAccess.Dashboard | UserAccess.Properties, user.Access);
+        Assert.True(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.Properties));
+        Assert.False(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.Financial));
     }
 
     private static MonthoyaDbContext CreateDbContext()

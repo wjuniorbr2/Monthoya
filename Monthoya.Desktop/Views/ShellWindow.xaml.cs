@@ -31,7 +31,9 @@ public partial class ShellWindow : Window
         DiagnosticsNavButton.Visibility = RolePermissions.CanAccessDiagnostics(currentUser.Role) ? Visibility.Visible : Visibility.Collapsed;
         UserRoleBox.ItemsSource = Enum.GetValues<UserRole>();
         UserRoleBox.SelectedItem = UserRole.Usuario;
-        DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {currentUser.Role}{Environment.NewLine}Banco: configurado via secrets/appsettings";
+        SetAccessCheckboxes(RolePermissions.DefaultUserAccess);
+        UpdateAccessControlState();
+        DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {currentUser.Role}{Environment.NewLine}Acessos: {RolePermissions.GetEffectiveAccess(currentUser.Role, currentUser.Access)}{Environment.NewLine}Banco: configurado via secrets/appsettings";
 
         Loaded += async (_, _) => await LoadDashboardAsync();
     }
@@ -173,6 +175,8 @@ public partial class ShellWindow : Window
         UserLoginNameBox.Text = selected.LoginName;
         UserEmailBox.Text = selected.Email;
         UserRoleBox.SelectedItem = selected.Role;
+        SetAccessCheckboxes(RolePermissions.GetEffectiveAccess(selected.Role, selected.Access));
+        UpdateAccessControlState();
         UserPasswordBox.Clear();
         ToggleUserActiveButton.Content = selected.IsActive ? "Desativar usuario" : "Reativar usuario";
     }
@@ -188,12 +192,12 @@ public partial class ShellWindow : Window
             if (_editingUserId is null)
             {
                 await _userService.CreateUserAsync(
-                    new CreateUserRequest(UserNameBox.Text, UserLoginNameBox.Text, UserEmailBox.Text, UserPasswordBox.Password, selectedRole));
+                    new CreateUserRequest(UserNameBox.Text, UserLoginNameBox.Text, UserEmailBox.Text, UserPasswordBox.Password, selectedRole, GetSelectedAccess()));
             }
             else
             {
                 await _userService.UpdateUserAsync(
-                    new UpdateUserRequest(_editingUserId.Value, UserNameBox.Text, UserLoginNameBox.Text, UserEmailBox.Text, selectedRole));
+                    new UpdateUserRequest(_editingUserId.Value, UserNameBox.Text, UserLoginNameBox.Text, UserEmailBox.Text, selectedRole, GetSelectedAccess()));
             }
 
             ClearUserForm();
@@ -233,8 +237,79 @@ public partial class ShellWindow : Window
         UserEmailBox.Clear();
         UserPasswordBox.Clear();
         UserRoleBox.SelectedItem = UserRole.Usuario;
+        SetAccessCheckboxes(RolePermissions.DefaultUserAccess);
+        UpdateAccessControlState();
         UserErrorText.Text = string.Empty;
         ToggleUserActiveButton.Content = "Ativar/Desativar";
+    }
+
+    private void UserRoleBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateAccessControlState();
+    }
+
+    private UserAccess GetSelectedAccess()
+    {
+        var access = UserAccess.None;
+
+        if (DashboardAccessBox.IsChecked == true)
+        {
+            access |= UserAccess.Dashboard;
+        }
+
+        if (PropertiesAccessBox.IsChecked == true)
+        {
+            access |= UserAccess.Properties;
+        }
+
+        if (ContractsAccessBox.IsChecked == true)
+        {
+            access |= UserAccess.Contracts;
+        }
+
+        if (FinancialAccessBox.IsChecked == true)
+        {
+            access |= UserAccess.Financial;
+        }
+
+        if (DocumentsAccessBox.IsChecked == true)
+        {
+            access |= UserAccess.Documents;
+        }
+
+        return access;
+    }
+
+    private void SetAccessCheckboxes(UserAccess access)
+    {
+        DashboardAccessBox.IsChecked = access.HasFlag(UserAccess.Dashboard);
+        PropertiesAccessBox.IsChecked = access.HasFlag(UserAccess.Properties);
+        ContractsAccessBox.IsChecked = access.HasFlag(UserAccess.Contracts);
+        FinancialAccessBox.IsChecked = access.HasFlag(UserAccess.Financial);
+        DocumentsAccessBox.IsChecked = access.HasFlag(UserAccess.Documents);
+    }
+
+    private void UpdateAccessControlState()
+    {
+        if (UserRoleBox.SelectedItem is not UserRole selectedRole)
+        {
+            return;
+        }
+
+        var isNormalUser = selectedRole == UserRole.Usuario;
+        if (!isNormalUser)
+        {
+            SetAccessCheckboxes(RolePermissions.GetEffectiveAccess(selectedRole, RolePermissions.DefaultUserAccess));
+        }
+
+        DashboardAccessBox.IsEnabled = isNormalUser;
+        PropertiesAccessBox.IsEnabled = isNormalUser;
+        ContractsAccessBox.IsEnabled = isNormalUser;
+        FinancialAccessBox.IsEnabled = isNormalUser;
+        DocumentsAccessBox.IsEnabled = isNormalUser;
+        AccessHelpText.Text = isNormalUser
+            ? "Marque apenas as areas que este usuario pode acessar."
+            : "Este perfil tem acesso completo por regra do sistema.";
     }
 
     private void LogoutButton_Click(object sender, RoutedEventArgs e)

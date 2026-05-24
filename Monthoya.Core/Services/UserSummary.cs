@@ -8,5 +8,6 @@ public sealed record UserSummary(
     string LoginName,
     string Email,
     UserRole Role,
+    UserAccess Access,
     bool IsActive,
     DateTimeOffset? LastLoginAtUtc);

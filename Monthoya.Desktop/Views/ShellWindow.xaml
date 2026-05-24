@@ -248,6 +248,7 @@
                                 <DataGridTextColumn Header="Login" Binding="{Binding LoginName}" Width="150" />
                                 <DataGridTextColumn Header="E-mail" Binding="{Binding Email}" Width="2*" />
                                 <DataGridTextColumn Header="Perfil" Binding="{Binding Role}" Width="140" />
+                                <DataGridTextColumn Header="Acessos" Binding="{Binding Access}" Width="220" />
                                 <DataGridCheckBoxColumn Header="Ativo" Binding="{Binding IsActive}" Width="90" />
                             </DataGrid.Columns>
                         </DataGrid>
@@ -256,46 +257,82 @@
                     <Border Grid.Column="1"
                             Style="{StaticResource CardBorder}"
                             Margin="18,0,0,0">
-                        <StackPanel>
-                            <TextBlock Text="Cadastro"
-                                       FontSize="20"
-                                       FontWeight="SemiBold" />
-                            <TextBlock Text="Senha obrigatoria somente para novo usuario."
-                                       Foreground="{StaticResource MutedBrush}"
-                                       TextWrapping="Wrap"
-                                       Margin="0,6,0,16" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="Cadastro"
+                                           FontSize="20"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="Senha obrigatoria somente para novo usuario."
+                                           Foreground="{StaticResource MutedBrush}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,6,0,16" />
 
-                            <TextBlock Text="Nome" FontWeight="SemiBold" />
-                            <TextBox x:Name="UserNameBox" Margin="0,6,0,12" />
+                                <TextBlock Text="Nome" FontWeight="SemiBold" />
+                                <TextBox x:Name="UserNameBox" Margin="0,6,0,12" />
 
-                            <TextBlock Text="Login" FontWeight="SemiBold" />
-                            <TextBox x:Name="UserLoginNameBox" Margin="0,6,0,12" />
+                                <TextBlock Text="Login" FontWeight="SemiBold" />
+                                <TextBox x:Name="UserLoginNameBox" Margin="0,6,0,12" />
 
-                            <TextBlock Text="E-mail" FontWeight="SemiBold" />
-                            <TextBox x:Name="UserEmailBox" Margin="0,6,0,12" />
+                                <TextBlock Text="E-mail" FontWeight="SemiBold" />
+                                <TextBox x:Name="UserEmailBox" Margin="0,6,0,12" />
 
-                            <TextBlock Text="Perfil" FontWeight="SemiBold" />
-                            <ComboBox x:Name="UserRoleBox" Margin="0,6,0,12" />
+                                <TextBlock Text="Perfil" FontWeight="SemiBold" />
+                                <ComboBox x:Name="UserRoleBox"
+                                          Margin="0,6,0,12"
+                                          SelectionChanged="UserRoleBox_SelectionChanged" />
 
-                            <TextBlock Text="Senha inicial" FontWeight="SemiBold" />
-                            <PasswordBox x:Name="UserPasswordBox" Margin="0,6,0,14" />
+                                <TextBlock Text="Acessos do usuario normal"
+                                           FontWeight="SemiBold" />
+                                <Border Background="{StaticResource SoftBrush}"
+                                        BorderBrush="{StaticResource LineBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="12"
+                                        Margin="0,6,0,12">
+                                    <StackPanel>
+                                        <TextBlock x:Name="AccessHelpText"
+                                                   Text="Administradores e desenvolvedores mantem acesso completo. Para usuarios normais, marque apenas as areas necessarias."
+                                                   Foreground="{StaticResource MutedBrush}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,8" />
+                                        <CheckBox x:Name="DashboardAccessBox"
+                                                  Content="Dashboard"
+                                                  Margin="0,3" />
+                                        <CheckBox x:Name="PropertiesAccessBox"
+                                                  Content="Imoveis"
+                                                  Margin="0,3" />
+                                        <CheckBox x:Name="ContractsAccessBox"
+                                                  Content="Contratos e locacoes"
+                                                  Margin="0,3" />
+                                        <CheckBox x:Name="FinancialAccessBox"
+                                                  Content="Financeiro"
+                                                  Margin="0,3" />
+                                        <CheckBox x:Name="DocumentsAccessBox"
+                                                  Content="Documentos"
+                                                  Margin="0,3" />
+                                    </StackPanel>
+                                </Border>
 
-                            <TextBlock x:Name="UserErrorText"
-                                       Foreground="#B42318"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,14" />
+                                <TextBlock Text="Senha inicial" FontWeight="SemiBold" />
+                                <PasswordBox x:Name="UserPasswordBox" Margin="0,6,0,14" />
 
-                            <Button Style="{StaticResource PrimaryButton}"
-                                    HorizontalAlignment="Stretch"
-                                    Click="SaveUserButton_Click"
-                                    Content="Salvar" />
-                            <Button x:Name="ToggleUserActiveButton"
-                                    Style="{StaticResource SecondaryButton}"
-                                    HorizontalAlignment="Stretch"
-                                    Margin="0,10,0,0"
-                                    Click="ToggleUserActiveButton_Click"
-                                    Content="Ativar/Desativar" />
-                        </StackPanel>
+                                <TextBlock x:Name="UserErrorText"
+                                           Foreground="#B42318"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,14" />
+
+                                <Button Style="{StaticResource PrimaryButton}"
+                                        HorizontalAlignment="Stretch"
+                                        Click="SaveUserButton_Click"
+                                        Content="Salvar" />
+                                <Button x:Name="ToggleUserActiveButton"
+                                        Style="{StaticResource SecondaryButton}"
+                                        HorizontalAlignment="Stretch"
+                                        Margin="0,10,0,0"
+                                        Click="ToggleUserActiveButton_Click"
+                                        Content="Ativar/Desativar" />
+                            </StackPanel>
+                        </ScrollViewer>
                     </Border>
                 </Grid>
             </Grid>

@@ -16,6 +16,12 @@ public sealed class AppUser : BaseEntity
 
     public UserRole Role { get; set; } = UserRole.Usuario;
 
+    public UserAccess Access { get; set; } = UserAccess.Dashboard
+        | UserAccess.Properties
+        | UserAccess.Contracts
+        | UserAccess.Financial
+        | UserAccess.Documents;
+
     public bool IsActive { get; set; } = true;
 
     public DateTimeOffset? LastLoginAtUtc { get; set; }

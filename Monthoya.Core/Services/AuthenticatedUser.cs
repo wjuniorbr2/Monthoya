@@ -7,4 +7,5 @@ public sealed record AuthenticatedUser(
     string DisplayName,
     string LoginName,
     string Email,
-    UserRole Role);
+    UserRole Role,
+    UserAccess Access);

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Monthoya.Core.Entities;
+using Monthoya.Core.Security;
 using Monthoya.Core.Services;
 
 namespace Monthoya.Data.Users;
@@ -49,6 +50,7 @@ public sealed class UserService(
             Email = request.Email.Trim(),
             NormalizedEmail = normalizedEmail,
             Role = request.Role,
+            Access = NormalizeAccessForRole(request.Role, request.Access),
             IsActive = true
         };
 
@@ -93,6 +95,7 @@ public sealed class UserService(
         user.Email = request.Email.Trim();
         user.NormalizedEmail = normalizedEmail;
         user.Role = request.Role;
+        user.Access = NormalizeAccessForRole(request.Role, request.Access);
         user.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -110,4 +113,12 @@ public sealed class UserService(
 
         await dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    private static UserAccess NormalizeAccessForRole(UserRole role, UserAccess access) =>
+        role switch
+        {
+            UserRole.Administrador => RolePermissions.AdministratorAccess,
+            UserRole.Desenvolvedor => RolePermissions.DeveloperAccess,
+            _ => access & RolePermissions.DefaultUserAccess
+        };
 }
