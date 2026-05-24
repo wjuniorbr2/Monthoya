@@ -12,12 +12,19 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UserSecretsId>monthoya-desktop-dev</UserSecretsId>
+    <ApplicationIcon>Assets\Monthoya.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Icon_Monthoya.png" />
+    <Resource Include="Assets\Logo_angle.png" />
+    <Resource Include="Assets\Monthoya.ico" />
   </ItemGroup>
 
   <ItemGroup>

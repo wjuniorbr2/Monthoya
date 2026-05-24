@@ -8,16 +8,21 @@
         MinWidth="1120"
         MinHeight="700"
         WindowStartupLocation="CenterScreen">
-    <Grid Background="#F5F8F6">
+    <Grid Background="#F5F8FF">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Background="#F9FFFC"
-                BorderBrush="#DDE9E4"
+        <Border BorderBrush="#DDE7F8"
                 BorderThickness="0,0,1,0"
                 Padding="18">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#06142E" Offset="0" />
+                    <GradientStop Color="#082D78" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -26,29 +31,31 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel>
-                    <TextBlock Text="Monthoya"
-                               FontSize="26"
-                               FontWeight="SemiBold" />
+                    <Image Source="/Assets/Logo_angle.png"
+                           Width="198"
+                           Stretch="Uniform"
+                           HorizontalAlignment="Left"
+                           Margin="0,0,0,12" />
                     <TextBlock Text="Gestao imobiliaria"
-                               Foreground="{StaticResource MutedBrush}"
+                               Foreground="#BED3FF"
                                Margin="0,4,0,24" />
                 </StackPanel>
 
                 <StackPanel Grid.Row="1" Margin="0,18,0,0">
                     <Button x:Name="DashboardNavButton"
-                            Style="{StaticResource PrimaryButton}"
+                            Style="{StaticResource SelectedNavButton}"
                             HorizontalAlignment="Stretch"
                             Margin="0,0,0,10"
                             Click="DashboardNavButton_Click"
                             Content="Dashboard" />
                     <Button x:Name="UsersNavButton"
-                            Style="{StaticResource SecondaryButton}"
+                            Style="{StaticResource NavButton}"
                             HorizontalAlignment="Stretch"
                             Margin="0,0,0,10"
                             Click="UsersNavButton_Click"
                             Content="Usuarios" />
                     <Button x:Name="DiagnosticsNavButton"
-                            Style="{StaticResource SecondaryButton}"
+                            Style="{StaticResource NavButton}"
                             HorizontalAlignment="Stretch"
                             Margin="0,0,0,10"
                             Click="DiagnosticsNavButton_Click"
@@ -58,11 +65,12 @@
                 <StackPanel Grid.Row="2">
                     <TextBlock x:Name="CurrentUserText"
                                FontWeight="SemiBold"
+                               Foreground="White"
                                TextWrapping="Wrap" />
                     <TextBlock x:Name="CurrentRoleText"
-                               Foreground="{StaticResource MutedBrush}"
+                               Foreground="#BED3FF"
                                Margin="0,4,0,14" />
-                    <Button Style="{StaticResource SecondaryButton}"
+                    <Button Style="{StaticResource NavButton}"
                             HorizontalAlignment="Stretch"
                             Click="LogoutButton_Click"
                             Content="Sair" />
@@ -87,11 +95,6 @@
                                    Foreground="{StaticResource MutedBrush}"
                                    Margin="0,4,0,0" />
                     </StackPanel>
-                    <Button Style="{StaticResource SecondaryButton}"
-                            DockPanel.Dock="Right"
-                            HorizontalAlignment="Right"
-                            Click="RefreshDashboardButton_Click"
-                            Content="Atualizar" />
                 </DockPanel>
 
                 <UniformGrid Grid.Row="1"
@@ -148,6 +151,12 @@
                     <Border Style="{StaticResource CardBorder}" Padding="0">
                         <Grid>
                             <wv2:WebView2 x:Name="PropertyMap" />
+                            <Button Style="{StaticResource PrimaryButton}"
+                                    HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom"
+                                    Margin="0,0,18,18"
+                                    Click="RefreshDashboardButton_Click"
+                                    Content="Atualizar mapa" />
                             <Border x:Name="MapFallback"
                                     Visibility="Collapsed"
                                     Background="{StaticResource SoftBrush}"

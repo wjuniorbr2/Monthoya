@@ -104,6 +104,7 @@ public partial class ShellWindow : Window
 
     private void ShowDashboard()
     {
+        SetActiveNavigation(DashboardNavButton);
         DashboardPanel.Visibility = Visibility.Visible;
         UsersPanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
@@ -125,6 +126,7 @@ public partial class ShellWindow : Window
         DashboardPanel.Visibility = Visibility.Collapsed;
         UsersPanel.Visibility = Visibility.Visible;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        SetActiveNavigation(UsersNavButton);
         await LoadUsersAsync();
     }
 
@@ -138,6 +140,15 @@ public partial class ShellWindow : Window
         DashboardPanel.Visibility = Visibility.Collapsed;
         UsersPanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Visible;
+        SetActiveNavigation(DiagnosticsNavButton);
+    }
+
+    private void SetActiveNavigation(Button activeButton)
+    {
+        DashboardNavButton.Style = (Style)FindResource("NavButton");
+        UsersNavButton.Style = (Style)FindResource("NavButton");
+        DiagnosticsNavButton.Style = (Style)FindResource("NavButton");
+        activeButton.Style = (Style)FindResource("SelectedNavButton");
     }
 
     private async void RefreshDashboardButton_Click(object sender, RoutedEventArgs e)

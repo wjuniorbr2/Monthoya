@@ -6,7 +6,7 @@
         Height="430"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
-    <Grid Margin="28">
+    <Grid Margin="28" Background="#F5F8FF">
         <Border Style="{StaticResource CardBorder}">
             <Grid>
                 <Grid.RowDefinitions>
@@ -16,9 +16,21 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="Configuracao do banco de dados"
-                           FontSize="26"
-                           FontWeight="SemiBold" />
+                <DockPanel>
+                    <Image Source="/Assets/Icon_Monthoya.png"
+                           Width="42"
+                           Height="42"
+                           DockPanel.Dock="Left"
+                           Margin="0,0,14,0" />
+                    <StackPanel>
+                        <TextBlock Text="Configuracao do banco de dados"
+                                   FontSize="26"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="Monthoya"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   Margin="0,2,0,0" />
+                    </StackPanel>
+                </DockPanel>
 
                 <TextBlock x:Name="MessageText"
                            Grid.Row="1"
@@ -29,7 +41,7 @@
                 <Border Grid.Row="2"
                         Margin="0,24,0,0"
                         Background="{StaticResource SoftBrush}"
-                        BorderBrush="#D6E8E2"
+                        BorderBrush="{StaticResource LineBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
                         Padding="16">

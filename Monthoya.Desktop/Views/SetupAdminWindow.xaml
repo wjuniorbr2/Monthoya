@@ -6,23 +6,31 @@
         Height="540"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize">
-    <Grid>
+    <Grid Background="#F5F8FF">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="300" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Background="{StaticResource AccentBrush}" Padding="28">
+        <Border Padding="28">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#071A3E" Offset="0" />
+                    <GradientStop Color="#0A5FE8" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Monthoya"
-                           Foreground="White"
-                           FontSize="30"
-                           FontWeight="SemiBold" />
+                <Image Source="/Assets/Logo_angle.png"
+                       Width="220"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Left"
+                       Margin="0,0,0,28" />
                 <TextBlock Text="Sistema imobiliario"
                            Foreground="#DDF5EF"
+                           FontSize="16"
                            Margin="0,8,0,0" />
                 <TextBlock Text="Crie o primeiro administrador para proteger o acesso ao sistema."
-                           Foreground="#DDF5EF"
+                           Foreground="#EAF2FF"
                            TextWrapping="Wrap"
                            Margin="0,32,0,0" />
             </StackPanel>
@@ -32,12 +40,20 @@
                 Margin="28"
                 Style="{StaticResource CardBorder}">
             <StackPanel>
-                <TextBlock Text="Primeiro administrador"
-                           FontSize="24"
-                           FontWeight="SemiBold" />
+                <DockPanel>
+                    <Image Source="/Assets/Icon_Monthoya.png"
+                           Width="40"
+                           Height="40"
+                           DockPanel.Dock="Left"
+                           Margin="0,0,12,0" />
+                    <TextBlock Text="Primeiro administrador"
+                               FontSize="24"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                </DockPanel>
                 <TextBlock Text="Nao existe usuario cadastrado. Defina o acesso inicial."
                            Foreground="{StaticResource MutedBrush}"
-                           Margin="0,6,0,22" />
+                           Margin="0,10,0,22" />
 
                 <TextBlock Text="Nome" FontWeight="SemiBold" />
                 <TextBox x:Name="NameBox" Margin="0,6,0,14" />
