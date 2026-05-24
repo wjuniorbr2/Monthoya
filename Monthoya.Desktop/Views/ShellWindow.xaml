@@ -31,14 +31,28 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel>
-                    <Image Source="/Assets/Logo_angle.png"
+                    <Image Source="/Assets/Logo_angle_small.png"
                            Width="198"
                            Stretch="Uniform"
                            HorizontalAlignment="Left"
                            Margin="0,0,0,12" />
-                    <TextBlock Text="Gestao imobiliaria"
+                    <TextBlock Text="Monthoya Consultoria Imobiliária"
+                               Foreground="White"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap" />
+                    <TextBlock Text="Paranavaí - PR"
                                Foreground="#BED3FF"
-                               Margin="0,4,0,24" />
+                               Margin="0,4,0,12" />
+                    <TextBlock Text="Gestão imobiliária integrada"
+                               Foreground="#EAF2FF"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,6" />
+                    <TextBlock Text="Locações, contratos, pagamentos, documentos e livro caixa em um só lugar."
+                               Foreground="#BED3FF"
+                               TextWrapping="Wrap"
+                               FontSize="12"
+                               Margin="0,0,0,22" />
                 </StackPanel>
 
                 <StackPanel Grid.Row="1" Margin="0,18,0,0">
@@ -91,7 +105,7 @@
                         <TextBlock Text="Dashboard"
                                    FontSize="30"
                                    FontWeight="SemiBold" />
-                        <TextBlock Text="Mapa de locacoes em Paranavai e indicadores iniciais."
+                        <TextBlock Text="Mapa de locações em Paranavaí e indicadores iniciais."
                                    Foreground="{StaticResource MutedBrush}"
                                    Margin="0,4,0,0" />
                     </StackPanel>
@@ -302,7 +316,7 @@
                                                   Content="Imoveis"
                                                   Margin="0,3" />
                                         <CheckBox x:Name="ContractsAccessBox"
-                                                  Content="Contratos e locacoes"
+                                                  Content="Contratos e locações"
                                                   Margin="0,3" />
                                         <CheckBox x:Name="FinancialAccessBox"
                                                   Content="Financeiro"

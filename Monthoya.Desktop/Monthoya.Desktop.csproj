@@ -24,6 +24,7 @@
   <ItemGroup>
     <Resource Include="Assets\Icon_Monthoya.png" />
     <Resource Include="Assets\Logo_angle.png" />
+    <Resource Include="Assets\Logo_angle_small.png" />
     <Resource Include="Assets\Monthoya.ico" />
   </ItemGroup>
 

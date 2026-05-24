@@ -21,19 +21,29 @@
                 </LinearGradientBrush>
             </Border.Background>
             <StackPanel VerticalAlignment="Center">
-                <Image Source="/Assets/Logo_angle.png"
+                <Image Source="/Assets/Logo_angle_small.png"
                        Width="220"
                        Stretch="Uniform"
                        HorizontalAlignment="Left"
                        Margin="0,0,0,28" />
-                <TextBlock Text="Sistema imobiliario"
+                <TextBlock Text="Monthoya Consultoria Imobiliária"
                            Foreground="#DDF5EF"
                            FontSize="16"
+                           FontWeight="SemiBold"
                            Margin="0,8,0,0" />
+                <TextBlock Text="Paranavaí - PR"
+                           Foreground="#BED3FF"
+                           Margin="0,4,0,0" />
+                <TextBlock Text="Gestão imobiliária integrada"
+                           Foreground="White"
+                           FontSize="15"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           Margin="0,28,0,0" />
                 <TextBlock Text="Crie o primeiro administrador para proteger o acesso ao sistema."
                            Foreground="#EAF2FF"
                            TextWrapping="Wrap"
-                           Margin="0,32,0,0" />
+                           Margin="0,22,0,0" />
             </StackPanel>
         </Border>
 
