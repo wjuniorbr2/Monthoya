@@ -51,18 +51,30 @@ public sealed class AppStartup(
             }
         }
 
-        var loginWindow = services.GetRequiredService<LoginWindow>();
-        var loginResult = loginWindow.ShowDialog();
-        if (loginResult != true || loginWindow.AuthenticatedUser is null)
+        while (true)
         {
+            var loginWindow = services.GetRequiredService<LoginWindow>();
+            var loginResult = loginWindow.ShowDialog();
+            if (loginResult != true || loginWindow.AuthenticatedUser is null)
+            {
+                Application.Current.Shutdown();
+                return;
+            }
+
+            var shellWindow = ActivatorUtilities.CreateInstance<ShellWindow>(services, loginWindow.AuthenticatedUser);
+            Application.Current.MainWindow = shellWindow;
+            Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            shellWindow.ShowDialog();
+
+            if (shellWindow.IsLogoutRequested)
+            {
+                Application.Current.MainWindow = null;
+                continue;
+            }
+
             Application.Current.Shutdown();
             return;
         }
-
-        var shellWindow = ActivatorUtilities.CreateInstance<ShellWindow>(services, loginWindow.AuthenticatedUser);
-        Application.Current.MainWindow = shellWindow;
-        Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
-        shellWindow.Show();
     }
 
     private void ShowConfigurationWindow(string message)

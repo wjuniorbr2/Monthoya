@@ -43,6 +43,8 @@ public partial class ShellWindow : Window
         Loaded += async (_, _) => await ShowPageAsync(ShellPage.Dashboard, true);
     }
 
+    public bool IsLogoutRequested { get; private set; }
+
     private async Task LoadDashboardAsync()
     {
         try
@@ -452,9 +454,32 @@ public partial class ShellWindow : Window
             : "Este perfil tem acesso completo por regra do sistema.";
     }
 
+    private void LogoutPrompt_Click(object sender, RoutedEventArgs e)
+    {
+        RequestLogout();
+    }
+
     private void LogoutButton_Click(object sender, RoutedEventArgs e)
     {
-        Application.Current.Shutdown();
+        RequestLogout();
+    }
+
+    private void RequestLogout()
+    {
+        var result = MessageBox.Show(
+            this,
+            "Deseja sair do sistema e voltar para a tela de login?",
+            "Sair do Monthoya",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        IsLogoutRequested = true;
+        Close();
     }
 
     private const string MapHtmlTemplate = """

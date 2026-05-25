@@ -57,13 +57,29 @@
                 </ScrollViewer>
 
                 <StackPanel Grid.Row="1">
-                    <TextBlock x:Name="CurrentUserText"
-                               FontWeight="SemiBold"
-                               Foreground="White"
-                               TextWrapping="Wrap" />
-                    <TextBlock x:Name="CurrentRoleText"
-                               Foreground="#BED3FF"
-                               Margin="0,4,0,14" />
+                    <Button Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0"
+                            HorizontalContentAlignment="Left"
+                            Cursor="Hand"
+                            Click="LogoutPrompt_Click">
+                        <TextBlock x:Name="CurrentUserText"
+                                   FontWeight="SemiBold"
+                                   Foreground="White"
+                                   TextDecorations="Underline"
+                                   TextWrapping="Wrap" />
+                    </Button>
+                    <Button Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0"
+                            Margin="0,4,0,14"
+                            HorizontalContentAlignment="Left"
+                            Cursor="Hand"
+                            Click="LogoutPrompt_Click">
+                        <TextBlock x:Name="CurrentRoleText"
+                                   Foreground="#BED3FF"
+                                   TextDecorations="Underline" />
+                    </Button>
                     <Button Style="{StaticResource NavButton}"
                             HorizontalAlignment="Stretch"
                             Click="LogoutButton_Click">
