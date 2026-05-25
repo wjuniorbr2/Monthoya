@@ -46,6 +46,42 @@
                                 Click="UsersNavButton_Click">
                             <TextBlock Style="{StaticResource NavLabelText}" Text="Usuários" />
                         </Button>
+                        <Button x:Name="PessoasNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="PessoasNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Pessoas" />
+                        </Button>
+                        <Button x:Name="ImoveisNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="ImoveisNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Imóveis" />
+                        </Button>
+                        <Button x:Name="LocacoesNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="LocacoesNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Locações" />
+                        </Button>
+                        <Button x:Name="FinanceiroNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="FinanceiroNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Financeiro" />
+                        </Button>
+                        <Button x:Name="BoletosNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="BoletosNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Boletos" />
+                        </Button>
+                        <Button x:Name="NotasFiscaisNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="NotasFiscaisNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Notas Fiscais" />
+                        </Button>
+                        <Button x:Name="DocumentosNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="DocumentosNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Documentos" />
+                        </Button>
+                        <Button x:Name="RelatoriosNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="RelatoriosNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Relatórios" />
+                        </Button>
+                        <Button x:Name="DimobNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="DimobNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="DIMOB" />
+                        </Button>
+                        <Button x:Name="ManutencoesNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="ManutencoesNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Manutenções" />
+                        </Button>
+                        <Button x:Name="VistoriasNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="VistoriasNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Vistorias" />
+                        </Button>
+                        <Button x:Name="ConfiguracoesNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="ConfiguracoesNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Configurações" />
+                        </Button>
                         <Button x:Name="DiagnosticsNavButton"
                                 Style="{StaticResource NavButton}"
                                 HorizontalAlignment="Stretch"
@@ -370,6 +406,140 @@
                                 </ScrollViewer>
                             </Border>
                         </Grid>
+                    </Grid>
+
+                    <Grid x:Name="PessoasPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Left">
+                                <TextBlock Text="Pessoas" FontSize="30" FontWeight="SemiBold" />
+                                <TextBlock Text="Cadastro único de pessoas físicas e jurídicas com múltiplas funções." Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <Button Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ReloadPessoasButton_Click" Content="Atualizar" />
+                        </DockPanel>
+                        <Grid Grid.Row="1" Margin="0,22,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="360" />
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource CardBorder}" Padding="0">
+                                <DataGrid x:Name="PessoasGrid" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="2*" />
+                                        <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="*" />
+                                        <DataGridTextColumn Header="Funções" Binding="{Binding Roles}" Width="2*" />
+                                        <DataGridTextColumn Header="Telefone" Binding="{Binding Telefone}" Width="*" />
+                                        <DataGridTextColumn Header="E-mail" Binding="{Binding Email}" Width="2*" />
+                                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                            <Border Grid.Column="1" Style="{StaticResource CardBorder}" Margin="18,0,0,0">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="Nova pessoa" FontSize="20" FontWeight="SemiBold" />
+                                        <TextBlock Text="Use um único cadastro e marque todas as funções necessárias." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,16" />
+                                        <TextBlock Text="Tipo" FontWeight="SemiBold" />
+                                        <ComboBox x:Name="PessoaTipoBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Nome / Razão social" FontWeight="SemiBold" />
+                                        <TextBox x:Name="PessoaNomeBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="CPF/CNPJ" FontWeight="SemiBold" />
+                                        <TextBox x:Name="PessoaDocumentoBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Telefone" FontWeight="SemiBold" />
+                                        <TextBox x:Name="PessoaTelefoneBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="E-mail" FontWeight="SemiBold" />
+                                        <TextBox x:Name="PessoaEmailBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Funções" FontWeight="SemiBold" />
+                                        <CheckBox x:Name="PessoaProprietarioBox" Content="Proprietário" Margin="0,6,0,3" />
+                                        <CheckBox x:Name="PessoaLocatarioBox" Content="Locatário" Margin="0,3" />
+                                        <CheckBox x:Name="PessoaFiadorBox" Content="Fiador" Margin="0,3,0,12" />
+                                        <TextBlock Text="Observações" FontWeight="SemiBold" />
+                                        <TextBox x:Name="PessoaObservacoesBox" AcceptsReturn="True" Height="74" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                        <TextBlock x:Name="PessoaErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                        <Button Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" Click="SavePessoaButton_Click" Content="Salvar pessoa" />
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <Grid x:Name="ImoveisPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Left">
+                                <TextBlock Text="Imóveis" FontSize="30" FontWeight="SemiBold" />
+                                <TextBlock Text="Cadastro inicial de imóveis vinculados a proprietário." Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <Button Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ReloadImoveisButton_Click" Content="Atualizar" />
+                        </DockPanel>
+                        <Grid Grid.Row="1" Margin="0,22,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="360" />
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource CardBorder}" Padding="0">
+                                <DataGrid x:Name="ImoveisGrid" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Endereço" Binding="{Binding Endereco}" Width="2*" />
+                                        <DataGridTextColumn Header="Proprietário" Binding="{Binding Proprietario}" Width="2*" />
+                                        <DataGridTextColumn Header="Finalidade" Binding="{Binding Finalidade}" Width="*" />
+                                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
+                                        <DataGridTextColumn Header="Aluguel" Binding="{Binding ValorAluguel, StringFormat=R$ {0:N2}}" Width="*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                            <Border Grid.Column="1" Style="{StaticResource CardBorder}" Margin="18,0,0,0">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <StackPanel>
+                                        <TextBlock Text="Novo imóvel" FontSize="20" FontWeight="SemiBold" />
+                                        <TextBlock Text="Selecione uma pessoa com função Proprietário." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,16" />
+                                        <TextBlock Text="Proprietário" FontWeight="SemiBold" />
+                                        <ComboBox x:Name="ImovelProprietarioBox" DisplayMemberPath="Nome" SelectedValuePath="Id" Margin="0,6,0,12" />
+                                        <TextBlock Text="Rua" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelRuaBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Número" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelNumeroBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Bairro" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelBairroBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Valor do aluguel" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelValorAluguelBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Finalidade" FontWeight="SemiBold" />
+                                        <ComboBox x:Name="ImovelFinalidadeBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Observações" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelObservacoesBox" AcceptsReturn="True" Height="74" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                        <TextBlock x:Name="ImovelErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                        <Button Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" Click="SaveImovelButton_Click" Content="Salvar imóvel" />
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
+                    </Grid>
+
+                    <Grid x:Name="ModulePanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Left">
+                                <TextBlock x:Name="ModuleTitleText" FontSize="30" FontWeight="SemiBold" />
+                                <TextBlock x:Name="ModuleSubtitleText" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <Button x:Name="ModulePrimaryActionButton" Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ModulePrimaryActionButton_Click" />
+                        </DockPanel>
+                        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0,18,0,18">
+                            <TextBlock x:Name="ModuleNoticeText" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" />
+                        </Border>
+                        <Border Grid.Row="2" Style="{StaticResource CardBorder}" Padding="0">
+                            <DataGrid x:Name="ModuleGrid" AutoGenerateColumns="True" IsReadOnly="True" BorderThickness="0" />
+                        </Border>
                     </Grid>
 
                     <Grid x:Name="DiagnosticsPanel" Visibility="Collapsed">

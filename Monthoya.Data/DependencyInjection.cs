@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 using Monthoya.Data.Dashboard;
+using Monthoya.Data.RentalManagement;
 using Monthoya.Data.Users;
 using Microsoft.AspNetCore.Identity;
 
@@ -26,6 +27,9 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IRentalManagementService, RentalManagementService>();
+        services.AddScoped<IBoletoProvider, LocalBoletoProvider>();
+        services.AddScoped<INfseProvider, ManualPortalNfseProvider>();
 
         return services;
     }

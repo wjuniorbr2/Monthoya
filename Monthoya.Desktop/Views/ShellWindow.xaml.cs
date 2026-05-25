@@ -16,18 +16,22 @@ public partial class ShellWindow : Window
     private readonly AuthenticatedUser _currentUser;
     private readonly IUserService _userService;
     private readonly IDashboardService _dashboardService;
+    private readonly IRentalManagementService _rentalManagementService;
     private Guid? _editingUserId;
     private ShellTab? _activeTab;
+    private ShellPage _activeModulePage;
 
     public ShellWindow(
         AuthenticatedUser currentUser,
         IUserService userService,
-        IDashboardService dashboardService)
+        IDashboardService dashboardService,
+        IRentalManagementService rentalManagementService)
     {
         InitializeComponent();
         _currentUser = currentUser;
         _userService = userService;
         _dashboardService = dashboardService;
+        _rentalManagementService = rentalManagementService;
 
         CurrentUserText.Text = currentUser.DisplayName;
         CurrentRoleText.Text = GetRoleLabel(currentUser.Role);
@@ -35,6 +39,14 @@ public partial class ShellWindow : Window
         DiagnosticsNavButton.Visibility = RolePermissions.CanAccessDiagnostics(currentUser.Role) ? Visibility.Visible : Visibility.Collapsed;
         UserRoleBox.ItemsSource = UserRoleOptions;
         UserRoleBox.SelectedValue = UserRole.Usuario;
+        PessoaTipoBox.ItemsSource = TipoPessoaOptions;
+        PessoaTipoBox.SelectedValuePath = "Tipo";
+        PessoaTipoBox.DisplayMemberPath = "Label";
+        PessoaTipoBox.SelectedValue = TipoPessoa.Fisica;
+        ImovelFinalidadeBox.ItemsSource = ImovelFinalidadeOptions;
+        ImovelFinalidadeBox.SelectedValuePath = "Finalidade";
+        ImovelFinalidadeBox.DisplayMemberPath = "Label";
+        ImovelFinalidadeBox.SelectedValue = ImovelFinalidade.Locacao;
         SetAccessCheckboxes(RolePermissions.DefaultUserAccess);
         UpdateAccessControlState();
         DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {GetRoleLabel(currentUser.Role)}{Environment.NewLine}Acessos: {GetAccessLabel(RolePermissions.GetEffectiveAccess(currentUser.Role, currentUser.Access))}{Environment.NewLine}Banco: configurado via secrets/appsettings";
@@ -148,9 +160,57 @@ public partial class ShellWindow : Window
     {
         DashboardNavButton.Style = (Style)FindResource("NavButton");
         UsersNavButton.Style = (Style)FindResource("NavButton");
+        PessoasNavButton.Style = (Style)FindResource("NavButton");
+        ImoveisNavButton.Style = (Style)FindResource("NavButton");
+        LocacoesNavButton.Style = (Style)FindResource("NavButton");
+        FinanceiroNavButton.Style = (Style)FindResource("NavButton");
+        BoletosNavButton.Style = (Style)FindResource("NavButton");
+        NotasFiscaisNavButton.Style = (Style)FindResource("NavButton");
+        DocumentosNavButton.Style = (Style)FindResource("NavButton");
+        RelatoriosNavButton.Style = (Style)FindResource("NavButton");
+        DimobNavButton.Style = (Style)FindResource("NavButton");
+        ManutencoesNavButton.Style = (Style)FindResource("NavButton");
+        VistoriasNavButton.Style = (Style)FindResource("NavButton");
+        ConfiguracoesNavButton.Style = (Style)FindResource("NavButton");
         DiagnosticsNavButton.Style = (Style)FindResource("NavButton");
         activeButton.Style = (Style)FindResource("SelectedNavButton");
     }
+
+    private async void PessoasNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Pessoas, "Pessoas", true);
+
+    private async void ImoveisNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Imoveis, "Imóveis", true);
+
+    private async void LocacoesNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Locacoes, "Locações", true);
+
+    private async void FinanceiroNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Financeiro, "Financeiro", true);
+
+    private async void BoletosNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Boletos, "Boletos", true);
+
+    private async void NotasFiscaisNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.NotasFiscais, "Notas Fiscais", true);
+
+    private async void DocumentosNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Documentos, "Documentos", true);
+
+    private async void RelatoriosNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Relatorios, "Relatórios", true);
+
+    private async void DimobNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Dimob, "DIMOB", true);
+
+    private async void ManutencoesNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Manutencoes, "Manutenções", true);
+
+    private async void VistoriasNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Vistorias, "Vistorias", true);
+
+    private async void ConfiguracoesNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Configuracoes, "Configurações", true);
 
     private async void RefreshDashboardButton_Click(object sender, RoutedEventArgs e)
     {
@@ -276,11 +336,26 @@ public partial class ShellWindow : Window
     {
         DashboardPanel.Visibility = page == ShellPage.Dashboard ? Visibility.Visible : Visibility.Collapsed;
         UsersPanel.Visibility = page == ShellPage.Users ? Visibility.Visible : Visibility.Collapsed;
+        PessoasPanel.Visibility = page == ShellPage.Pessoas ? Visibility.Visible : Visibility.Collapsed;
+        ImoveisPanel.Visibility = page == ShellPage.Imoveis ? Visibility.Visible : Visibility.Collapsed;
+        ModulePanel.Visibility = IsGenericModulePage(page) ? Visibility.Visible : Visibility.Collapsed;
         DiagnosticsPanel.Visibility = page == ShellPage.Diagnostics ? Visibility.Visible : Visibility.Collapsed;
 
         SetActiveNavigation(page switch
         {
             ShellPage.Users => UsersNavButton,
+            ShellPage.Pessoas => PessoasNavButton,
+            ShellPage.Imoveis => ImoveisNavButton,
+            ShellPage.Locacoes => LocacoesNavButton,
+            ShellPage.Financeiro => FinanceiroNavButton,
+            ShellPage.Boletos => BoletosNavButton,
+            ShellPage.NotasFiscais => NotasFiscaisNavButton,
+            ShellPage.Documentos => DocumentosNavButton,
+            ShellPage.Relatorios => RelatoriosNavButton,
+            ShellPage.Dimob => DimobNavButton,
+            ShellPage.Manutencoes => ManutencoesNavButton,
+            ShellPage.Vistorias => VistoriasNavButton,
+            ShellPage.Configuracoes => ConfiguracoesNavButton,
             ShellPage.Diagnostics => DiagnosticsNavButton,
             _ => DashboardNavButton
         });
@@ -298,6 +373,158 @@ public partial class ShellWindow : Window
         {
             await LoadUsersAsync();
         }
+        else if (page == ShellPage.Pessoas)
+        {
+            await LoadPessoasAsync();
+        }
+        else if (page == ShellPage.Imoveis)
+        {
+            await LoadImoveisAsync();
+        }
+        else if (IsGenericModulePage(page))
+        {
+            await LoadGenericModuleAsync(page);
+        }
+    }
+
+    private async Task LoadPessoasAsync()
+    {
+        PessoasGrid.ItemsSource = await _rentalManagementService.GetPessoasAsync();
+        var proprietarios = (await _rentalManagementService.GetPessoasAsync())
+            .Where(x => x.Roles.Contains("Proprietário", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        ImovelProprietarioBox.ItemsSource = proprietarios;
+    }
+
+    private async Task LoadImoveisAsync()
+    {
+        ImoveisGrid.ItemsSource = await _rentalManagementService.GetImoveisAsync();
+        var proprietarios = (await _rentalManagementService.GetPessoasAsync())
+            .Where(x => x.Roles.Contains("Proprietário", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        ImovelProprietarioBox.ItemsSource = proprietarios;
+    }
+
+    private async void ReloadPessoasButton_Click(object sender, RoutedEventArgs e) => await LoadPessoasAsync();
+
+    private async void ReloadImoveisButton_Click(object sender, RoutedEventArgs e) => await LoadImoveisAsync();
+
+    private async void SavePessoaButton_Click(object sender, RoutedEventArgs e)
+    {
+        PessoaErrorText.Text = string.Empty;
+
+        try
+        {
+            var roles = new List<PessoaRoleTipo>();
+            if (PessoaProprietarioBox.IsChecked == true) roles.Add(PessoaRoleTipo.Proprietario);
+            if (PessoaLocatarioBox.IsChecked == true) roles.Add(PessoaRoleTipo.Locatario);
+            if (PessoaFiadorBox.IsChecked == true) roles.Add(PessoaRoleTipo.Fiador);
+
+            var tipo = PessoaTipoBox.SelectedValue is TipoPessoa selectedTipo ? selectedTipo : TipoPessoa.Fisica;
+            await _rentalManagementService.CreatePessoaAsync(new CreatePessoaRequest(
+                tipo,
+                PessoaNomeBox.Text,
+                PessoaTelefoneBox.Text,
+                PessoaEmailBox.Text,
+                PessoaDocumentoBox.Text,
+                roles.ToArray(),
+                PessoaObservacoesBox.Text));
+
+            PessoaNomeBox.Clear();
+            PessoaDocumentoBox.Clear();
+            PessoaTelefoneBox.Clear();
+            PessoaEmailBox.Clear();
+            PessoaObservacoesBox.Clear();
+            PessoaProprietarioBox.IsChecked = false;
+            PessoaLocatarioBox.IsChecked = false;
+            PessoaFiadorBox.IsChecked = false;
+            await LoadPessoasAsync();
+        }
+        catch (Exception ex)
+        {
+            PessoaErrorText.Text = ex.Message;
+        }
+    }
+
+    private async void SaveImovelButton_Click(object sender, RoutedEventArgs e)
+    {
+        ImovelErrorText.Text = string.Empty;
+
+        try
+        {
+            var finalidade = ImovelFinalidadeBox.SelectedValue is ImovelFinalidade selectedFinalidade
+                ? selectedFinalidade
+                : ImovelFinalidade.Locacao;
+
+            decimal? valorAluguel = null;
+            if (!string.IsNullOrWhiteSpace(ImovelValorAluguelBox.Text)
+                && decimal.TryParse(ImovelValorAluguelBox.Text, NumberStyles.Currency, CultureInfo.GetCultureInfo("pt-BR"), out var parsedValue))
+            {
+                valorAluguel = parsedValue;
+            }
+
+            var proprietarioId = ImovelProprietarioBox.SelectedValue is Guid selectedOwnerId ? selectedOwnerId : Guid.Empty;
+            await _rentalManagementService.CreateImovelAsync(new CreateImovelRequest(
+                proprietarioId,
+                ImovelRuaBox.Text,
+                ImovelNumeroBox.Text,
+                ImovelBairroBox.Text,
+                "Paranavaí",
+                "PR",
+                valorAluguel,
+                finalidade,
+                ImovelObservacoesBox.Text));
+
+            ImovelRuaBox.Clear();
+            ImovelNumeroBox.Clear();
+            ImovelBairroBox.Clear();
+            ImovelValorAluguelBox.Clear();
+            ImovelObservacoesBox.Clear();
+            await LoadImoveisAsync();
+        }
+        catch (Exception ex)
+        {
+            ImovelErrorText.Text = ex.Message;
+        }
+    }
+
+    private async Task LoadGenericModuleAsync(ShellPage page)
+    {
+        _activeModulePage = page;
+        var definition = GetModuleDefinition(page);
+        ModuleTitleText.Text = definition.Title;
+        ModuleSubtitleText.Text = definition.Subtitle;
+        ModuleNoticeText.Text = definition.Notice;
+        ModulePrimaryActionButton.Content = definition.ActionText;
+        ModuleGrid.ItemsSource = page switch
+        {
+            ShellPage.Locacoes => await _rentalManagementService.GetLocacoesAsync(),
+            ShellPage.Financeiro => await _rentalManagementService.GetLancamentosFinanceirosAsync(),
+            ShellPage.Boletos => await _rentalManagementService.GetBoletosAsync(),
+            ShellPage.NotasFiscais => await _rentalManagementService.GetNotasFiscaisAsync(),
+            ShellPage.Documentos => await _rentalManagementService.GetDocumentoModelosAsync(),
+            ShellPage.Relatorios => await _rentalManagementService.GetImoveisAsync(),
+            ShellPage.Dimob => await _rentalManagementService.GetDimobDeclaracoesAsync(),
+            ShellPage.Manutencoes => await _rentalManagementService.GetManutencoesAsync(),
+            ShellPage.Vistorias => await _rentalManagementService.GetVistoriasAsync(),
+            ShellPage.Configuracoes => await _rentalManagementService.GetIndicesReajusteAsync(),
+            _ => null
+        };
+    }
+
+    private void ModulePrimaryActionButton_Click(object sender, RoutedEventArgs e)
+    {
+        var message = _activeModulePage switch
+        {
+            ShellPage.Boletos => "Integração bancária ainda não configurada.",
+            ShellPage.NotasFiscais => "Integração automática com NFS-e ainda não configurada. Use o fluxo manual/semi-manual.",
+            ShellPage.Dimob => "Exportação oficial DIMOB pendente de confirmação do layout vigente da Receita Federal.",
+            ShellPage.Documentos => "Modelos iniciais criados como pendentes de revisão. A redação final deve ser confirmada com o cliente.",
+            ShellPage.Configuracoes => "Certificados A1: registrar apenas metadados por enquanto. Não armazene senha ou arquivo do certificado sem armazenamento seguro.",
+            _ => "CRUD completo deste módulo será implementado em uma próxima etapa."
+        };
+
+        MessageBox.Show(this, message, "Monthoya", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void NewUserButton_Click(object sender, RoutedEventArgs e)
@@ -468,6 +695,34 @@ public partial class ShellWindow : Window
             ? "Cadastro de usuários"
             : "Básico";
 
+    private static bool IsGenericModulePage(ShellPage page) =>
+        page is ShellPage.Locacoes
+            or ShellPage.Financeiro
+            or ShellPage.Boletos
+            or ShellPage.NotasFiscais
+            or ShellPage.Documentos
+            or ShellPage.Relatorios
+            or ShellPage.Dimob
+            or ShellPage.Manutencoes
+            or ShellPage.Vistorias
+            or ShellPage.Configuracoes;
+
+    private static ModuleDefinition GetModuleDefinition(ShellPage page) =>
+        page switch
+        {
+            ShellPage.Locacoes => new("Locações", "Contratos de locação vinculados a imóvel, proprietário, locatário e fiadores.", "Fundação criada. O cadastro completo de locação deve validar imóvel, locatário, proprietário, fiadores, reajuste e taxas antes de ativar.", "Nova locação"),
+            ShellPage.Financeiro => new("Financeiro", "Lançamentos financeiros, contas a pagar e contas a receber.", "Fundação criada para aluguel, manutenção, taxas, descontos, multa, juros, administração, boleto, nota fiscal e outros.", "Novo lançamento"),
+            ShellPage.Boletos => new("Boletos", "Controle interno de boletos vinculados a locações e lançamentos.", "Integração bancária ainda não configurada. As ações Gerar, Registrar, Cancelar, Baixar PDF e Consultar status ficam preparadas para provider futuro.", "Ações do boleto"),
+            ShellPage.NotasFiscais => new("Notas Fiscais", "Fluxo manual/semi-manual de NFS-e para registrar dados emitidos no portal municipal.", "Integração automática com NFS-e ainda não configurada. Use o fluxo manual/semi-manual e registre número, código de verificação, PDF/XML e status.", "Ações de NFS-e"),
+            ShellPage.Documentos => new("Documentos", "Modelos e documentos gerados em PDF.", "Modelos iniciais foram criados como pendentes de revisão. Não use redação jurídica como definitiva sem validação do cliente.", "Novo documento"),
+            ShellPage.Relatorios => new("Relatórios", "Consultas operacionais de aluguéis, imóveis, locações e contas.", "Relatórios oficiais e exportações finais serão detalhados conforme os dados reais e decisões do cliente.", "Gerar relatório"),
+            ShellPage.Dimob => new("DIMOB", "Fundação para conferência anual de dados da DIMOB.", "Exportação TXT oficial pendente de confirmação do layout vigente da Receita Federal/PGD/Receitanet.", "Exportar DIMOB"),
+            ShellPage.Manutencoes => new("Manutenções", "Solicitações e execução de manutenção de imóveis.", "Fundação criada com status solicitada, em andamento, concluída e cancelada.", "Nova manutenção"),
+            ShellPage.Vistorias => new("Vistorias", "Vistorias de entrada, saída, periódicas e outras.", "Fundação criada. Anexos, fotos e laudos em PDF devem usar o módulo de documentos.", "Nova vistoria"),
+            ShellPage.Configuracoes => new("Configurações", "Índices de reajuste, certificado A1 e integrações futuras.", "Certificados digitais: registrar somente metadados agora. TODO: armazenamento criptografado, senha segura, auditoria, alertas e ambiente homologação/produção.", "Abrir configurações"),
+            _ => new("Módulo", "Fundação do módulo.", "Sem ações disponíveis.", "Abrir")
+        };
+
     private const string MapHtmlTemplate = """
 <!doctype html>
 <html>
@@ -516,6 +771,18 @@ public partial class ShellWindow : Window
     {
         Dashboard,
         Users,
+        Pessoas,
+        Imoveis,
+        Locacoes,
+        Financeiro,
+        Boletos,
+        NotasFiscais,
+        Documentos,
+        Relatorios,
+        Dimob,
+        Manutencoes,
+        Vistorias,
+        Configuracoes,
         Diagnostics
     }
 
@@ -529,11 +796,27 @@ public partial class ShellWindow : Window
     }
 
     private sealed record UserRoleOption(string Label, UserRole Role);
+    private sealed record TipoPessoaOption(string Label, TipoPessoa Tipo);
+    private sealed record ImovelFinalidadeOption(string Label, ImovelFinalidade Finalidade);
+    private sealed record ModuleDefinition(string Title, string Subtitle, string Notice, string ActionText);
 
     private static readonly IReadOnlyList<UserRoleOption> UserRoleOptions =
     [
         new("Usuário", UserRole.Usuario),
         new("Administrador", UserRole.Administrador),
         new("Desenvolvedor", UserRole.Desenvolvedor)
+    ];
+
+    private static readonly IReadOnlyList<TipoPessoaOption> TipoPessoaOptions =
+    [
+        new("Física", TipoPessoa.Fisica),
+        new("Jurídica", TipoPessoa.Juridica)
+    ];
+
+    private static readonly IReadOnlyList<ImovelFinalidadeOption> ImovelFinalidadeOptions =
+    [
+        new("Locação", ImovelFinalidade.Locacao),
+        new("Venda", ImovelFinalidade.Venda),
+        new("Ambos", ImovelFinalidade.Ambos)
     ];
 }

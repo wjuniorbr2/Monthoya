@@ -4,6 +4,7 @@ using Monthoya.Core.Entities;
 using Monthoya.Core.Security;
 using Monthoya.Core.Services;
 using Monthoya.Data;
+using Monthoya.Data.RentalManagement;
 using Monthoya.Data.Users;
 
 namespace Monthoya.Tests;
@@ -281,6 +282,66 @@ public sealed class AuthAndUserTests
         Assert.False(result.Succeeded);
         Assert.Null(result.User);
         Assert.Equal("A configuração inicial já foi concluída.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Pessoa_CanHaveMultipleRolesWithoutDuplicateRecords()
+    {
+        await using var dbContext = CreateDbContext();
+        var rentalService = new RentalManagementService(dbContext);
+
+        var pessoa = await rentalService.CreatePessoaAsync(
+            new CreatePessoaRequest(
+                TipoPessoa.Fisica,
+                "João da Silva",
+                "(44) 99999-0000",
+                "joao@monthoya.local",
+                "12345678901",
+                [PessoaRoleTipo.Proprietario, PessoaRoleTipo.Locatario, PessoaRoleTipo.Fiador],
+                null));
+
+        var pessoas = await rentalService.GetPessoasAsync();
+
+        Assert.Single(pessoas);
+        Assert.Equal(pessoa.Id, pessoas[0].Id);
+        Assert.Contains("Proprietário", pessoas[0].Roles);
+        Assert.Contains("Locatário", pessoas[0].Roles);
+        Assert.Contains("Fiador", pessoas[0].Roles);
+    }
+
+    [Fact]
+    public async Task Imovel_RequiresOwnerAndAutoAddsOwnerRole()
+    {
+        await using var dbContext = CreateDbContext();
+        var rentalService = new RentalManagementService(dbContext);
+
+        var pessoa = await rentalService.CreatePessoaAsync(
+            new CreatePessoaRequest(
+                TipoPessoa.Fisica,
+                "Maria Locatária",
+                null,
+                null,
+                null,
+                [PessoaRoleTipo.Locatario],
+                null));
+
+        var imovel = await rentalService.CreateImovelAsync(
+            new CreateImovelRequest(
+                pessoa.Id,
+                "Rua Getúlio Vargas",
+                "668",
+                "Centro",
+                "Paranavaí",
+                "PR",
+                1500m,
+                ImovelFinalidade.Locacao,
+                null));
+
+        var pessoas = await rentalService.GetPessoasAsync();
+        var imoveis = await rentalService.GetImoveisAsync();
+
+        Assert.Equal(imovel.Id, imoveis.Single().Id);
+        Assert.Contains("Proprietário", pessoas.Single().Roles);
     }
 
     private static MonthoyaDbContext CreateDbContext()
