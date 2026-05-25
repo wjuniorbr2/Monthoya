@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Resource Include="Assets\Login_image.jpg" />
+    <Resource Include="Assets\Login_icon_small.png" />
     <Resource Include="Assets\Logo_bg.png" />
     <Resource Include="Assets\Logo_icon2.png" />
     <Resource Include="Assets\Monthoya.ico" />

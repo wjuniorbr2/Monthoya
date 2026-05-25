@@ -16,7 +16,7 @@
 
         <Border BorderBrush="#DDE7F8"
                 BorderThickness="0,0,1,0"
-                Padding="18,190,18,18">
+                Padding="18,260,18,18">
             <Border.Background>
                 <ImageBrush ImageSource="/Assets/Side_panel.png"
                             Stretch="UniformToFill"
@@ -80,17 +80,15 @@
             </Grid.RowDefinitions>
 
             <StackPanel Orientation="Horizontal"
-                        Margin="0,0,0,0">
+                        Margin="0,0,0,-1"
+                        Panel.ZIndex="2">
                 <ScrollViewer HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Disabled"
                               MaxWidth="880">
                     <StackPanel x:Name="TabsPanel"
                                 Orientation="Horizontal" />
                 </ScrollViewer>
-                <Button Style="{StaticResource SecondaryButton}"
-                        Width="40"
-                        MinHeight="42"
-                        Padding="0"
+                <Button Style="{StaticResource AddTabButton}"
                         Margin="8,0,0,0"
                         Click="AddTabButton_Click"
                         Content="+" />
@@ -100,7 +98,7 @@
                     Style="{StaticResource CardBorder}"
                     Padding="22"
                     BorderThickness="1,0,1,1"
-                    Margin="0,-1,0,0">
+                    Margin="0,0,0,0">
                 <Grid>
                     <Grid x:Name="DashboardPanel">
                         <Grid.RowDefinitions>

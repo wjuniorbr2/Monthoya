@@ -67,9 +67,12 @@
             <Border Style="{StaticResource CardBorder}" VerticalAlignment="Center">
                 <StackPanel>
                     <DockPanel>
-                        <Image Source="/Assets/Logo_icon2.png"
-                               Width="42"
+                        <Image Source="/Assets/Login_icon_small.png"
+                               Width="58"
                                Height="42"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               SnapsToDevicePixels="True"
                                DockPanel.Dock="Left"
                                Margin="0,0,12,0" />
                         <TextBlock Text="Entrar"

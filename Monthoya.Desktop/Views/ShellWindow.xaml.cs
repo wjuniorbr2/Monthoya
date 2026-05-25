@@ -235,7 +235,10 @@ public partial class ShellWindow : Window
             var tabButton = new Button
             {
                 Content = tabContent,
-                Margin = new Thickness(0, 0, 4, 0),
+                Margin = tab == _activeTab
+                    ? new Thickness(0, 0, 4, -1)
+                    : new Thickness(0, 0, 4, 0),
+                VerticalAlignment = VerticalAlignment.Bottom,
                 Style = (Style)FindResource(tab == _activeTab ? "ShellTabButtonActive" : "ShellTabButton")
             };
 
@@ -463,7 +466,7 @@ public partial class ShellWindow : Window
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     html, body, #map { height: 100%; margin: 0; font-family: Segoe UI, Arial, sans-serif; }
-    .empty { position: absolute; z-index: 999; top: 18px; left: 18px; right: 18px; background: white; border: 1px solid #dbe8e2; border-radius: 8px; padding: 14px 16px; color: #66756f; box-shadow: 0 10px 30px rgba(20,37,33,.08); }
+    .empty { position: absolute; z-index: 999; top: 18px; left: 68px; width: min(560px, calc(100% - 92px)); background: white; border: 1px solid #dbe8e2; border-radius: 8px; padding: 12px 14px; color: #66756f; box-shadow: 0 10px 30px rgba(20,37,33,.08); }
   </style>
 </head>
 <body>
