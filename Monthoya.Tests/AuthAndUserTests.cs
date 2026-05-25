@@ -310,6 +310,31 @@ public sealed class AuthAndUserTests
     }
 
     [Fact]
+    public async Task PessoaJuridica_CanHaveMultipleRoles()
+    {
+        await using var dbContext = CreateDbContext();
+        var rentalService = new RentalManagementService(dbContext);
+
+        var pessoa = await rentalService.CreatePessoaAsync(
+            new CreatePessoaRequest(
+                TipoPessoa.Juridica,
+                "Empresa Teste Ltda",
+                "(44) 3222-0000",
+                "empresa@monthoya.local",
+                "12345678000190",
+                [PessoaRoleTipo.Proprietario, PessoaRoleTipo.Fiador],
+                "Cadastro preliminar para teste."));
+
+        var pessoas = await rentalService.GetPessoasAsync();
+
+        Assert.Single(pessoas);
+        Assert.Equal(pessoa.Id, pessoas[0].Id);
+        Assert.Equal("Jurídica", pessoas[0].Tipo);
+        Assert.Contains("Proprietário", pessoas[0].Roles);
+        Assert.Contains("Fiador", pessoas[0].Roles);
+    }
+
+    [Fact]
     public async Task Imovel_RequiresOwnerAndAutoAddsOwnerRole()
     {
         await using var dbContext = CreateDbContext();
@@ -342,6 +367,52 @@ public sealed class AuthAndUserTests
 
         Assert.Equal(imovel.Id, imoveis.Single().Id);
         Assert.Contains("Proprietário", pessoas.Single().Roles);
+    }
+
+    [Fact]
+    public async Task Imovel_RejectsMissingOwner()
+    {
+        await using var dbContext = CreateDbContext();
+        var rentalService = new RentalManagementService(dbContext);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            rentalService.CreateImovelAsync(
+                new CreateImovelRequest(
+                    Guid.Empty,
+                    "Rua Getúlio Vargas",
+                    "668",
+                    "Centro",
+                    "Paranavaí",
+                    "PR",
+                    1500m,
+                    ImovelFinalidade.Locacao,
+                    null)));
+
+        Assert.Equal("Selecione um proprietário.", exception.Message);
+    }
+
+    [Fact]
+    public async Task PlaceholderProviders_ReportPendingConfiguration()
+    {
+        var boletoProvider = new LocalBoletoProvider();
+        var nfseProvider = new ManualPortalNfseProvider();
+
+        var boletoResult = await boletoProvider.GenerateBoletoAsync(new Boleto
+        {
+            Valor = 1500m,
+            DataVencimento = new DateOnly(2026, 6, 10)
+        });
+
+        var nfseResult = await nfseProvider.EmitirNotaFiscalAsync(new NotaFiscal
+        {
+            ValorServico = 150m,
+            Provider = "manual_portal"
+        });
+
+        Assert.False(boletoResult.Succeeded);
+        Assert.Equal("Integração bancária ainda não configurada.", boletoResult.Message);
+        Assert.False(nfseResult.Succeeded);
+        Assert.Equal("Integração automática com NFS-e ainda não configurada. Use o fluxo manual/semi-manual.", nfseResult.Message);
     }
 
     private static MonthoyaDbContext CreateDbContext()
