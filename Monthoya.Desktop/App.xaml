@@ -255,6 +255,7 @@
                 <Setter Property="Background" Value="White" />
                 <Setter Property="Foreground" Value="#3B4250" />
                 <Setter Property="BorderBrush" Value="#DCE4F0" />
+                <Setter Property="BorderThickness" Value="1,1,1,0" />
                 <Setter Property="Effect" Value="{StaticResource TabShadow}" />
             </Style>
 
