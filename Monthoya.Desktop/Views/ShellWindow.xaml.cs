@@ -31,7 +31,7 @@ public partial class ShellWindow : Window
 
         CurrentUserText.Text = currentUser.DisplayName;
         CurrentRoleText.Text = currentUser.Role.ToString();
-        UsersNavButton.Visibility = RolePermissions.CanManageUsers(currentUser.Role) ? Visibility.Visible : Visibility.Collapsed;
+        UsersNavButton.Visibility = RolePermissions.CanManageUsers(currentUser.Role, currentUser.Access) ? Visibility.Visible : Visibility.Collapsed;
         DiagnosticsNavButton.Visibility = RolePermissions.CanAccessDiagnostics(currentUser.Role) ? Visibility.Visible : Visibility.Collapsed;
         UserRoleBox.ItemsSource = Enum.GetValues<UserRole>();
         UserRoleBox.SelectedItem = UserRole.Usuario;
@@ -126,7 +126,7 @@ public partial class ShellWindow : Window
 
     private async void UsersNavButton_Click(object sender, RoutedEventArgs e)
     {
-        if (!RolePermissions.CanManageUsers(_currentUser.Role))
+        if (!RolePermissions.CanManageUsers(_currentUser.Role, _currentUser.Access))
         {
             return;
         }
@@ -394,29 +394,9 @@ public partial class ShellWindow : Window
     {
         var access = UserAccess.None;
 
-        if (DashboardAccessBox.IsChecked == true)
+        if (UserManagementAccessBox.IsChecked == true)
         {
-            access |= UserAccess.Dashboard;
-        }
-
-        if (PropertiesAccessBox.IsChecked == true)
-        {
-            access |= UserAccess.Properties;
-        }
-
-        if (ContractsAccessBox.IsChecked == true)
-        {
-            access |= UserAccess.Contracts;
-        }
-
-        if (FinancialAccessBox.IsChecked == true)
-        {
-            access |= UserAccess.Financial;
-        }
-
-        if (DocumentsAccessBox.IsChecked == true)
-        {
-            access |= UserAccess.Documents;
+            access |= UserAccess.UserManagement;
         }
 
         return access;
@@ -424,11 +404,7 @@ public partial class ShellWindow : Window
 
     private void SetAccessCheckboxes(UserAccess access)
     {
-        DashboardAccessBox.IsChecked = access.HasFlag(UserAccess.Dashboard);
-        PropertiesAccessBox.IsChecked = access.HasFlag(UserAccess.Properties);
-        ContractsAccessBox.IsChecked = access.HasFlag(UserAccess.Contracts);
-        FinancialAccessBox.IsChecked = access.HasFlag(UserAccess.Financial);
-        DocumentsAccessBox.IsChecked = access.HasFlag(UserAccess.Documents);
+        UserManagementAccessBox.IsChecked = access.HasFlag(UserAccess.UserManagement);
     }
 
     private void UpdateAccessControlState()
@@ -444,14 +420,10 @@ public partial class ShellWindow : Window
             SetAccessCheckboxes(RolePermissions.GetEffectiveAccess(selectedRole, RolePermissions.DefaultUserAccess));
         }
 
-        DashboardAccessBox.IsEnabled = isNormalUser;
-        PropertiesAccessBox.IsEnabled = isNormalUser;
-        ContractsAccessBox.IsEnabled = isNormalUser;
-        FinancialAccessBox.IsEnabled = isNormalUser;
-        DocumentsAccessBox.IsEnabled = isNormalUser;
+        UserManagementAccessBox.IsEnabled = isNormalUser;
         AccessHelpText.Text = isNormalUser
-            ? "Marque apenas as áreas que este usuário pode acessar."
-            : "Este perfil tem acesso completo por regra do sistema.";
+            ? "Marque se este usuário normal pode abrir o cadastro de usuários para cadastrar, editar, ativar e desativar usuários."
+            : "Este perfil tem acesso ao cadastro de usuários por regra do sistema.";
     }
 
     private void LogoutPrompt_Click(object sender, RoutedEventArgs e)

@@ -119,6 +119,6 @@ public sealed class UserService(
         {
             UserRole.Administrador => RolePermissions.AdministratorAccess,
             UserRole.Desenvolvedor => RolePermissions.DeveloperAccess,
-            _ => access & RolePermissions.DefaultUserAccess
+            _ => access & UserAccess.UserManagement
         };
 }

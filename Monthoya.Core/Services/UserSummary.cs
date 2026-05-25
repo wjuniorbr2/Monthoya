@@ -10,4 +10,10 @@ public sealed record UserSummary(
     UserRole Role,
     UserAccess Access,
     bool IsActive,
-    DateTimeOffset? LastLoginAtUtc);
+    DateTimeOffset? LastLoginAtUtc)
+{
+    public string AccessLabel =>
+        Access.HasFlag(UserAccess.UserManagement)
+            ? "Cadastro de usuários"
+            : "Básico";
+}

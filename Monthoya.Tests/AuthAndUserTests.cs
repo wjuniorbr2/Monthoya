@@ -58,6 +58,7 @@ public sealed class AuthAndUserTests
     public void RolePermissions_MatchExpectedAccess()
     {
         Assert.False(RolePermissions.CanManageUsers(UserRole.Usuario));
+        Assert.True(RolePermissions.CanManageUsers(UserRole.Usuario, UserAccess.UserManagement));
         Assert.True(RolePermissions.CanManageUsers(UserRole.Administrador));
         Assert.True(RolePermissions.CanManageUsers(UserRole.Desenvolvedor));
 
@@ -65,14 +66,15 @@ public sealed class AuthAndUserTests
         Assert.False(RolePermissions.CanAccessDiagnostics(UserRole.Administrador));
         Assert.True(RolePermissions.CanAccessDiagnostics(UserRole.Desenvolvedor));
 
-        Assert.True(RolePermissions.CanAccess(UserRole.Usuario, UserAccess.Dashboard, UserAccess.Dashboard));
-        Assert.False(RolePermissions.CanAccess(UserRole.Usuario, UserAccess.Dashboard, UserAccess.Documents));
+        Assert.True(RolePermissions.CanAccess(UserRole.Usuario, UserAccess.None, UserAccess.Dashboard));
+        Assert.False(RolePermissions.CanAccess(UserRole.Usuario, UserAccess.None, UserAccess.Documents));
+        Assert.True(RolePermissions.CanAccess(UserRole.Usuario, UserAccess.UserManagement, UserAccess.UserManagement));
         Assert.True(RolePermissions.CanAccess(UserRole.Administrador, UserAccess.None, UserAccess.UserManagement));
         Assert.True(RolePermissions.CanAccess(UserRole.Desenvolvedor, UserAccess.None, UserAccess.Diagnostics));
     }
 
     [Fact]
-    public async Task CreateUser_StoresRestrictedNormalUserAccess()
+    public async Task CreateUser_StoresOnlyCurrentNormalUserAccess()
     {
         await using var dbContext = CreateDbContext();
         var passwordHasher = new PasswordHasher<AppUser>();
@@ -85,10 +87,12 @@ public sealed class AuthAndUserTests
                 "atendente@monthoya.local",
                 "strongpass123",
                 UserRole.Usuario,
-                UserAccess.Dashboard | UserAccess.Properties));
+                UserAccess.Dashboard | UserAccess.Properties | UserAccess.UserManagement));
 
-        Assert.Equal(UserAccess.Dashboard | UserAccess.Properties, user.Access);
-        Assert.True(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.Properties));
+        Assert.Equal(UserAccess.UserManagement, user.Access);
+        Assert.True(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.Dashboard));
+        Assert.True(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.UserManagement));
+        Assert.False(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.Properties));
         Assert.False(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.Financial));
     }
 
