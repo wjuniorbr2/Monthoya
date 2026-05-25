@@ -112,6 +112,28 @@ public sealed class AuthAndUserTests
         Assert.Equal("Informe um login com pelo menos 3 caracteres.", exception.Message);
     }
 
+    [Theory]
+    [InlineData("abc")]
+    [InlineData("abcdefgh")]
+    [InlineData(" abc ")]
+    public async Task CreateUser_AcceptsLoginWithAtLeastThreeTrimmedCharacters(string loginName)
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+
+        var user = await userService.CreateUserAsync(
+            new CreateUserRequest(
+                "Teste",
+                loginName,
+                "teste@monthoya.local",
+                "strongpass123",
+                UserRole.Usuario,
+                UserAccess.Dashboard));
+
+        Assert.Equal(loginName.Trim(), user.LoginName);
+    }
+
     [Fact]
     public async Task CreateUser_RejectsWeakPassword()
     {

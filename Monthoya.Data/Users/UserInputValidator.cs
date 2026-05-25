@@ -25,22 +25,25 @@ internal static class UserInputValidator
 
     private static void ValidateUserFields(string displayName, string loginName, string email)
     {
+        var trimmedLoginName = loginName.Trim();
+        var trimmedEmail = email.Trim();
+
         if (string.IsNullOrWhiteSpace(displayName))
         {
             throw new InvalidOperationException("Informe o nome do usuário.");
         }
 
-        if (string.IsNullOrWhiteSpace(loginName) || loginName.Trim().Length < 3)
+        if (trimmedLoginName.Length < 3)
         {
             throw new InvalidOperationException("Informe um login com pelo menos 3 caracteres.");
         }
 
-        if (loginName.Any(char.IsWhiteSpace))
+        if (trimmedLoginName.Any(char.IsWhiteSpace))
         {
             throw new InvalidOperationException("O login não pode conter espaços.");
         }
 
-        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@', StringComparison.Ordinal))
+        if (string.IsNullOrWhiteSpace(trimmedEmail) || !trimmedEmail.Contains('@', StringComparison.Ordinal))
         {
             throw new InvalidOperationException("Informe um e-mail válido.");
         }
