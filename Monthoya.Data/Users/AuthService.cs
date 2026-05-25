@@ -10,7 +10,7 @@ public sealed class AuthService(
     IUserService userService,
     PasswordHasher<AppUser> passwordHasher) : IAuthService
 {
-    private const string SafeLoginError = "Login ou senha invalidos.";
+    private const string SafeLoginError = "Login ou senha inválidos.";
 
     public async Task<AuthResult> SignInAsync(string loginName, string password, CancellationToken cancellationToken = default)
     {
@@ -44,7 +44,7 @@ public sealed class AuthService(
     {
         if (await userService.HasAnyUsersAsync(cancellationToken))
         {
-            return new AuthResult(false, null, "A configuracao inicial ja foi concluida.");
+            return new AuthResult(false, null, "A configuração inicial já foi concluída.");
         }
 
         var adminRequest = request with { Role = UserRole.Administrador };

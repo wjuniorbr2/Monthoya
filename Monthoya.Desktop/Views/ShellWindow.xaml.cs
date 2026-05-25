@@ -39,7 +39,7 @@ public partial class ShellWindow : Window
         UpdateAccessControlState();
         DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {currentUser.Role}{Environment.NewLine}Acessos: {RolePermissions.GetEffectiveAccess(currentUser.Role, currentUser.Access)}{Environment.NewLine}Banco: configurado via secrets/appsettings";
 
-        AddShellTab(ShellPage.Dashboard, "Dashboard");
+        AddShellTab(ShellPage.Dashboard, "Tela Inicial");
         Loaded += async (_, _) => await ShowPageAsync(ShellPage.Dashboard, true);
     }
 
@@ -61,7 +61,7 @@ public partial class ShellWindow : Window
         }
         catch (Exception ex)
         {
-            DashboardStatusText.Text = $"Não foi possível carregar o dashboard: {ex.Message}";
+            DashboardStatusText.Text = $"Não foi possível carregar a tela inicial: {ex.Message}";
             ShowMapFallback("Mapa indisponível no momento.");
         }
     }
@@ -119,7 +119,7 @@ public partial class ShellWindow : Window
 
     private async void DashboardNavButton_Click(object sender, RoutedEventArgs e)
     {
-        await UpdateActiveTabAsync(ShellPage.Dashboard, "Dashboard", true);
+        await UpdateActiveTabAsync(ShellPage.Dashboard, "Tela Inicial", true);
     }
 
     private async void UsersNavButton_Click(object sender, RoutedEventArgs e)
@@ -157,7 +157,7 @@ public partial class ShellWindow : Window
 
     private async void AddTabButton_Click(object sender, RoutedEventArgs e)
     {
-        AddShellTab(ShellPage.Dashboard, "Dashboard");
+        AddShellTab(ShellPage.Dashboard, "Tela Inicial");
         await ShowPageAsync(ShellPage.Dashboard, true);
     }
 
@@ -251,7 +251,7 @@ public partial class ShellWindow : Window
     {
         if (_tabs.Count == 1)
         {
-            await UpdateActiveTabAsync(ShellPage.Dashboard, "Dashboard", true);
+            await UpdateActiveTabAsync(ShellPage.Dashboard, "Tela Inicial", true);
             return;
         }
 

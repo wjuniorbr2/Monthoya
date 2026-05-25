@@ -25,41 +25,55 @@
                         </LinearGradientBrush>
                     </Rectangle.Fill>
                 </Rectangle>
-                <StackPanel VerticalAlignment="Bottom"
-                            Margin="34"
-                            TextElement.Foreground="White">
-                    <TextBlock Text="Gestão imobiliária integrada"
-                               Foreground="White"
-                               FontSize="23"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="Plataforma digital para locações, vendas, contratos, pagamentos, documentos e gestão contábil."
-                               Foreground="#E7F0FF"
-                               FontSize="14"
-                               LineHeight="20"
-                               TextWrapping="Wrap"
-                               Margin="0,12,0,34" />
 
-                    <TextBlock Text="Monthoya Consultoria Imobiliária"
-                               Foreground="White"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="Rua Getúlio Vargas, 668 - Centro"
-                               Foreground="#D9E7FF"
-                               Margin="0,6,0,0" />
-                    <TextBlock Text="Paranavaí - Paraná — 87702-000"
-                               Foreground="#D9E7FF"
-                               Margin="0,4,0,28" />
+                <Grid Margin="34">
+                    <StackPanel VerticalAlignment="Bottom"
+                                Margin="0,0,0,84"
+                                TextElement.Foreground="White">
+                        <TextBlock Text="Gestão imobiliária integrada"
+                                   Foreground="White"
+                                   FontSize="23"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="Plataforma digital para locações, vendas, contratos, pagamentos, documentos e gestão contábil."
+                                   Foreground="#E7F0FF"
+                                   FontSize="14"
+                                   LineHeight="20"
+                                   TextWrapping="Wrap"
+                                   Margin="0,12,0,34" />
 
-                    <TextBlock Text="Designed and coded by Waldomiro S C Jr"
-                               Foreground="#C8DAF8"
-                               FontSize="12"
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="wjuniorbr@hotmail.com"
-                               Foreground="#C8DAF8"
-                               FontSize="12"
-                               Margin="0,4,0,0" />
-                </StackPanel>
+                        <TextBlock Text="Monthoya Consultoria Imobiliária"
+                                   Foreground="White"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="Rua Getúlio Vargas, 668 - Centro"
+                                   Foreground="#D9E7FF"
+                                   Margin="0,6,0,0" />
+                        <TextBlock Text="Paranavaí - Paraná — 87702-000"
+                                   Foreground="#D9E7FF"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+
+                    <StackPanel VerticalAlignment="Bottom"
+                                HorizontalAlignment="Right"
+                                TextElement.Foreground="#C8DAF8">
+                        <TextBlock Text="Designed and coded by"
+                                   FontFamily="Cascadia Code, Consolas"
+                                   FontSize="10"
+                                   TextAlignment="Right" />
+                        <TextBlock Text="Waldomiro S C Jr"
+                                   FontFamily="Cascadia Code, Consolas"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   TextAlignment="Right"
+                                   Margin="0,3,0,0" />
+                        <TextBlock Text="wjuniorbr@hotmail.com"
+                                   FontFamily="Cascadia Code, Consolas"
+                                   FontSize="10"
+                                   TextAlignment="Right"
+                                   Margin="0,3,0,0" />
+                    </StackPanel>
+                </Grid>
             </Grid>
         </Border>
 

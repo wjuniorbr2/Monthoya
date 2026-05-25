@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using Monthoya.Core.Services;
 
 namespace Monthoya.Desktop.Views;
@@ -11,6 +12,11 @@ public partial class LoginWindow : Window
     {
         InitializeComponent();
         _authService = authService;
+        Loaded += (_, _) =>
+        {
+            LoginNameBox.Focus();
+            Keyboard.Focus(LoginNameBox);
+        };
     }
 
     public AuthenticatedUser? AuthenticatedUser { get; private set; }
@@ -22,7 +28,7 @@ public partial class LoginWindow : Window
         var result = await _authService.SignInAsync(LoginNameBox.Text, PasswordBox.Password);
         if (!result.Succeeded || result.User is null)
         {
-            ErrorText.Text = result.ErrorMessage ?? "Login ou senha invalidos.";
+            ErrorText.Text = result.ErrorMessage ?? "Login ou senha inválidos.";
             return;
         }
 

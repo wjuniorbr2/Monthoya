@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
@@ -12,6 +13,11 @@ public partial class SetupAdminWindow : Window
     {
         InitializeComponent();
         _authService = authService;
+        Loaded += (_, _) =>
+        {
+            NameBox.Focus();
+            Keyboard.Focus(NameBox);
+        };
     }
 
     private async void CreateButton_Click(object sender, RoutedEventArgs e)
@@ -20,7 +26,7 @@ public partial class SetupAdminWindow : Window
 
         if (PasswordBox.Password != ConfirmPasswordBox.Password)
         {
-            ErrorText.Text = "As senhas nao conferem.";
+            ErrorText.Text = "As senhas não conferem.";
             return;
         }
 
@@ -31,7 +37,7 @@ public partial class SetupAdminWindow : Window
 
             if (!result.Succeeded)
             {
-                ErrorText.Text = result.ErrorMessage ?? "Nao foi possivel criar o administrador.";
+                ErrorText.Text = result.ErrorMessage ?? "Não foi possível criar o administrador.";
                 return;
             }
 

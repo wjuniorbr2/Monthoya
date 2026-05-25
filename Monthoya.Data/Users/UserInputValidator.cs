@@ -27,7 +27,7 @@ internal static class UserInputValidator
     {
         if (string.IsNullOrWhiteSpace(displayName))
         {
-            throw new InvalidOperationException("Informe o nome do usuario.");
+            throw new InvalidOperationException("Informe o nome do usuário.");
         }
 
         if (string.IsNullOrWhiteSpace(loginName) || loginName.Trim().Length < 3)
@@ -37,12 +37,12 @@ internal static class UserInputValidator
 
         if (loginName.Any(char.IsWhiteSpace))
         {
-            throw new InvalidOperationException("O login nao pode conter espacos.");
+            throw new InvalidOperationException("O login não pode conter espaços.");
         }
 
         if (string.IsNullOrWhiteSpace(email) || !email.Contains('@', StringComparison.Ordinal))
         {
-            throw new InvalidOperationException("Informe um e-mail valido.");
+            throw new InvalidOperationException("Informe um e-mail válido.");
         }
     }
 }

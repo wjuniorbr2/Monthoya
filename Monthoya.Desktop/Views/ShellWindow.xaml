@@ -37,7 +37,7 @@
                                 HorizontalAlignment="Stretch"
                                 Margin="0,0,0,10"
                                 Click="DashboardNavButton_Click">
-                            <TextBlock Style="{StaticResource NavLabelText}" Text="Dashboard" />
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Tela Inicial" />
                         </Button>
                         <Button x:Name="UsersNavButton"
                                 Style="{StaticResource NavButton}"
@@ -109,12 +109,9 @@
 
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Left">
-                                <TextBlock Text="Dashboard"
+                                <TextBlock Text="Tela Inicial"
                                            FontSize="30"
                                            FontWeight="SemiBold" />
-                                <TextBlock Text="Mapa de locações em Paranavaí e indicadores iniciais."
-                                           Foreground="{StaticResource MutedBrush}"
-                                           Margin="0,4,0,0" />
                             </StackPanel>
                         </DockPanel>
 
@@ -317,7 +314,7 @@
                                                            TextWrapping="Wrap"
                                                            Margin="0,0,0,8" />
                                                 <CheckBox x:Name="DashboardAccessBox"
-                                                          Content="Dashboard"
+                                                          Content="Tela Inicial"
                                                           Margin="0,3" />
                                                 <CheckBox x:Name="PropertiesAccessBox"
                                                           Content="Imóveis"

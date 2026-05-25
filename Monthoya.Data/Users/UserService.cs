@@ -32,14 +32,14 @@ public sealed class UserService(
         var loginExists = await dbContext.Users.AnyAsync(x => x.NormalizedLoginName == normalizedLoginName, cancellationToken);
         if (loginExists)
         {
-            throw new InvalidOperationException("Ja existe um usuario com este login.");
+            throw new InvalidOperationException("Já existe um usuário com este login.");
         }
 
         var normalizedEmail = UserInputValidator.NormalizeEmail(request.Email);
         var emailExists = await dbContext.Users.AnyAsync(x => x.NormalizedEmail == normalizedEmail, cancellationToken);
         if (emailExists)
         {
-            throw new InvalidOperationException("Ja existe um usuario com este e-mail.");
+            throw new InvalidOperationException("Já existe um usuário com este e-mail.");
         }
 
         var user = new AppUser
@@ -67,7 +67,7 @@ public sealed class UserService(
         UserInputValidator.ValidateUpdate(request);
 
         var user = await dbContext.Users.SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
-            ?? throw new InvalidOperationException("Usuario nao encontrado.");
+            ?? throw new InvalidOperationException("Usuário não encontrado.");
 
         var normalizedLoginName = UserInputValidator.NormalizeLoginName(request.LoginName);
         var loginExists = await dbContext.Users.AnyAsync(
@@ -76,7 +76,7 @@ public sealed class UserService(
 
         if (loginExists)
         {
-            throw new InvalidOperationException("Ja existe um usuario com este login.");
+            throw new InvalidOperationException("Já existe um usuário com este login.");
         }
 
         var normalizedEmail = UserInputValidator.NormalizeEmail(request.Email);
@@ -86,7 +86,7 @@ public sealed class UserService(
 
         if (emailExists)
         {
-            throw new InvalidOperationException("Ja existe um usuario com este e-mail.");
+            throw new InvalidOperationException("Já existe um usuário com este e-mail.");
         }
 
         user.DisplayName = request.DisplayName.Trim();
@@ -106,7 +106,7 @@ public sealed class UserService(
     public async Task SetUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default)
     {
         var user = await dbContext.Users.SingleOrDefaultAsync(x => x.Id == userId, cancellationToken)
-            ?? throw new InvalidOperationException("Usuario nao encontrado.");
+            ?? throw new InvalidOperationException("Usuário não encontrado.");
 
         user.IsActive = isActive;
         user.UpdatedAtUtc = DateTimeOffset.UtcNow;

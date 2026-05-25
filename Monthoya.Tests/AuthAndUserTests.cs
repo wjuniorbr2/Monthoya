@@ -51,7 +51,7 @@ public sealed class AuthAndUserTests
 
         Assert.False(result.Succeeded);
         Assert.Null(result.User);
-        Assert.Equal("Login ou senha invalidos.", result.ErrorMessage);
+        Assert.Equal("Login ou senha inválidos.", result.ErrorMessage);
     }
 
     [Fact]
@@ -90,6 +90,171 @@ public sealed class AuthAndUserTests
         Assert.Equal(UserAccess.Dashboard | UserAccess.Properties, user.Access);
         Assert.True(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.Properties));
         Assert.False(RolePermissions.CanAccess(user.Role, user.Access, UserAccess.Financial));
+    }
+
+    [Fact]
+    public async Task CreateUser_RejectsShortLogin()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            userService.CreateUserAsync(
+                new CreateUserRequest(
+                    "Teste",
+                    "1",
+                    "teste@monthoya.local",
+                    "strongpass123",
+                    UserRole.Usuario,
+                    UserAccess.Dashboard)));
+
+        Assert.Equal("Informe um login com pelo menos 3 caracteres.", exception.Message);
+    }
+
+    [Fact]
+    public async Task CreateUser_RejectsWeakPassword()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            userService.CreateUserAsync(
+                new CreateUserRequest(
+                    "Teste",
+                    "teste",
+                    "teste@monthoya.local",
+                    "1234567",
+                    UserRole.Usuario,
+                    UserAccess.Dashboard)));
+
+        Assert.Equal("A senha deve ter pelo menos 8 caracteres.", exception.Message);
+    }
+
+    [Fact]
+    public async Task CreateUser_RejectsLoginWithSpaces()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            userService.CreateUserAsync(
+                new CreateUserRequest(
+                    "Teste",
+                    "teste um",
+                    "teste@monthoya.local",
+                    "strongpass123",
+                    UserRole.Usuario,
+                    UserAccess.Dashboard)));
+
+        Assert.Equal("O login não pode conter espaços.", exception.Message);
+    }
+
+    [Fact]
+    public async Task CreateUser_RejectsInvalidEmail()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            userService.CreateUserAsync(
+                new CreateUserRequest(
+                    "Teste",
+                    "teste",
+                    "email-sem-arroba",
+                    "strongpass123",
+                    UserRole.Usuario,
+                    UserAccess.Dashboard)));
+
+        Assert.Equal("Informe um e-mail válido.", exception.Message);
+    }
+
+    [Fact]
+    public async Task CreateUser_RejectsDuplicateLoginAndEmail()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+
+        await userService.CreateUserAsync(
+            new CreateUserRequest(
+                "Primeiro",
+                "junior",
+                "junior@monthoya.local",
+                "strongpass123",
+                UserRole.Usuario,
+                UserAccess.Dashboard));
+
+        var duplicateLogin = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            userService.CreateUserAsync(
+                new CreateUserRequest(
+                    "Outro",
+                    "JUNIOR",
+                    "outro@monthoya.local",
+                    "strongpass123",
+                    UserRole.Usuario,
+                    UserAccess.Dashboard)));
+
+        var duplicateEmail = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            userService.CreateUserAsync(
+                new CreateUserRequest(
+                    "Outro",
+                    "outro",
+                    "JUNIOR@monthoya.local",
+                    "strongpass123",
+                    UserRole.Usuario,
+                    UserAccess.Dashboard)));
+
+        Assert.Equal("Já existe um usuário com este login.", duplicateLogin.Message);
+        Assert.Equal("Já existe um usuário com este e-mail.", duplicateEmail.Message);
+    }
+
+    [Fact]
+    public async Task SignIn_RejectsInactiveUserWithSafeError()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+        var authService = new AuthService(dbContext, userService, passwordHasher);
+
+        var user = await userService.CreateUserAsync(
+            new CreateUserRequest(
+                "Atendente",
+                "atendente",
+                "atendente@monthoya.local",
+                "strongpass123",
+                UserRole.Usuario,
+                UserAccess.Dashboard));
+
+        await userService.SetUserActiveAsync(user.Id, false);
+
+        var result = await authService.SignInAsync("atendente", "strongpass123");
+
+        Assert.False(result.Succeeded);
+        Assert.Null(result.User);
+        Assert.Equal("Login ou senha inválidos.", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task CreateFirstAdmin_RejectsSecondSetup()
+    {
+        await using var dbContext = CreateDbContext();
+        var passwordHasher = new PasswordHasher<AppUser>();
+        var userService = new UserService(dbContext, passwordHasher);
+        var authService = new AuthService(dbContext, userService, passwordHasher);
+
+        await authService.CreateFirstAdminAsync(
+            new CreateUserRequest("Admin", "admin", "admin@monthoya.local", "strongpass123", UserRole.Administrador));
+
+        var result = await authService.CreateFirstAdminAsync(
+            new CreateUserRequest("Outro", "outro", "outro@monthoya.local", "strongpass123", UserRole.Administrador));
+
+        Assert.False(result.Succeeded);
+        Assert.Null(result.User);
+        Assert.Equal("A configuração inicial já foi concluída.", result.ErrorMessage);
     }
 
     private static MonthoyaDbContext CreateDbContext()
