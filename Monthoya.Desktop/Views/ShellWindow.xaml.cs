@@ -275,7 +275,11 @@ public partial class ShellWindow : Window
             tabContent.Children.Add(new TextBlock
             {
                 Text = GetShellPageIcon(tab.Page),
-                Style = (Style)FindResource("ShellTabIconText")
+                Style = (Style)FindResource("ShellTabIconText"),
+                FontFamily = tab.Page == ShellPage.Financeiro
+                    ? new FontFamily("Segoe UI Black")
+                    : new FontFamily("Segoe MDL2 Assets"),
+                FontSize = tab.Page == ShellPage.Financeiro ? 14 : 13
             });
 
             tabContent.Children.Add(new TextBlock
@@ -330,7 +334,7 @@ public partial class ShellWindow : Window
             ShellPage.Pessoas => "\uE716",
             ShellPage.Imoveis => "\uE80F",
             ShellPage.Locacoes => "\uE8A1",
-            ShellPage.Financeiro => "\uEAFD",
+            ShellPage.Financeiro => "$",
             ShellPage.Boletos => "\uE8C7",
             ShellPage.NotasFiscais => "\uE9D9",
             ShellPage.Documentos => "\uE8A5",

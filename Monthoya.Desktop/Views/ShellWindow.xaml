@@ -65,7 +65,7 @@
                         </Button>
                         <Button x:Name="FinanceiroNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="FinanceiroNavButton_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Style="{StaticResource NavIconText}" Text="&#xEAFD;" />
+                                <TextBlock Style="{StaticResource NavIconText}" Text="$" FontFamily="Segoe UI Black" FontSize="17" />
                                 <TextBlock Style="{StaticResource NavLabelText}" Text="Financeiro" />
                             </StackPanel>
                         </Button>
