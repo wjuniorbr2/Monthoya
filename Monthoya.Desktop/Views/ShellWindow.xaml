@@ -16,28 +16,20 @@
 
         <Border BorderBrush="#DDE7F8"
                 BorderThickness="0,0,1,0"
-                Padding="18">
+                Padding="18,190,18,18">
             <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="#06142E" Offset="0" />
-                    <GradientStop Color="#082D78" Offset="1" />
-                </LinearGradientBrush>
+                <ImageBrush ImageSource="/Assets/Side_panel.png"
+                            Stretch="UniformToFill"
+                            AlignmentX="Center"
+                            AlignmentY="Top" />
             </Border.Background>
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Image Source="/Assets/Logo_bg.png"
-                       Width="206"
-                       Stretch="Uniform"
-                       HorizontalAlignment="Left"
-                       Margin="0,0,0,18" />
-
-                <ScrollViewer Grid.Row="1"
-                              Margin="0,18,0,0"
+                <ScrollViewer Grid.Row="0"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel>
                         <Button x:Name="DashboardNavButton"
@@ -64,7 +56,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <StackPanel Grid.Row="2">
+                <StackPanel Grid.Row="1">
                     <TextBlock x:Name="CurrentUserText"
                                FontWeight="SemiBold"
                                Foreground="White"
@@ -87,7 +79,8 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal"
+                        Margin="0,0,0,0">
                 <ScrollViewer HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Disabled"
                               MaxWidth="880">
@@ -96,7 +89,7 @@
                 </ScrollViewer>
                 <Button Style="{StaticResource SecondaryButton}"
                         Width="40"
-                        MinHeight="38"
+                        MinHeight="42"
                         Padding="0"
                         Margin="8,0,0,0"
                         Click="AddTabButton_Click"
@@ -106,6 +99,7 @@
             <Border Grid.Row="1"
                     Style="{StaticResource CardBorder}"
                     Padding="22"
+                    BorderThickness="1,0,1,1"
                     Margin="0,-1,0,0">
                 <Grid>
                     <Grid x:Name="DashboardPanel">

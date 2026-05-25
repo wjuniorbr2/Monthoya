@@ -56,8 +56,7 @@
             <Style x:Key="NavLabelText" TargetType="TextBlock">
                 <Setter Property="Foreground" Value="White" />
                 <Setter Property="FontWeight" Value="ExtraBold" />
-                <Setter Property="FontSize" Value="13" />
-                <Setter Property="Effect" Value="{StaticResource NavTextOutline}" />
+                <Setter Property="FontSize" Value="15" />
                 <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
                 <Setter Property="TextOptions.TextRenderingMode" Value="ClearType" />
             </Style>
@@ -219,8 +218,8 @@
             </Style>
 
             <Style x:Key="ShellTabButton" TargetType="Button">
-                <Setter Property="MinHeight" Value="38" />
-                <Setter Property="Padding" Value="16,8" />
+                <Setter Property="MinHeight" Value="42" />
+                <Setter Property="Padding" Value="14,8" />
                 <Setter Property="Background" Value="#E8EDF6" />
                 <Setter Property="Foreground" Value="#4B5565" />
                 <Setter Property="BorderBrush" Value="#D6DEEA" />
@@ -254,9 +253,8 @@
             <Style x:Key="ShellTabButtonActive" TargetType="Button" BasedOn="{StaticResource ShellTabButton}">
                 <Setter Property="Background" Value="White" />
                 <Setter Property="Foreground" Value="#3B4250" />
-                <Setter Property="BorderBrush" Value="#DCE4F0" />
+                <Setter Property="BorderBrush" Value="#E3ECFB" />
                 <Setter Property="BorderThickness" Value="1,1,1,0" />
-                <Setter Property="Effect" Value="{StaticResource TabShadow}" />
             </Style>
 
             <Style x:Key="CardBorder" TargetType="Border">

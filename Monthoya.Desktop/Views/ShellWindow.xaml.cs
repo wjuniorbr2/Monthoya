@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Security;
 using Monthoya.Core.Services;
@@ -196,16 +198,73 @@ public partial class ShellWindow : Window
 
         foreach (var tab in _tabs)
         {
+            var tabContent = new StackPanel
+            {
+                Orientation = Orientation.Horizontal
+            };
+
+            tabContent.Children.Add(new TextBlock
+            {
+                Text = tab.Title,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+
+            var closeButton = new Button
+            {
+                Content = "×",
+                Width = 20,
+                Height = 20,
+                Padding = new Thickness(0),
+                Margin = new Thickness(10, 0, -4, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Foreground = Brushes.Gray,
+                FontWeight = FontWeights.Bold,
+                Cursor = Cursors.Hand
+            };
+
+            closeButton.Click += async (sender, e) =>
+            {
+                e.Handled = true;
+                await CloseTabAsync(tab);
+            };
+
+            tabContent.Children.Add(closeButton);
+
             var tabButton = new Button
             {
-                Content = tab.Title,
-                Margin = new Thickness(0, 0, 6, 0),
+                Content = tabContent,
+                Margin = new Thickness(0, 0, 4, 0),
                 Style = (Style)FindResource(tab == _activeTab ? "ShellTabButtonActive" : "ShellTabButton")
             };
 
             tabButton.Click += async (_, _) => await SelectTabAsync(tab);
             TabsPanel.Children.Add(tabButton);
         }
+    }
+
+    private async Task CloseTabAsync(ShellTab tab)
+    {
+        if (_tabs.Count == 1)
+        {
+            await UpdateActiveTabAsync(ShellPage.Dashboard, "Dashboard", true);
+            return;
+        }
+
+        var closedTabIndex = _tabs.IndexOf(tab);
+        _tabs.Remove(tab);
+
+        if (_activeTab == tab)
+        {
+            var nextTabIndex = Math.Clamp(closedTabIndex, 0, _tabs.Count - 1);
+            _activeTab = _tabs[nextTabIndex];
+            RenderTabs();
+            await ShowPageAsync(_activeTab.Page, true);
+            return;
+        }
+
+        RenderTabs();
     }
 
     private async Task ShowPageAsync(ShellPage page, bool loadData)
