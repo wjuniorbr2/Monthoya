@@ -267,6 +267,12 @@ public partial class ShellWindow : Window
 
             tabContent.Children.Add(new TextBlock
             {
+                Text = GetShellPageIcon(tab.Page),
+                Style = (Style)FindResource("ShellTabIconText")
+            });
+
+            tabContent.Children.Add(new TextBlock
+            {
                 Text = tab.Title,
                 VerticalAlignment = VerticalAlignment.Center
             });
@@ -308,6 +314,27 @@ public partial class ShellWindow : Window
             TabsPanel.Children.Add(tabButton);
         }
     }
+
+    private static string GetShellPageIcon(ShellPage page) =>
+        page switch
+        {
+            ShellPage.Dashboard => "\uE80F",
+            ShellPage.Users => "\uE77B",
+            ShellPage.Pessoas => "\uE716",
+            ShellPage.Imoveis => "\uE80F",
+            ShellPage.Locacoes => "\uE8A1",
+            ShellPage.Financeiro => "\uEAFD",
+            ShellPage.Boletos => "\uE8C7",
+            ShellPage.NotasFiscais => "\uE9D9",
+            ShellPage.Documentos => "\uE8A5",
+            ShellPage.Relatorios => "\uE9D2",
+            ShellPage.Dimob => "\uE9F9",
+            ShellPage.Manutencoes => "\uE90F",
+            ShellPage.Vistorias => "\uE721",
+            ShellPage.Configuracoes => "\uE713",
+            ShellPage.Diagnostics => "\uE950",
+            _ => "\uE80F"
+        };
 
     private async Task CloseTabAsync(ShellTab tab)
     {

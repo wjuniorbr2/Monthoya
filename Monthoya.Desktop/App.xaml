@@ -61,6 +61,71 @@
                 <Setter Property="TextOptions.TextRenderingMode" Value="ClearType" />
             </Style>
 
+            <Style x:Key="NavIconText" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="15" />
+                <Setter Property="FontWeight" Value="Normal" />
+                <Setter Property="Width" Value="22" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+                <Setter Property="TextOptions.TextRenderingMode" Value="ClearType" />
+            </Style>
+
+            <Style x:Key="ShellTabIconText" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Width" Value="18" />
+                <Setter Property="Margin" Value="0,0,7,0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <Style x:Key="MenuScrollBarThumb" TargetType="{x:Type Thumb}">
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Thumb}">
+                            <Border Width="6"
+                                    Background="#8AFFFFFF"
+                                    CornerRadius="3" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="MenuVerticalScrollBar" TargetType="{x:Type ScrollBar}">
+                <Setter Property="Width" Value="12" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type ScrollBar}">
+                            <Grid Width="{TemplateBinding Width}"
+                                  Background="Transparent">
+                                <Rectangle Width="1"
+                                           RadiusX="0.5"
+                                           RadiusY="0.5"
+                                           Fill="#38FFFFFF"
+                                           HorizontalAlignment="Center" />
+                                <Track x:Name="PART_Track"
+                                       IsDirectionReversed="True">
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Command="{x:Static ScrollBar.PageUpCommand}"
+                                                      Opacity="0" />
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.Thumb>
+                                        <Thumb Style="{StaticResource MenuScrollBarThumb}" />
+                                    </Track.Thumb>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Command="{x:Static ScrollBar.PageDownCommand}"
+                                                      Opacity="0" />
+                                    </Track.IncreaseRepeatButton>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
             </Style>
@@ -226,7 +291,7 @@
             </Style>
 
             <Style x:Key="SelectedNavButton" TargetType="Button" BasedOn="{StaticResource NavButton}">
-                <Setter Property="Background" Value="#367BFF" />
+                <Setter Property="Background" Value="#80367BFF" />
                 <Setter Property="Foreground" Value="White" />
                 <Setter Property="Effect" Value="{StaticResource SoftShadow}" />
                 <Setter Property="Template">
