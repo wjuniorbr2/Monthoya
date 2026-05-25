@@ -17,7 +17,7 @@ public sealed class AppStartup(
         var connectionString = configuration[$"{DatabaseOptions.SectionName}:{nameof(DatabaseOptions.ConnectionString)}"];
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            ShowConfigurationWindow("Configure a conexao com o PostgreSQL para iniciar o Monthoya.");
+            ShowConfigurationWindow("Configure a conexão com o PostgreSQL para iniciar o Monthoya.");
             return;
         }
 
@@ -25,7 +25,7 @@ public sealed class AppStartup(
         var dbContext = scope.ServiceProvider.GetService<MonthoyaDbContext>();
         if (dbContext is null)
         {
-            ShowConfigurationWindow("A conexao com o banco nao foi registrada. Revise a configuracao local.");
+            ShowConfigurationWindow("A conexão com o banco não foi registrada. Revise a configuração local.");
             return;
         }
 
@@ -35,7 +35,7 @@ public sealed class AppStartup(
         }
         catch (Exception ex)
         {
-            ShowConfigurationWindow($"Nao foi possivel conectar ou atualizar o banco de dados. Detalhes: {ex.Message}");
+            ShowConfigurationWindow($"Não foi possível conectar ou atualizar o banco de dados. Detalhes: {ex.Message}");
             return;
         }
 

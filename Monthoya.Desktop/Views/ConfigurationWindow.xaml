@@ -23,7 +23,7 @@
                            DockPanel.Dock="Left"
                            Margin="0,0,14,0" />
                     <StackPanel>
-                        <TextBlock Text="Configuracao do banco de dados"
+                        <TextBlock Text="Configuração do banco de dados"
                                    FontSize="26"
                                    FontWeight="SemiBold" />
                         <TextBlock Text="Monthoya"
@@ -46,7 +46,7 @@
                         CornerRadius="8"
                         Padding="16">
                     <StackPanel>
-                        <TextBlock Text="Use user secrets ou variaveis de ambiente. Nao salve senhas no codigo."
+                        <TextBlock Text="Use user secrets ou variáveis de ambiente. Não salve senhas no código."
                                    FontWeight="SemiBold" />
                         <TextBlock Margin="0,12,0,0"
                                    FontFamily="Consolas"

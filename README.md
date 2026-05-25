@@ -66,12 +66,12 @@ The desktop app starts in Portuguese and routes through:
 - first-run administrator setup when no users exist;
 - login with local password hashing;
 - a role-aware shell with dashboard, user management, and developer diagnostics;
-- a Paranavai map area using WebView2 + OpenStreetMap/Leaflet for available rental properties with coordinates.
+- a Paranavaí map area using WebView2 + OpenStreetMap/Leaflet for available rental properties with coordinates.
 
 Roles:
 
 - `Administrador` - user management and business operations.
-- `Usuario` - regular business use without user management.
+- `Usuário` - regular business use without user management.
 - `Desenvolvedor` - administrator access plus diagnostics.
 
 ## Notes

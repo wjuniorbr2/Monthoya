@@ -12,7 +12,7 @@
                        FontSize="28"
                        FontWeight="SemiBold"
                        HorizontalAlignment="Center" />
-            <TextBlock Text="Real estate desktop application"
+            <TextBlock Text="Aplicativo desktop para gestão imobiliária"
                        Margin="0,8,0,0"
                        HorizontalAlignment="Center" />
         </StackPanel>

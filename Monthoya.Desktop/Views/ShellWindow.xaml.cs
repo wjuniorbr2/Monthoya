@@ -30,14 +30,14 @@ public partial class ShellWindow : Window
         _dashboardService = dashboardService;
 
         CurrentUserText.Text = currentUser.DisplayName;
-        CurrentRoleText.Text = currentUser.Role.ToString();
+        CurrentRoleText.Text = GetRoleLabel(currentUser.Role);
         UsersNavButton.Visibility = RolePermissions.CanManageUsers(currentUser.Role, currentUser.Access) ? Visibility.Visible : Visibility.Collapsed;
         DiagnosticsNavButton.Visibility = RolePermissions.CanAccessDiagnostics(currentUser.Role) ? Visibility.Visible : Visibility.Collapsed;
-        UserRoleBox.ItemsSource = Enum.GetValues<UserRole>();
-        UserRoleBox.SelectedItem = UserRole.Usuario;
+        UserRoleBox.ItemsSource = UserRoleOptions;
+        UserRoleBox.SelectedValue = UserRole.Usuario;
         SetAccessCheckboxes(RolePermissions.DefaultUserAccess);
         UpdateAccessControlState();
-        DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {currentUser.Role}{Environment.NewLine}Acessos: {RolePermissions.GetEffectiveAccess(currentUser.Role, currentUser.Access)}{Environment.NewLine}Banco: configurado via secrets/appsettings";
+        DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {GetRoleLabel(currentUser.Role)}{Environment.NewLine}Acessos: {GetAccessLabel(RolePermissions.GetEffectiveAccess(currentUser.Role, currentUser.Access))}{Environment.NewLine}Banco: configurado via secrets/appsettings";
 
         AddShellTab(ShellPage.Dashboard, "Tela Inicial");
         Loaded += async (_, _) => await ShowPageAsync(ShellPage.Dashboard, true);
@@ -316,7 +316,7 @@ public partial class ShellWindow : Window
         UserNameBox.Text = selected.DisplayName;
         UserLoginNameBox.Text = selected.LoginName;
         UserEmailBox.Text = selected.Email;
-        UserRoleBox.SelectedItem = selected.Role;
+        UserRoleBox.SelectedValue = selected.Role;
         SetAccessCheckboxes(RolePermissions.GetEffectiveAccess(selected.Role, selected.Access));
         UpdateAccessControlState();
         UserPasswordBox.Clear();
@@ -329,7 +329,7 @@ public partial class ShellWindow : Window
 
         try
         {
-            var selectedRole = UserRoleBox.SelectedItem is UserRole role ? role : UserRole.Usuario;
+            var selectedRole = UserRoleBox.SelectedValue is UserRole role ? role : UserRole.Usuario;
 
             if (_editingUserId is null)
             {
@@ -378,7 +378,7 @@ public partial class ShellWindow : Window
         UserLoginNameBox.Clear();
         UserEmailBox.Clear();
         UserPasswordBox.Clear();
-        UserRoleBox.SelectedItem = UserRole.Usuario;
+        UserRoleBox.SelectedValue = UserRole.Usuario;
         SetAccessCheckboxes(RolePermissions.DefaultUserAccess);
         UpdateAccessControlState();
         UserErrorText.Text = string.Empty;
@@ -409,7 +409,7 @@ public partial class ShellWindow : Window
 
     private void UpdateAccessControlState()
     {
-        if (UserRoleBox.SelectedItem is not UserRole selectedRole)
+        if (UserRoleBox.SelectedValue is not UserRole selectedRole)
         {
             return;
         }
@@ -453,6 +453,20 @@ public partial class ShellWindow : Window
         IsLogoutRequested = true;
         Close();
     }
+
+    private static string GetRoleLabel(UserRole role) =>
+        role switch
+        {
+            UserRole.Usuario => "Usuário",
+            UserRole.Administrador => "Administrador",
+            UserRole.Desenvolvedor => "Desenvolvedor",
+            _ => role.ToString()
+        };
+
+    private static string GetAccessLabel(UserAccess access) =>
+        access.HasFlag(UserAccess.UserManagement)
+            ? "Cadastro de usuários"
+            : "Básico";
 
     private const string MapHtmlTemplate = """
 <!doctype html>
@@ -513,4 +527,13 @@ public partial class ShellWindow : Window
 
         public ShellPage Page { get; set; } = page;
     }
+
+    private sealed record UserRoleOption(string Label, UserRole Role);
+
+    private static readonly IReadOnlyList<UserRoleOption> UserRoleOptions =
+    [
+        new("Usuário", UserRole.Usuario),
+        new("Administrador", UserRole.Administrador),
+        new("Desenvolvedor", UserRole.Desenvolvedor)
+    ];
 }

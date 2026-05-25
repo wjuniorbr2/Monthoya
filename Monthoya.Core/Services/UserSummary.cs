@@ -16,4 +16,13 @@ public sealed record UserSummary(
         Access.HasFlag(UserAccess.UserManagement)
             ? "Cadastro de usuários"
             : "Básico";
+
+    public string RoleLabel =>
+        Role switch
+        {
+            UserRole.Usuario => "Usuário",
+            UserRole.Administrador => "Administrador",
+            UserRole.Desenvolvedor => "Desenvolvedor",
+            _ => Role.ToString()
+        };
 }
