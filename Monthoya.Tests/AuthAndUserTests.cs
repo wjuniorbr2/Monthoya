@@ -335,6 +335,51 @@ public sealed class AuthAndUserTests
     }
 
     [Fact]
+    public async Task Pessoa_StoresDetailedClientRegistryFieldsAndScannedDocumentMetadata()
+    {
+        await using var dbContext = CreateDbContext();
+        var rentalService = new RentalManagementService(dbContext);
+
+        var pessoa = await rentalService.CreatePessoaAsync(
+            new CreatePessoaRequest(
+                TipoPessoa: TipoPessoa.Fisica,
+                NomeDisplay: "Ana Cliente",
+                Telefone: "(44) 99999-1111",
+                Email: "ana@monthoya.local",
+                Documento: "12345678901",
+                Roles: [PessoaRoleTipo.Locatario, PessoaRoleTipo.Fiador],
+                Observacoes: "Cadastro completo.",
+                Endereco: "Rua das Flores, 10",
+                EstadoCivil: "Casada",
+                Nacionalidade: "Brasileira",
+                DataNascimento: new DateOnly(1990, 5, 20),
+                Rg: "1234567",
+                Profissao: "Professora",
+                OndeTrabalha: "Escola Municipal",
+                DadosBancarios: "Banco teste"));
+
+        await rentalService.CreatePessoaDocumentoAsync(
+            new CreatePessoaDocumentoRequest(
+                pessoa.Id,
+                "comprovante_residencia",
+                "Comprovante de residência",
+                @"C:\Monthoya\documentos\ana-comprovante.pdf",
+                "application/pdf",
+                null,
+                "Arquivo digitalizado informado pelo atendimento."));
+
+        var pessoaFisica = await dbContext.PessoasFisicas.SingleAsync();
+        var documentos = await rentalService.GetPessoaDocumentosAsync(pessoa.Id);
+
+        Assert.Equal("Rua das Flores, 10", pessoaFisica.Endereco);
+        Assert.Equal("Casada", pessoaFisica.EstadoCivil);
+        Assert.Equal("Professora", pessoaFisica.Profissao);
+        Assert.Single(documentos);
+        Assert.Equal("Comprovante de residência", documentos[0].Tipo);
+        Assert.Contains("ana-comprovante.pdf", documentos[0].StoragePath);
+    }
+
+    [Fact]
     public async Task Imovel_RequiresOwnerAndAutoAddsOwnerRole()
     {
         await using var dbContext = CreateDbContext();
@@ -367,6 +412,53 @@ public sealed class AuthAndUserTests
 
         Assert.Equal(imovel.Id, imoveis.Single().Id);
         Assert.Contains("Proprietário", pessoas.Single().Roles);
+    }
+
+    [Fact]
+    public async Task Imovel_StoresDetailedRegistryFields()
+    {
+        await using var dbContext = CreateDbContext();
+        var rentalService = new RentalManagementService(dbContext);
+
+        var proprietario = await rentalService.CreatePessoaAsync(
+            new CreatePessoaRequest(
+                TipoPessoa.Fisica,
+                "Proprietário Teste",
+                null,
+                null,
+                null,
+                [PessoaRoleTipo.Proprietario],
+                null));
+
+        await rentalService.CreateImovelAsync(
+            new CreateImovelRequest(
+                ProprietarioId: proprietario.Id,
+                Rua: "Rua Souza Naves",
+                Numero: "100",
+                Bairro: "Centro",
+                Cidade: "Paranavaí",
+                Estado: "PR",
+                ValorAluguel: 2000m,
+                Finalidade: ImovelFinalidade.Ambos,
+                Observacoes: "Imóvel com dados completos.",
+                Complemento: "Sala 2",
+                Cep: "87702-000",
+                SaneparMatricula: "SAN123",
+                CopelMatricula: "COP456",
+                IptuMatricula: "IPTU789",
+                TipoImovel: "Casa",
+                Descricao: "Casa residencial.",
+                ValorVenda: 450000m,
+                Latitude: -23.0816m,
+                Longitude: -52.4617m));
+
+        var imovel = await dbContext.Imoveis.SingleAsync();
+
+        Assert.Equal("Sala 2", imovel.Complemento);
+        Assert.Equal("SAN123", imovel.SaneparMatricula);
+        Assert.Equal("Casa", imovel.TipoImovel);
+        Assert.Equal(450000m, imovel.ValorVenda);
+        Assert.Equal(-23.0816m, imovel.Latitude);
     }
 
     [Fact]

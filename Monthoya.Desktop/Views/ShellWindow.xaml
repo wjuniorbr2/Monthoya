@@ -218,6 +218,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
 
@@ -462,6 +463,7 @@
                     <Grid x:Name="PessoasPanel" Visibility="Collapsed">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <DockPanel>
@@ -471,10 +473,15 @@
                             </StackPanel>
                             <Button Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ReloadPessoasButton_Click" Content="Atualizar" />
                         </DockPanel>
-                        <Grid Grid.Row="1" Margin="0,22,0,0">
+                        <TextBox x:Name="PessoasSearchBox"
+                                 Grid.Row="1"
+                                 Margin="0,16,0,0"
+                                 TextChanged="PessoasSearchBox_TextChanged"
+                                 ToolTip="Pesquisar por nome, CPF ou CNPJ" />
+                        <Grid Grid.Row="2" Margin="0,16,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="360" />
+                                <ColumnDefinition Width="390" />
                             </Grid.ColumnDefinitions>
                             <Border Style="{StaticResource CardBorder}" Padding="0">
                                 <DataGrid x:Name="PessoasGrid" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0">
@@ -482,6 +489,7 @@
                                         <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="2*" />
                                         <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="*" />
                                         <DataGridTextColumn Header="Funções" Binding="{Binding Roles}" Width="2*" />
+                                        <DataGridTextColumn Header="CPF/CNPJ" Binding="{Binding Documento}" Width="*" />
                                         <DataGridTextColumn Header="Telefone" Binding="{Binding Telefone}" Width="*" />
                                         <DataGridTextColumn Header="E-mail" Binding="{Binding Email}" Width="2*" />
                                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
@@ -507,10 +515,103 @@
                                         <CheckBox x:Name="PessoaProprietarioBox" Content="Proprietário" Margin="0,6,0,3" />
                                         <CheckBox x:Name="PessoaLocatarioBox" Content="Locatário" Margin="0,3" />
                                         <CheckBox x:Name="PessoaFiadorBox" Content="Fiador" Margin="0,3,0,12" />
+                                        <Expander Header="Dados de pessoa física" IsExpanded="False" Margin="0,4,0,12">
+                                            <StackPanel Margin="0,10,0,0">
+                                                <TextBlock Text="Endereço" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaEnderecoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="RG" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaRgBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Estado civil" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaEstadoCivilBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Nacionalidade" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaNacionalidadeBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Data de nascimento" FontWeight="SemiBold" />
+                                                <DatePicker x:Name="PessoaDataNascimentoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Profissão" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaProfissaoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Onde trabalha" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaOndeTrabalhaBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Endereço do trabalho" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaEnderecoTrabalhoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Nome da empresa" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaNomeEmpresaTrabalhoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Telefone da empresa" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaTelefoneEmpresaTrabalhoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Dados bancários" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaDadosBancariosBox" AcceptsReturn="True" Height="64" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                                <TextBlock Text="Cônjuge" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaConjugeNomeBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="RG do cônjuge" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaConjugeRgBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="CPF do cônjuge" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaConjugeCpfBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Nascimento do cônjuge" FontWeight="SemiBold" />
+                                                <DatePicker x:Name="PessoaConjugeDataNascimentoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Profissão do cônjuge" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaConjugeProfissaoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Nacionalidade do cônjuge" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaConjugeNacionalidadeBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Telefone do cônjuge" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaConjugeTelefoneBox" Margin="0,6,0,0" />
+                                            </StackPanel>
+                                        </Expander>
+                                        <Expander Header="Dados de pessoa jurídica e responsável" IsExpanded="False" Margin="0,4,0,12">
+                                            <StackPanel Margin="0,10,0,0">
+                                                <TextBlock Text="Endereço da empresa" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaJuridicaEnderecoEmpresaBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Nome do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelNomeBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Endereço do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelEnderecoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Estado civil do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelEstadoCivilBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Nacionalidade do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelNacionalidadeBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Nascimento do responsável" FontWeight="SemiBold" />
+                                                <DatePicker x:Name="PessoaResponsavelDataNascimentoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Telefone do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelTelefoneBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="E-mail do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelEmailBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="RG do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelRgBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="CPF do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelCpfBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Profissão do responsável" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelProfissaoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Onde trabalha" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelOndeTrabalhaBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Endereço do trabalho" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelEnderecoTrabalhoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Empresa onde trabalha" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelNomeEmpresaTrabalhoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Telefone da empresa" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelTelefoneEmpresaTrabalhoBox" Margin="0,6,0,12" />
+                                                <TextBlock Text="Dados bancários" FontWeight="SemiBold" />
+                                                <TextBox x:Name="PessoaResponsavelDadosBancariosBox" AcceptsReturn="True" Height="64" TextWrapping="Wrap" Margin="0,6,0,0" />
+                                            </StackPanel>
+                                        </Expander>
                                         <TextBlock Text="Observações" FontWeight="SemiBold" />
                                         <TextBox x:Name="PessoaObservacoesBox" AcceptsReturn="True" Height="74" TextWrapping="Wrap" Margin="0,6,0,12" />
                                         <TextBlock x:Name="PessoaErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,12" />
                                         <Button Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" Click="SavePessoaButton_Click" Content="Salvar pessoa" />
+                                        <Border Height="1" Background="{StaticResource LineBrush}" Margin="0,18,0,18" />
+                                        <TextBlock Text="Documento digitalizado" FontSize="18" FontWeight="SemiBold" />
+                                        <TextBlock Text="Salva metadados do arquivo. A cópia segura para pasta local ou nuvem será definida depois." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                        <TextBlock Text="Pessoa" FontWeight="SemiBold" />
+                                        <ComboBox x:Name="PessoaDocumentoPessoaBox" DisplayMemberPath="Nome" SelectedValuePath="Id" Margin="0,6,0,12" />
+                                        <TextBlock Text="Tipo de documento" FontWeight="SemiBold" />
+                                        <ComboBox x:Name="PessoaDocumentoTipoBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Nome do documento" FontWeight="SemiBold" />
+                                        <TextBox x:Name="PessoaDocumentoNomeBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Caminho do arquivo" FontWeight="SemiBold" />
+                                        <TextBox x:Name="PessoaDocumentoArquivoBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Validade, se houver" FontWeight="SemiBold" />
+                                        <DatePicker x:Name="PessoaDocumentoValidadeBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Observações do documento" FontWeight="SemiBold" />
+                                        <TextBox x:Name="PessoaDocumentoObservacoesBox" AcceptsReturn="True" Height="58" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                        <TextBlock x:Name="PessoaDocumentoErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                        <Button Style="{StaticResource SecondaryButton}" HorizontalAlignment="Stretch" Click="SavePessoaDocumentoButton_Click" Content="Adicionar documento" />
                                     </StackPanel>
                                 </ScrollViewer>
                             </Border>
@@ -519,6 +620,7 @@
 
                     <Grid x:Name="ImoveisPanel" Visibility="Collapsed">
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
@@ -529,7 +631,12 @@
                             </StackPanel>
                             <Button Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ReloadImoveisButton_Click" Content="Atualizar" />
                         </DockPanel>
-                        <Grid Grid.Row="1" Margin="0,22,0,0">
+                        <TextBox x:Name="ImoveisSearchBox"
+                                 Grid.Row="1"
+                                 Margin="0,16,0,0"
+                                 TextChanged="ImoveisSearchBox_TextChanged"
+                                 ToolTip="Pesquisar por rua, bairro ou proprietário" />
+                        <Grid Grid.Row="2" Margin="0,16,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="360" />
@@ -538,6 +645,7 @@
                                 <DataGrid x:Name="ImoveisGrid" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Endereço" Binding="{Binding Endereco}" Width="2*" />
+                                        <DataGridTextColumn Header="Bairro" Binding="{Binding Bairro}" Width="*" />
                                         <DataGridTextColumn Header="Proprietário" Binding="{Binding Proprietario}" Width="2*" />
                                         <DataGridTextColumn Header="Finalidade" Binding="{Binding Finalidade}" Width="*" />
                                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
@@ -556,12 +664,32 @@
                                         <TextBox x:Name="ImovelRuaBox" Margin="0,6,0,12" />
                                         <TextBlock Text="Número" FontWeight="SemiBold" />
                                         <TextBox x:Name="ImovelNumeroBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Complemento" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelComplementoBox" Margin="0,6,0,12" />
                                         <TextBlock Text="Bairro" FontWeight="SemiBold" />
                                         <TextBox x:Name="ImovelBairroBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="CEP" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelCepBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Tipo do imóvel" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelTipoBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Matrícula Sanepar" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelSaneparBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Matrícula Copel" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelCopelBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Matrícula IPTU" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelIptuBox" Margin="0,6,0,12" />
                                         <TextBlock Text="Valor do aluguel" FontWeight="SemiBold" />
                                         <TextBox x:Name="ImovelValorAluguelBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Valor de venda" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelValorVendaBox" Margin="0,6,0,12" />
                                         <TextBlock Text="Finalidade" FontWeight="SemiBold" />
                                         <ComboBox x:Name="ImovelFinalidadeBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Latitude" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelLatitudeBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Longitude" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelLongitudeBox" Margin="0,6,0,12" />
+                                        <TextBlock Text="Descrição" FontWeight="SemiBold" />
+                                        <TextBox x:Name="ImovelDescricaoBox" AcceptsReturn="True" Height="74" TextWrapping="Wrap" Margin="0,6,0,12" />
                                         <TextBlock Text="Observações" FontWeight="SemiBold" />
                                         <TextBox x:Name="ImovelObservacoesBox" AcceptsReturn="True" Height="74" TextWrapping="Wrap" Margin="0,6,0,12" />
                                         <TextBlock x:Name="ImovelErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,12" />
@@ -588,7 +716,12 @@
                         <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0,18,0,18">
                             <TextBlock x:Name="ModuleNoticeText" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" />
                         </Border>
-                        <Border Grid.Row="2" Style="{StaticResource CardBorder}" Padding="0">
+                        <TextBox x:Name="ModuleSearchBox"
+                                 Grid.Row="2"
+                                 Margin="0,0,0,18"
+                                 TextChanged="ModuleSearchBox_TextChanged"
+                                 ToolTip="Pesquisar nesta lista" />
+                        <Border Grid.Row="3" Style="{StaticResource CardBorder}" Padding="0">
                             <DataGrid x:Name="ModuleGrid" AutoGenerateColumns="True" IsReadOnly="True" BorderThickness="0" />
                         </Border>
                     </Grid>

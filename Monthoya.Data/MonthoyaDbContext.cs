@@ -29,6 +29,7 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
 
     public DbSet<Pessoa> Pessoas => Set<Pessoa>();
     public DbSet<PessoaRole> PessoaRoles => Set<PessoaRole>();
+    public DbSet<PessoaDocumento> PessoaDocumentos => Set<PessoaDocumento>();
     public DbSet<PessoaFisica> PessoasFisicas => Set<PessoaFisica>();
     public DbSet<PessoaJuridica> PessoasJuridicas => Set<PessoaJuridica>();
     public DbSet<Imovel> Imoveis => Set<Imovel>();
@@ -186,6 +187,18 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.ToTable("pessoa_roles");
             entity.HasIndex(x => new { x.PessoaId, x.Role }).IsUnique();
             entity.HasOne(x => x.Pessoa).WithMany(x => x.Roles).HasForeignKey(x => x.PessoaId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PessoaDocumento>(entity =>
+        {
+            entity.ToTable("pessoa_documentos");
+            entity.Property(x => x.Tipo).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.Nome).HasMaxLength(220).IsRequired();
+            entity.Property(x => x.StoragePath).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.ContentType).HasMaxLength(100);
+            entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.HasOne(x => x.Pessoa).WithMany(x => x.Documentos).HasForeignKey(x => x.PessoaId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.PessoaId, x.Tipo });
         });
 
         modelBuilder.Entity<PessoaFisica>(entity =>

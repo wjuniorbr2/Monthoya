@@ -20,6 +20,9 @@ public partial class ShellWindow : Window
     private Guid? _editingUserId;
     private ShellTab? _activeTab;
     private ShellPage _activeModulePage;
+    private IReadOnlyList<PessoaSummary> _pessoas = [];
+    private IReadOnlyList<ImovelSummary> _imoveis = [];
+    private IReadOnlyList<object> _moduleItems = [];
 
     public ShellWindow(
         AuthenticatedUser currentUser,
@@ -43,6 +46,10 @@ public partial class ShellWindow : Window
         PessoaTipoBox.SelectedValuePath = "Tipo";
         PessoaTipoBox.DisplayMemberPath = "Label";
         PessoaTipoBox.SelectedValue = TipoPessoa.Fisica;
+        PessoaDocumentoTipoBox.ItemsSource = PessoaDocumentoTipoOptions;
+        PessoaDocumentoTipoBox.SelectedValuePath = "Tipo";
+        PessoaDocumentoTipoBox.DisplayMemberPath = "Label";
+        PessoaDocumentoTipoBox.SelectedValue = "cpf";
         ImovelFinalidadeBox.ItemsSource = ImovelFinalidadeOptions;
         ImovelFinalidadeBox.SelectedValuePath = "Finalidade";
         ImovelFinalidadeBox.DisplayMemberPath = "Label";
@@ -336,6 +343,43 @@ public partial class ShellWindow : Window
             _ => "\uE80F"
         };
 
+    private static DateOnly? ToDateOnly(DateTime? value) =>
+        value.HasValue ? DateOnly.FromDateTime(value.Value) : null;
+
+    private static decimal? ParseNullableDecimal(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var culture = CultureInfo.GetCultureInfo("pt-BR");
+        return decimal.TryParse(value, NumberStyles.Number | NumberStyles.Currency, culture, out var parsed)
+            || decimal.TryParse(value, NumberStyles.Number | NumberStyles.Currency, CultureInfo.InvariantCulture, out parsed)
+            ? parsed
+            : null;
+    }
+
+    private static bool ContainsSearch(string? query, params string?[] values)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return true;
+        }
+
+        var normalizedQuery = NormalizeSearch(query);
+        return values.Any(value => NormalizeSearch(value).Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeSearch(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : value.Replace(".", string.Empty, StringComparison.Ordinal)
+                .Replace("-", string.Empty, StringComparison.Ordinal)
+                .Replace("/", string.Empty, StringComparison.Ordinal)
+                .Replace(" ", string.Empty, StringComparison.Ordinal)
+                .Trim();
+
     private async Task CloseTabAsync(ShellTab tab)
     {
         if (_tabs.Count == 1)
@@ -416,8 +460,11 @@ public partial class ShellWindow : Window
 
     private async Task LoadPessoasAsync()
     {
-        PessoasGrid.ItemsSource = await _rentalManagementService.GetPessoasAsync();
-        var proprietarios = (await _rentalManagementService.GetPessoasAsync())
+        _pessoas = await _rentalManagementService.GetPessoasAsync();
+        ApplyPessoasFilter();
+        PessoaDocumentoPessoaBox.ItemsSource = _pessoas;
+
+        var proprietarios = _pessoas
             .Where(x => x.Roles.Contains("Proprietário", StringComparison.OrdinalIgnoreCase))
             .ToList();
         ImovelProprietarioBox.ItemsSource = proprietarios;
@@ -425,16 +472,54 @@ public partial class ShellWindow : Window
 
     private async Task LoadImoveisAsync()
     {
-        ImoveisGrid.ItemsSource = await _rentalManagementService.GetImoveisAsync();
-        var proprietarios = (await _rentalManagementService.GetPessoasAsync())
+        _imoveis = await _rentalManagementService.GetImoveisAsync();
+        ApplyImoveisFilter();
+
+        _pessoas = await _rentalManagementService.GetPessoasAsync();
+        var proprietarios = _pessoas
             .Where(x => x.Roles.Contains("Proprietário", StringComparison.OrdinalIgnoreCase))
             .ToList();
         ImovelProprietarioBox.ItemsSource = proprietarios;
+        PessoaDocumentoPessoaBox.ItemsSource = _pessoas;
     }
 
     private async void ReloadPessoasButton_Click(object sender, RoutedEventArgs e) => await LoadPessoasAsync();
 
     private async void ReloadImoveisButton_Click(object sender, RoutedEventArgs e) => await LoadImoveisAsync();
+
+    private void PessoasSearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyPessoasFilter();
+
+    private void ImoveisSearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyImoveisFilter();
+
+    private void ModuleSearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyModuleFilter();
+
+    private void ApplyPessoasFilter()
+    {
+        var query = PessoasSearchBox.Text;
+        PessoasGrid.ItemsSource = _pessoas
+            .Where(x => ContainsSearch(query, x.Nome, x.Documento, x.Roles, x.Telefone, x.Email))
+            .ToList();
+    }
+
+    private void ApplyImoveisFilter()
+    {
+        var query = ImoveisSearchBox.Text;
+        ImoveisGrid.ItemsSource = _imoveis
+            .Where(x => ContainsSearch(query, x.Endereco, x.Bairro, x.Proprietario, x.Finalidade, x.Status))
+            .ToList();
+    }
+
+    private void ApplyModuleFilter()
+    {
+        var query = ModuleSearchBox.Text;
+        ModuleGrid.ItemsSource = _moduleItems
+            .Where(item => item switch
+            {
+                LocacaoSummary locacao => ContainsSearch(query, locacao.Imovel, locacao.Proprietario, locacao.Locatario, locacao.Fiadores, locacao.Status),
+                _ => ContainsSearch(query, item.ToString())
+            })
+            .ToList();
+    }
 
     private async void SavePessoaButton_Click(object sender, RoutedEventArgs e)
     {
@@ -449,28 +534,129 @@ public partial class ShellWindow : Window
 
             var tipo = PessoaTipoBox.SelectedValue is TipoPessoa selectedTipo ? selectedTipo : TipoPessoa.Fisica;
             await _rentalManagementService.CreatePessoaAsync(new CreatePessoaRequest(
-                tipo,
-                PessoaNomeBox.Text,
-                PessoaTelefoneBox.Text,
-                PessoaEmailBox.Text,
-                PessoaDocumentoBox.Text,
-                roles.ToArray(),
-                PessoaObservacoesBox.Text));
+                TipoPessoa: tipo,
+                NomeDisplay: PessoaNomeBox.Text,
+                Telefone: PessoaTelefoneBox.Text,
+                Email: PessoaEmailBox.Text,
+                Documento: PessoaDocumentoBox.Text,
+                Roles: roles.ToArray(),
+                Observacoes: PessoaObservacoesBox.Text,
+                Endereco: tipo == TipoPessoa.Fisica ? PessoaEnderecoBox.Text : PessoaJuridicaEnderecoEmpresaBox.Text,
+                EstadoCivil: PessoaEstadoCivilBox.Text,
+                Nacionalidade: PessoaNacionalidadeBox.Text,
+                DataNascimento: ToDateOnly(PessoaDataNascimentoBox.SelectedDate),
+                Rg: PessoaRgBox.Text,
+                Profissao: PessoaProfissaoBox.Text,
+                OndeTrabalha: PessoaOndeTrabalhaBox.Text,
+                EnderecoTrabalho: PessoaEnderecoTrabalhoBox.Text,
+                NomeEmpresaTrabalho: PessoaNomeEmpresaTrabalhoBox.Text,
+                TelefoneEmpresaTrabalho: PessoaTelefoneEmpresaTrabalhoBox.Text,
+                DadosBancarios: PessoaDadosBancariosBox.Text,
+                ConjugeNome: PessoaConjugeNomeBox.Text,
+                ConjugeRg: PessoaConjugeRgBox.Text,
+                ConjugeCpf: PessoaConjugeCpfBox.Text,
+                ConjugeDataNascimento: ToDateOnly(PessoaConjugeDataNascimentoBox.SelectedDate),
+                ConjugeProfissao: PessoaConjugeProfissaoBox.Text,
+                ConjugeNacionalidade: PessoaConjugeNacionalidadeBox.Text,
+                ConjugeTelefone: PessoaConjugeTelefoneBox.Text,
+                ResponsavelNome: PessoaResponsavelNomeBox.Text,
+                ResponsavelEndereco: PessoaResponsavelEnderecoBox.Text,
+                ResponsavelEstadoCivil: PessoaResponsavelEstadoCivilBox.Text,
+                ResponsavelNacionalidade: PessoaResponsavelNacionalidadeBox.Text,
+                ResponsavelDataNascimento: ToDateOnly(PessoaResponsavelDataNascimentoBox.SelectedDate),
+                ResponsavelTelefone: PessoaResponsavelTelefoneBox.Text,
+                ResponsavelEmail: PessoaResponsavelEmailBox.Text,
+                ResponsavelRg: PessoaResponsavelRgBox.Text,
+                ResponsavelCpf: PessoaResponsavelCpfBox.Text,
+                ResponsavelProfissao: PessoaResponsavelProfissaoBox.Text,
+                ResponsavelOndeTrabalha: PessoaResponsavelOndeTrabalhaBox.Text,
+                ResponsavelEnderecoTrabalho: PessoaResponsavelEnderecoTrabalhoBox.Text,
+                ResponsavelNomeEmpresaTrabalho: PessoaResponsavelNomeEmpresaTrabalhoBox.Text,
+                ResponsavelTelefoneEmpresaTrabalho: PessoaResponsavelTelefoneEmpresaTrabalhoBox.Text,
+                ResponsavelDadosBancarios: PessoaResponsavelDadosBancariosBox.Text));
 
-            PessoaNomeBox.Clear();
-            PessoaDocumentoBox.Clear();
-            PessoaTelefoneBox.Clear();
-            PessoaEmailBox.Clear();
-            PessoaObservacoesBox.Clear();
-            PessoaProprietarioBox.IsChecked = false;
-            PessoaLocatarioBox.IsChecked = false;
-            PessoaFiadorBox.IsChecked = false;
+            ClearPessoaForm();
             await LoadPessoasAsync();
         }
         catch (Exception ex)
         {
             PessoaErrorText.Text = ex.Message;
         }
+    }
+
+    private async void SavePessoaDocumentoButton_Click(object sender, RoutedEventArgs e)
+    {
+        PessoaDocumentoErrorText.Text = string.Empty;
+
+        try
+        {
+            var pessoaId = PessoaDocumentoPessoaBox.SelectedValue is Guid selectedPessoaId ? selectedPessoaId : Guid.Empty;
+            var tipo = PessoaDocumentoTipoBox.SelectedValue as string ?? "outros";
+
+            await _rentalManagementService.CreatePessoaDocumentoAsync(new CreatePessoaDocumentoRequest(
+                pessoaId,
+                tipo,
+                PessoaDocumentoNomeBox.Text,
+                PessoaDocumentoArquivoBox.Text,
+                null,
+                ToDateOnly(PessoaDocumentoValidadeBox.SelectedDate),
+                PessoaDocumentoObservacoesBox.Text));
+
+            PessoaDocumentoNomeBox.Clear();
+            PessoaDocumentoArquivoBox.Clear();
+            PessoaDocumentoValidadeBox.SelectedDate = null;
+            PessoaDocumentoObservacoesBox.Clear();
+        }
+        catch (Exception ex)
+        {
+            PessoaDocumentoErrorText.Text = ex.Message;
+        }
+    }
+
+    private void ClearPessoaForm()
+    {
+        PessoaNomeBox.Clear();
+        PessoaDocumentoBox.Clear();
+        PessoaTelefoneBox.Clear();
+        PessoaEmailBox.Clear();
+        PessoaObservacoesBox.Clear();
+        PessoaProprietarioBox.IsChecked = false;
+        PessoaLocatarioBox.IsChecked = false;
+        PessoaFiadorBox.IsChecked = false;
+        PessoaEnderecoBox.Clear();
+        PessoaRgBox.Clear();
+        PessoaEstadoCivilBox.Clear();
+        PessoaNacionalidadeBox.Clear();
+        PessoaDataNascimentoBox.SelectedDate = null;
+        PessoaProfissaoBox.Clear();
+        PessoaOndeTrabalhaBox.Clear();
+        PessoaEnderecoTrabalhoBox.Clear();
+        PessoaNomeEmpresaTrabalhoBox.Clear();
+        PessoaTelefoneEmpresaTrabalhoBox.Clear();
+        PessoaDadosBancariosBox.Clear();
+        PessoaConjugeNomeBox.Clear();
+        PessoaConjugeRgBox.Clear();
+        PessoaConjugeCpfBox.Clear();
+        PessoaConjugeDataNascimentoBox.SelectedDate = null;
+        PessoaConjugeProfissaoBox.Clear();
+        PessoaConjugeNacionalidadeBox.Clear();
+        PessoaConjugeTelefoneBox.Clear();
+        PessoaJuridicaEnderecoEmpresaBox.Clear();
+        PessoaResponsavelNomeBox.Clear();
+        PessoaResponsavelEnderecoBox.Clear();
+        PessoaResponsavelEstadoCivilBox.Clear();
+        PessoaResponsavelNacionalidadeBox.Clear();
+        PessoaResponsavelDataNascimentoBox.SelectedDate = null;
+        PessoaResponsavelTelefoneBox.Clear();
+        PessoaResponsavelEmailBox.Clear();
+        PessoaResponsavelRgBox.Clear();
+        PessoaResponsavelCpfBox.Clear();
+        PessoaResponsavelProfissaoBox.Clear();
+        PessoaResponsavelOndeTrabalhaBox.Clear();
+        PessoaResponsavelEnderecoTrabalhoBox.Clear();
+        PessoaResponsavelNomeEmpresaTrabalhoBox.Clear();
+        PessoaResponsavelTelefoneEmpresaTrabalhoBox.Clear();
+        PessoaResponsavelDadosBancariosBox.Clear();
     }
 
     private async void SaveImovelButton_Click(object sender, RoutedEventArgs e)
@@ -490,22 +676,46 @@ public partial class ShellWindow : Window
                 valorAluguel = parsedValue;
             }
 
+            var valorVenda = ParseNullableDecimal(ImovelValorVendaBox.Text);
+            var latitude = ParseNullableDecimal(ImovelLatitudeBox.Text);
+            var longitude = ParseNullableDecimal(ImovelLongitudeBox.Text);
+
             var proprietarioId = ImovelProprietarioBox.SelectedValue is Guid selectedOwnerId ? selectedOwnerId : Guid.Empty;
             await _rentalManagementService.CreateImovelAsync(new CreateImovelRequest(
-                proprietarioId,
-                ImovelRuaBox.Text,
-                ImovelNumeroBox.Text,
-                ImovelBairroBox.Text,
-                "Paranavaí",
-                "PR",
-                valorAluguel,
-                finalidade,
-                ImovelObservacoesBox.Text));
+                ProprietarioId: proprietarioId,
+                Rua: ImovelRuaBox.Text,
+                Numero: ImovelNumeroBox.Text,
+                Bairro: ImovelBairroBox.Text,
+                Cidade: "Paranavaí",
+                Estado: "PR",
+                ValorAluguel: valorAluguel,
+                Finalidade: finalidade,
+                Observacoes: ImovelObservacoesBox.Text,
+                Complemento: ImovelComplementoBox.Text,
+                Cep: ImovelCepBox.Text,
+                SaneparMatricula: ImovelSaneparBox.Text,
+                CopelMatricula: ImovelCopelBox.Text,
+                IptuMatricula: ImovelIptuBox.Text,
+                TipoImovel: ImovelTipoBox.Text,
+                Descricao: ImovelDescricaoBox.Text,
+                ValorVenda: valorVenda,
+                Latitude: latitude,
+                Longitude: longitude));
 
             ImovelRuaBox.Clear();
             ImovelNumeroBox.Clear();
+            ImovelComplementoBox.Clear();
             ImovelBairroBox.Clear();
+            ImovelCepBox.Clear();
+            ImovelTipoBox.Clear();
+            ImovelSaneparBox.Clear();
+            ImovelCopelBox.Clear();
+            ImovelIptuBox.Clear();
             ImovelValorAluguelBox.Clear();
+            ImovelValorVendaBox.Clear();
+            ImovelLatitudeBox.Clear();
+            ImovelLongitudeBox.Clear();
+            ImovelDescricaoBox.Clear();
             ImovelObservacoesBox.Clear();
             await LoadImoveisAsync();
         }
@@ -523,20 +733,23 @@ public partial class ShellWindow : Window
         ModuleSubtitleText.Text = definition.Subtitle;
         ModuleNoticeText.Text = definition.Notice;
         ModulePrimaryActionButton.Content = definition.ActionText;
-        ModuleGrid.ItemsSource = page switch
+        IEnumerable<object> items = page switch
         {
-            ShellPage.Locacoes => await _rentalManagementService.GetLocacoesAsync(),
-            ShellPage.Financeiro => await _rentalManagementService.GetLancamentosFinanceirosAsync(),
-            ShellPage.Boletos => await _rentalManagementService.GetBoletosAsync(),
-            ShellPage.NotasFiscais => await _rentalManagementService.GetNotasFiscaisAsync(),
-            ShellPage.Documentos => await _rentalManagementService.GetDocumentoModelosAsync(),
-            ShellPage.Relatorios => await _rentalManagementService.GetImoveisAsync(),
-            ShellPage.Dimob => await _rentalManagementService.GetDimobDeclaracoesAsync(),
-            ShellPage.Manutencoes => await _rentalManagementService.GetManutencoesAsync(),
-            ShellPage.Vistorias => await _rentalManagementService.GetVistoriasAsync(),
-            ShellPage.Configuracoes => await _rentalManagementService.GetIndicesReajusteAsync(),
-            _ => null
+            ShellPage.Locacoes => (await _rentalManagementService.GetLocacoesAsync()).Cast<object>(),
+            ShellPage.Financeiro => (await _rentalManagementService.GetLancamentosFinanceirosAsync()).Cast<object>(),
+            ShellPage.Boletos => (await _rentalManagementService.GetBoletosAsync()).Cast<object>(),
+            ShellPage.NotasFiscais => (await _rentalManagementService.GetNotasFiscaisAsync()).Cast<object>(),
+            ShellPage.Documentos => (await _rentalManagementService.GetPessoaDocumentosAsync()).Cast<object>(),
+            ShellPage.Relatorios => (await _rentalManagementService.GetImoveisAsync()).Cast<object>(),
+            ShellPage.Dimob => (await _rentalManagementService.GetDimobDeclaracoesAsync()).Cast<object>(),
+            ShellPage.Manutencoes => (await _rentalManagementService.GetManutencoesAsync()).Cast<object>(),
+            ShellPage.Vistorias => (await _rentalManagementService.GetVistoriasAsync()).Cast<object>(),
+            ShellPage.Configuracoes => (await _rentalManagementService.GetIndicesReajusteAsync()).Cast<object>(),
+            _ => []
         };
+        _moduleItems = items.ToList();
+        ModuleSearchBox.Text = string.Empty;
+        ApplyModuleFilter();
     }
 
     private void ModulePrimaryActionButton_Click(object sender, RoutedEventArgs e)
@@ -825,6 +1038,7 @@ public partial class ShellWindow : Window
     private sealed record UserRoleOption(string Label, UserRole Role);
     private sealed record TipoPessoaOption(string Label, TipoPessoa Tipo);
     private sealed record ImovelFinalidadeOption(string Label, ImovelFinalidade Finalidade);
+    private sealed record PessoaDocumentoTipoOption(string Label, string Tipo);
     private sealed record ModuleDefinition(string Title, string Subtitle, string Notice, string ActionText);
 
     private static readonly IReadOnlyList<UserRoleOption> UserRoleOptions =
@@ -845,5 +1059,19 @@ public partial class ShellWindow : Window
         new("Locação", ImovelFinalidade.Locacao),
         new("Venda", ImovelFinalidade.Venda),
         new("Ambos", ImovelFinalidade.Ambos)
+    ];
+
+    private static readonly IReadOnlyList<PessoaDocumentoTipoOption> PessoaDocumentoTipoOptions =
+    [
+        new("CPF", "cpf"),
+        new("RG", "rg"),
+        new("Comprovante de residência", "comprovante_residencia"),
+        new("Comprovante de renda", "comprovante_renda"),
+        new("Comprovante de estado civil", "estado_civil"),
+        new("Contrato social", "contrato_social"),
+        new("Cartão CNPJ", "cartao_cnpj"),
+        new("Procuração/autorização", "procuracao"),
+        new("Dados bancários", "dados_bancarios"),
+        new("Outros", "outros")
     ];
 }

@@ -11,6 +11,8 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
         var pessoas = await dbContext.Pessoas
             .AsNoTracking()
             .Include(x => x.Roles)
+            .Include(x => x.PessoaFisica)
+            .Include(x => x.PessoaJuridica)
             .OrderBy(x => x.NomeDisplay)
             .ToListAsync(cancellationToken);
 
@@ -19,6 +21,7 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
             x.NomeDisplay,
             x.TipoPessoa == TipoPessoa.Fisica ? "Física" : "Jurídica",
             string.Join(", ", x.Roles.OrderBy(r => r.Role).Select(r => GetPessoaRoleLabel(r.Role))),
+            x.TipoPessoa == TipoPessoa.Fisica ? x.PessoaFisica?.Cpf : x.PessoaJuridica?.Cnpj,
             x.Telefone,
             x.Email,
             x.Status == RegistroStatus.Ativo ? "Ativo" : "Inativo")).ToList();
@@ -52,9 +55,27 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
             pessoa.PessoaFisica = new PessoaFisica
             {
                 Nome = pessoa.NomeDisplay,
+                Endereco = TrimOrNull(request.Endereco),
+                EstadoCivil = TrimOrNull(request.EstadoCivil),
+                Nacionalidade = TrimOrNull(request.Nacionalidade),
+                DataNascimento = request.DataNascimento,
+                Rg = TrimOrNull(request.Rg),
                 Cpf = request.Documento?.Trim(),
                 Telefone = pessoa.Telefone,
-                Email = pessoa.Email
+                Email = pessoa.Email,
+                Profissao = TrimOrNull(request.Profissao),
+                OndeTrabalha = TrimOrNull(request.OndeTrabalha),
+                EnderecoTrabalho = TrimOrNull(request.EnderecoTrabalho),
+                NomeEmpresaTrabalho = TrimOrNull(request.NomeEmpresaTrabalho),
+                TelefoneEmpresaTrabalho = TrimOrNull(request.TelefoneEmpresaTrabalho),
+                DadosBancarios = TrimOrNull(request.DadosBancarios),
+                ConjugeNome = TrimOrNull(request.ConjugeNome),
+                ConjugeRg = TrimOrNull(request.ConjugeRg),
+                ConjugeCpf = TrimOrNull(request.ConjugeCpf),
+                ConjugeDataNascimento = request.ConjugeDataNascimento,
+                ConjugeProfissao = TrimOrNull(request.ConjugeProfissao),
+                ConjugeNacionalidade = TrimOrNull(request.ConjugeNacionalidade),
+                ConjugeTelefone = TrimOrNull(request.ConjugeTelefone)
             };
         }
         else
@@ -63,8 +84,22 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
             {
                 NomeEmpresa = pessoa.NomeDisplay,
                 Cnpj = request.Documento?.Trim(),
+                EnderecoEmpresa = TrimOrNull(request.Endereco),
+                ResponsavelNome = TrimOrNull(request.ResponsavelNome),
+                ResponsavelEndereco = TrimOrNull(request.ResponsavelEndereco),
+                ResponsavelEstadoCivil = TrimOrNull(request.ResponsavelEstadoCivil),
+                ResponsavelNacionalidade = TrimOrNull(request.ResponsavelNacionalidade),
+                ResponsavelDataNascimento = request.ResponsavelDataNascimento,
                 ResponsavelEmail = pessoa.Email,
-                ResponsavelTelefone = pessoa.Telefone
+                ResponsavelTelefone = pessoa.Telefone,
+                ResponsavelRg = TrimOrNull(request.ResponsavelRg),
+                ResponsavelCpf = TrimOrNull(request.ResponsavelCpf),
+                ResponsavelProfissao = TrimOrNull(request.ResponsavelProfissao),
+                ResponsavelOndeTrabalha = TrimOrNull(request.ResponsavelOndeTrabalha),
+                ResponsavelEnderecoTrabalho = TrimOrNull(request.ResponsavelEnderecoTrabalho),
+                ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.ResponsavelNomeEmpresaTrabalho),
+                ResponsavelTelefoneEmpresaTrabalho = TrimOrNull(request.ResponsavelTelefoneEmpresaTrabalho),
+                ResponsavelDadosBancarios = TrimOrNull(request.ResponsavelDadosBancarios)
             };
         }
 
@@ -72,6 +107,74 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return (await GetPessoasAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
+    }
+
+    public async Task<PessoaDocumentoSummary> CreatePessoaDocumentoAsync(CreatePessoaDocumentoRequest request, CancellationToken cancellationToken = default)
+    {
+        if (request.PessoaId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Selecione a pessoa do documento.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Nome))
+        {
+            throw new InvalidOperationException("Informe o nome do documento.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.StoragePath))
+        {
+            throw new InvalidOperationException("Informe o caminho do arquivo digitalizado.");
+        }
+
+        var pessoaExists = await dbContext.Pessoas.AnyAsync(x => x.Id == request.PessoaId, cancellationToken);
+        if (!pessoaExists)
+        {
+            throw new InvalidOperationException("Pessoa não encontrada.");
+        }
+
+        var documento = new PessoaDocumento
+        {
+            PessoaId = request.PessoaId,
+            Tipo = string.IsNullOrWhiteSpace(request.Tipo) ? "outros" : request.Tipo.Trim(),
+            Nome = request.Nome.Trim(),
+            StoragePath = request.StoragePath.Trim(),
+            ContentType = TrimOrNull(request.ContentType),
+            DataValidade = request.DataValidade,
+            Observacoes = TrimOrNull(request.Observacoes)
+        };
+
+        dbContext.PessoaDocumentos.Add(documento);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return (await GetPessoaDocumentosAsync(request.PessoaId, cancellationToken)).Single(x => x.Id == documento.Id);
+    }
+
+    public async Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosAsync(Guid? pessoaId = null, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.PessoaDocumentos
+            .AsNoTracking()
+            .Include(x => x.Pessoa)
+            .AsQueryable();
+
+        if (pessoaId.HasValue)
+        {
+            query = query.Where(x => x.PessoaId == pessoaId.Value);
+        }
+
+        var documentos = await query
+            .OrderBy(x => x.Pessoa!.NomeDisplay)
+            .ThenBy(x => x.Tipo)
+            .ToListAsync(cancellationToken);
+
+        return documentos.Select(x => new PessoaDocumentoSummary(
+            x.Id,
+            x.PessoaId,
+            x.Pessoa?.NomeDisplay ?? "-",
+            GetPessoaDocumentoTipoLabel(x.Tipo),
+            x.Nome,
+            x.StoragePath,
+            x.DataValidade,
+            x.Status == RegistroStatus.Ativo ? "Ativo" : "Inativo")).ToList();
     }
 
     public async Task<IReadOnlyList<ImovelSummary>> GetImoveisAsync(CancellationToken cancellationToken = default)
@@ -85,6 +188,7 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
         return imoveis.Select(x => new ImovelSummary(
             x.Id,
             $"{x.Rua}, {x.Numero}".Trim().Trim(','),
+            x.Bairro,
             x.Proprietario?.NomeDisplay ?? "-",
             GetEnumLabel(x.Finalidade),
             GetEnumLabel(x.Status),
@@ -118,11 +222,21 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
             ProprietarioId = proprietario.Id,
             Rua = request.Rua.Trim(),
             Numero = request.Numero?.Trim(),
+            Complemento = TrimOrNull(request.Complemento),
             Bairro = request.Bairro?.Trim(),
             Cidade = string.IsNullOrWhiteSpace(request.Cidade) ? "Paranavaí" : request.Cidade.Trim(),
             Estado = string.IsNullOrWhiteSpace(request.Estado) ? "PR" : request.Estado.Trim().ToUpperInvariant(),
+            Cep = TrimOrNull(request.Cep),
+            SaneparMatricula = TrimOrNull(request.SaneparMatricula),
+            CopelMatricula = TrimOrNull(request.CopelMatricula),
+            IptuMatricula = TrimOrNull(request.IptuMatricula),
+            TipoImovel = TrimOrNull(request.TipoImovel),
+            Descricao = TrimOrNull(request.Descricao),
             ValorAluguel = request.ValorAluguel,
+            ValorVenda = request.ValorVenda,
             Finalidade = request.Finalidade,
+            Latitude = request.Latitude,
+            Longitude = request.Longitude,
             Observacoes = request.Observacoes?.Trim()
         };
 
@@ -139,6 +253,8 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
             .Include(x => x.Imovel)
             .Include(x => x.Proprietario)
             .Include(x => x.Locatario)
+            .Include(x => x.Fiadores)
+                .ThenInclude(x => x.Fiador)
             .OrderByDescending(x => x.CreatedAtUtc)
             .ToListAsync(cancellationToken);
 
@@ -147,6 +263,7 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
             x.Imovel is null ? "-" : $"{x.Imovel.Rua}, {x.Imovel.Numero}".Trim().Trim(','),
             x.Proprietario?.NomeDisplay ?? "-",
             x.Locatario?.NomeDisplay ?? "-",
+            string.Join(", ", x.Fiadores.Select(f => f.Fiador!.NomeDisplay).Order()),
             x.ValorAluguel,
             GetEnumLabel(x.Status))).ToList();
     }
@@ -199,6 +316,23 @@ public sealed class RentalManagementService(MonthoyaDbContext dbContext) : IRent
             PessoaRoleTipo.Fiador => "Fiador",
             _ => role.ToString()
         };
+
+    private static string GetPessoaDocumentoTipoLabel(string tipo) =>
+        tipo switch
+        {
+            "cpf" => "CPF",
+            "rg" => "RG",
+            "comprovante_residencia" => "Comprovante de residência",
+            "comprovante_renda" => "Comprovante de renda",
+            "estado_civil" => "Comprovante de estado civil",
+            "contrato_social" => "Contrato social",
+            "cartao_cnpj" => "Cartão CNPJ",
+            "procuracao" => "Procuração/autorização",
+            "dados_bancarios" => "Dados bancários",
+            _ => "Outros"
+        };
+
+    private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static string GetEnumLabel<T>(T value) where T : struct, Enum => value.ToString();
 }

@@ -30,6 +30,7 @@ public sealed class Pessoa : BaseEntity
     public ICollection<PessoaRole> Roles { get; set; } = new List<PessoaRole>();
     public PessoaFisica? PessoaFisica { get; set; }
     public PessoaJuridica? PessoaJuridica { get; set; }
+    public ICollection<PessoaDocumento> Documentos { get; set; } = new List<PessoaDocumento>();
 }
 
 public sealed class PessoaRole : BaseEntity
@@ -89,6 +90,19 @@ public sealed class PessoaJuridica
     public string? ResponsavelNomeEmpresaTrabalho { get; set; }
     public string? ResponsavelTelefoneEmpresaTrabalho { get; set; }
     public string? ResponsavelDadosBancarios { get; set; }
+}
+
+public sealed class PessoaDocumento : BaseEntity
+{
+    public Guid PessoaId { get; set; }
+    public Pessoa? Pessoa { get; set; }
+    public string Tipo { get; set; } = "outros";
+    public string Nome { get; set; } = string.Empty;
+    public string StoragePath { get; set; } = string.Empty;
+    public string? ContentType { get; set; }
+    public DateOnly? DataValidade { get; set; }
+    public RegistroStatus Status { get; set; } = RegistroStatus.Ativo;
+    public string? Observacoes { get; set; }
 }
 
 public sealed class Imovel : BaseEntity
