@@ -17,7 +17,7 @@
                 </Grid.RowDefinitions>
 
                 <DockPanel>
-                    <Image Source="/Assets/Icon_Monthoya.png"
+                    <Image Source="/Assets/Logo_icon2.png"
                            Width="42"
                            Height="42"
                            DockPanel.Dock="Left"

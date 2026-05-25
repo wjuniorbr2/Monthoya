@@ -10,10 +10,12 @@ namespace Monthoya.Desktop.Views;
 
 public partial class ShellWindow : Window
 {
+    private readonly List<ShellTab> _tabs = [];
     private readonly AuthenticatedUser _currentUser;
     private readonly IUserService _userService;
     private readonly IDashboardService _dashboardService;
     private Guid? _editingUserId;
+    private ShellTab? _activeTab;
 
     public ShellWindow(
         AuthenticatedUser currentUser,
@@ -35,7 +37,8 @@ public partial class ShellWindow : Window
         UpdateAccessControlState();
         DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {currentUser.Role}{Environment.NewLine}Acessos: {RolePermissions.GetEffectiveAccess(currentUser.Role, currentUser.Access)}{Environment.NewLine}Banco: configurado via secrets/appsettings";
 
-        Loaded += async (_, _) => await LoadDashboardAsync();
+        AddShellTab(ShellPage.Dashboard, "Dashboard");
+        Loaded += async (_, _) => await ShowPageAsync(ShellPage.Dashboard, true);
     }
 
     private async Task LoadDashboardAsync()
@@ -49,15 +52,15 @@ public partial class ShellWindow : Window
             PendingRentText.Text = summary.PendingRentAmount.ToString("C", CultureInfo.GetCultureInfo("pt-BR"));
             MapPropertiesList.ItemsSource = summary.AvailableRentalProperties;
             DashboardStatusText.Text = summary.AvailableRentalProperties.Count == 0
-                ? "Nenhum imovel disponivel para locacao com coordenadas cadastrado ainda."
-                : $"{summary.AvailableRentalProperties.Count} imovel(is) disponivel(is) com localizacao.";
+                ? "Nenhum imóvel disponível para locação com coordenadas cadastrado ainda."
+                : $"{summary.AvailableRentalProperties.Count} imóvel(is) disponível(is) com localização.";
 
             await LoadMapAsync(summary.AvailableRentalProperties);
         }
         catch (Exception ex)
         {
-            DashboardStatusText.Text = $"Nao foi possivel carregar o dashboard: {ex.Message}";
-            ShowMapFallback("Mapa indisponivel no momento.");
+            DashboardStatusText.Text = $"Não foi possível carregar o dashboard: {ex.Message}";
+            ShowMapFallback("Mapa indisponível no momento.");
         }
     }
 
@@ -72,7 +75,7 @@ public partial class ShellWindow : Window
         }
         catch
         {
-            ShowMapFallback("Nao foi possivel iniciar o WebView2. Instale o runtime do Microsoft Edge WebView2 para ver o mapa.");
+            ShowMapFallback("Não foi possível iniciar o WebView2. Instale o runtime do Microsoft Edge WebView2 para ver o mapa.");
         }
     }
 
@@ -114,8 +117,7 @@ public partial class ShellWindow : Window
 
     private async void DashboardNavButton_Click(object sender, RoutedEventArgs e)
     {
-        ShowDashboard();
-        await LoadDashboardAsync();
+        await UpdateActiveTabAsync(ShellPage.Dashboard, "Dashboard", true);
     }
 
     private async void UsersNavButton_Click(object sender, RoutedEventArgs e)
@@ -125,11 +127,7 @@ public partial class ShellWindow : Window
             return;
         }
 
-        DashboardPanel.Visibility = Visibility.Collapsed;
-        UsersPanel.Visibility = Visibility.Visible;
-        DiagnosticsPanel.Visibility = Visibility.Collapsed;
-        SetActiveNavigation(UsersNavButton);
-        await LoadUsersAsync();
+        await UpdateActiveTabAsync(ShellPage.Users, "Usuários", true);
     }
 
     private void DiagnosticsNavButton_Click(object sender, RoutedEventArgs e)
@@ -139,10 +137,7 @@ public partial class ShellWindow : Window
             return;
         }
 
-        DashboardPanel.Visibility = Visibility.Collapsed;
-        UsersPanel.Visibility = Visibility.Collapsed;
-        DiagnosticsPanel.Visibility = Visibility.Visible;
-        SetActiveNavigation(DiagnosticsNavButton);
+        _ = UpdateActiveTabAsync(ShellPage.Diagnostics, "Diagnósticos", false);
     }
 
     private void SetActiveNavigation(Button activeButton)
@@ -156,6 +151,89 @@ public partial class ShellWindow : Window
     private async void RefreshDashboardButton_Click(object sender, RoutedEventArgs e)
     {
         await LoadDashboardAsync();
+    }
+
+    private async void AddTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        AddShellTab(ShellPage.Dashboard, "Dashboard");
+        await ShowPageAsync(ShellPage.Dashboard, true);
+    }
+
+    private void AddShellTab(ShellPage page, string title)
+    {
+        var tab = new ShellTab(Guid.NewGuid(), title, page);
+        _tabs.Add(tab);
+        _activeTab = tab;
+        RenderTabs();
+    }
+
+    private async Task UpdateActiveTabAsync(ShellPage page, string title, bool loadData)
+    {
+        if (_activeTab is null)
+        {
+            AddShellTab(page, title);
+        }
+        else
+        {
+            _activeTab.Page = page;
+            _activeTab.Title = title;
+            RenderTabs();
+        }
+
+        await ShowPageAsync(page, loadData);
+    }
+
+    private async Task SelectTabAsync(ShellTab tab)
+    {
+        _activeTab = tab;
+        RenderTabs();
+        await ShowPageAsync(tab.Page, true);
+    }
+
+    private void RenderTabs()
+    {
+        TabsPanel.Children.Clear();
+
+        foreach (var tab in _tabs)
+        {
+            var tabButton = new Button
+            {
+                Content = tab.Title,
+                Margin = new Thickness(0, 0, 6, 0),
+                Style = (Style)FindResource(tab == _activeTab ? "ShellTabButtonActive" : "ShellTabButton")
+            };
+
+            tabButton.Click += async (_, _) => await SelectTabAsync(tab);
+            TabsPanel.Children.Add(tabButton);
+        }
+    }
+
+    private async Task ShowPageAsync(ShellPage page, bool loadData)
+    {
+        DashboardPanel.Visibility = page == ShellPage.Dashboard ? Visibility.Visible : Visibility.Collapsed;
+        UsersPanel.Visibility = page == ShellPage.Users ? Visibility.Visible : Visibility.Collapsed;
+        DiagnosticsPanel.Visibility = page == ShellPage.Diagnostics ? Visibility.Visible : Visibility.Collapsed;
+
+        SetActiveNavigation(page switch
+        {
+            ShellPage.Users => UsersNavButton,
+            ShellPage.Diagnostics => DiagnosticsNavButton,
+            _ => DashboardNavButton
+        });
+
+        if (!loadData)
+        {
+            return;
+        }
+
+        if (page == ShellPage.Dashboard)
+        {
+            await LoadDashboardAsync();
+        }
+        else if (page == ShellPage.Users)
+        {
+            await LoadUsersAsync();
+        }
     }
 
     private void NewUserButton_Click(object sender, RoutedEventArgs e)
@@ -178,7 +256,7 @@ public partial class ShellWindow : Window
         SetAccessCheckboxes(RolePermissions.GetEffectiveAccess(selected.Role, selected.Access));
         UpdateAccessControlState();
         UserPasswordBox.Clear();
-        ToggleUserActiveButton.Content = selected.IsActive ? "Desativar usuario" : "Reativar usuario";
+        ToggleUserActiveButton.Content = selected.IsActive ? "Desativar usuário" : "Reativar usuário";
     }
 
     private async void SaveUserButton_Click(object sender, RoutedEventArgs e)
@@ -213,13 +291,13 @@ public partial class ShellWindow : Window
     {
         if (UsersGrid.SelectedItem is not UserSummary selected)
         {
-            UserErrorText.Text = "Selecione um usuario.";
+            UserErrorText.Text = "Selecione um usuário.";
             return;
         }
 
         if (selected.Id == _currentUser.Id)
         {
-            UserErrorText.Text = "Voce nao pode desativar o proprio usuario logado.";
+            UserErrorText.Text = "Você não pode desativar o próprio usuário logado.";
             return;
         }
 
@@ -308,7 +386,7 @@ public partial class ShellWindow : Window
         FinancialAccessBox.IsEnabled = isNormalUser;
         DocumentsAccessBox.IsEnabled = isNormalUser;
         AccessHelpText.Text = isNormalUser
-            ? "Marque apenas as areas que este usuario pode acessar."
+            ? "Marque apenas as áreas que este usuário pode acessar."
             : "Este perfil tem acesso completo por regra do sistema.";
     }
 
@@ -343,7 +421,7 @@ public partial class ShellWindow : Window
     if (!properties.length) {
       const empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = 'Nenhum imovel disponivel para locacao com coordenadas cadastrado ainda.';
+      empty.textContent = 'Nenhum imóvel disponível para locação com coordenadas cadastrado ainda.';
       document.body.appendChild(empty);
     }
 
@@ -360,4 +438,20 @@ public partial class ShellWindow : Window
 </body>
 </html>
 """;
+
+    private enum ShellPage
+    {
+        Dashboard,
+        Users,
+        Diagnostics
+    }
+
+    private sealed class ShellTab(Guid id, string title, ShellPage page)
+    {
+        public Guid Id { get; } = id;
+
+        public string Title { get; set; } = title;
+
+        public ShellPage Page { get; set; } = page;
+    }
 }

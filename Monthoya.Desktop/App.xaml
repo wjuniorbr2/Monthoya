@@ -24,17 +24,23 @@
             <SolidColorBrush x:Key="LineBrush" Color="{StaticResource MonthoyaLineColor}" />
 
             <DropShadowEffect x:Key="CardShadow"
-                              BlurRadius="30"
-                              ShadowDepth="8"
-                              Direction="270"
-                              Opacity="0.12"
-                              Color="#12305F" />
-            <DropShadowEffect x:Key="SoftShadow"
-                              BlurRadius="22"
+                              BlurRadius="18"
                               ShadowDepth="5"
                               Direction="270"
-                              Opacity="0.16"
-                              Color="#0A3472" />
+                              Opacity="0.22"
+                              Color="#0A1E3F" />
+            <DropShadowEffect x:Key="SoftShadow"
+                              BlurRadius="16"
+                              ShadowDepth="4"
+                              Direction="270"
+                              Opacity="0.24"
+                              Color="#071B44" />
+            <DropShadowEffect x:Key="TabShadow"
+                              BlurRadius="12"
+                              ShadowDepth="3"
+                              Direction="270"
+                              Opacity="0.12"
+                              Color="#10233F" />
             <DropShadowEffect x:Key="NavTextOutline"
                               BlurRadius="1.8"
                               ShadowDepth="0"
@@ -195,22 +201,61 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid Effect="{TemplateBinding Effect}">
-                                <Path x:Name="Root"
-                                      Stretch="Fill"
-                                      Fill="{TemplateBinding Background}"
-                                      Stroke="#8EB5FF"
-                                      StrokeThickness="1"
-                                      Data="M 12,0 L 100,0 L 100,30 L 88,42 L 0,42 L 0,12 Z" />
-                                <ContentPresenter Margin="{TemplateBinding Padding}"
-                                                  TextElement.Foreground="{TemplateBinding Foreground}"
+                            <Border x:Name="Root"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="#8EB5FF"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="{TemplateBinding Padding}"
+                                    Effect="{TemplateBinding Effect}">
+                                <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                   VerticalAlignment="Center"
                                                   RecognizesAccessKey="True" />
-                            </Grid>
+                            </Border>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
+            </Style>
+
+            <Style x:Key="ShellTabButton" TargetType="Button">
+                <Setter Property="MinHeight" Value="38" />
+                <Setter Property="Padding" Value="16,8" />
+                <Setter Property="Background" Value="#E8EDF6" />
+                <Setter Property="Foreground" Value="#4B5565" />
+                <Setter Property="BorderBrush" Value="#D6DEEA" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Root"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8,8,0,0"
+                                    Padding="{TemplateBinding Padding}"
+                                    TextElement.Foreground="{TemplateBinding Foreground}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Root" Property="Background" Value="#F4F7FB" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ShellTabButtonActive" TargetType="Button" BasedOn="{StaticResource ShellTabButton}">
+                <Setter Property="Background" Value="White" />
+                <Setter Property="Foreground" Value="#3B4250" />
+                <Setter Property="BorderBrush" Value="#DCE4F0" />
+                <Setter Property="Effect" Value="{StaticResource TabShadow}" />
             </Style>
 
             <Style x:Key="CardBorder" TargetType="Border">

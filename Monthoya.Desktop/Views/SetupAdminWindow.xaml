@@ -21,7 +21,7 @@
                 </LinearGradientBrush>
             </Border.Background>
             <StackPanel VerticalAlignment="Center">
-                <Image Source="/Assets/Logo_angle_small.png"
+                <Image Source="/Assets/Logo_bg.png"
                        Width="220"
                        Stretch="Uniform"
                        HorizontalAlignment="Left"
@@ -59,7 +59,7 @@
 
                 <StackPanel>
                     <DockPanel>
-                        <Image Source="/Assets/Icon_Monthoya.png"
+                        <Image Source="/Assets/Logo_icon2.png"
                                Width="40"
                                Height="40"
                                DockPanel.Dock="Left"

@@ -30,54 +30,39 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <StackPanel>
-                    <Image Source="/Assets/Logo_angle_small.png"
-                           Width="198"
-                           Stretch="Uniform"
-                           HorizontalAlignment="Left"
-                           Margin="0,0,0,12" />
-                    <TextBlock Text="Monthoya Consultoria Imobiliária"
-                               Foreground="White"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="Paranavaí - PR"
-                               Foreground="#BED3FF"
-                               Margin="0,4,0,12" />
-                    <TextBlock Text="Gestão imobiliária integrada"
-                               Foreground="#EAF2FF"
-                               FontWeight="SemiBold"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,6" />
-                    <TextBlock Text="Locações, contratos, pagamentos, documentos e livro caixa em um só lugar."
-                               Foreground="#BED3FF"
-                               TextWrapping="Wrap"
-                               FontSize="12"
-                               Margin="0,0,0,22" />
-                </StackPanel>
+                <Image Source="/Assets/Logo_bg.png"
+                       Width="206"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Left"
+                       Margin="0,0,0,18" />
 
-                <StackPanel Grid.Row="1" Margin="0,18,0,0">
-                    <Button x:Name="DashboardNavButton"
-                            Style="{StaticResource SelectedNavButton}"
-                            HorizontalAlignment="Stretch"
-                            Margin="0,0,0,10"
-                            Click="DashboardNavButton_Click">
-                        <TextBlock Style="{StaticResource NavLabelText}" Text="Dashboard" />
-                    </Button>
-                    <Button x:Name="UsersNavButton"
-                            Style="{StaticResource NavButton}"
-                            HorizontalAlignment="Stretch"
-                            Margin="0,0,0,10"
-                            Click="UsersNavButton_Click">
-                        <TextBlock Style="{StaticResource NavLabelText}" Text="Usuários" />
-                    </Button>
-                    <Button x:Name="DiagnosticsNavButton"
-                            Style="{StaticResource NavButton}"
-                            HorizontalAlignment="Stretch"
-                            Margin="0,0,0,10"
-                            Click="DiagnosticsNavButton_Click">
-                        <TextBlock Style="{StaticResource NavLabelText}" Text="Diagnósticos" />
-                    </Button>
-                </StackPanel>
+                <ScrollViewer Grid.Row="1"
+                              Margin="0,18,0,0"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Button x:Name="DashboardNavButton"
+                                Style="{StaticResource SelectedNavButton}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,0,0,10"
+                                Click="DashboardNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Dashboard" />
+                        </Button>
+                        <Button x:Name="UsersNavButton"
+                                Style="{StaticResource NavButton}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,0,0,10"
+                                Click="UsersNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Usuários" />
+                        </Button>
+                        <Button x:Name="DiagnosticsNavButton"
+                                Style="{StaticResource NavButton}"
+                                HorizontalAlignment="Stretch"
+                                Margin="0,0,0,10"
+                                Click="DiagnosticsNavButton_Click">
+                            <TextBlock Style="{StaticResource NavLabelText}" Text="Diagnósticos" />
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
 
                 <StackPanel Grid.Row="2">
                     <TextBlock x:Name="CurrentUserText"
@@ -99,27 +84,50 @@
         <Grid Grid.Column="1" Margin="24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Border Style="{StaticResource CardBorder}"
+            <DockPanel Margin="0,0,0,10"
+                       LastChildFill="False">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Disabled"
+                              DockPanel.Dock="Left">
+                    <StackPanel x:Name="TabsPanel"
+                                Orientation="Horizontal" />
+                </ScrollViewer>
+                <Button Style="{StaticResource SecondaryButton}"
+                        Width="40"
+                        MinHeight="38"
+                        Padding="0"
+                        Margin="8,0,0,0"
+                        DockPanel.Dock="Right"
+                        Click="AddTabButton_Click"
+                        Content="+" />
+            </DockPanel>
+
+            <Border Grid.Row="1"
+                    Style="{StaticResource CardBorder}"
                     Padding="14"
                     Margin="0,0,0,18">
                 <DockPanel LastChildFill="False">
                     <StackPanel DockPanel.Dock="Left"
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center">
-                        <Image Source="/Assets/Icon_Monthoya.png"
+                        <Image Source="/Assets/Logo_icon2.png"
                                Width="30"
                                Height="30"
                                Margin="0,0,10,0" />
                         <StackPanel>
                             <TextBlock Text="Monthoya Consultoria Imobiliária"
+                                       Foreground="#3B4250"
                                        FontWeight="SemiBold"
-                                       FontSize="15" />
+                                       FontSize="15"
+                                       FontFamily="Segoe UI Variable Display, Segoe UI" />
                             <TextBlock Text="Gestão imobiliária integrada"
                                        Foreground="{StaticResource MutedBrush}"
-                                       FontSize="12" />
+                                       FontSize="12"
+                                       FontFamily="Segoe UI Variable Text, Segoe UI" />
                         </StackPanel>
                     </StackPanel>
 
@@ -137,7 +145,7 @@
                 </DockPanel>
             </Border>
 
-            <Grid x:Name="DashboardPanel" Grid.Row="1">
+            <Grid x:Name="DashboardPanel" Grid.Row="2">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
@@ -160,7 +168,7 @@
                              Margin="0,22,0,22">
                     <Border Style="{StaticResource CardBorder}" Margin="0,0,12,0">
                         <StackPanel>
-                            <TextBlock Text="Imoveis"
+                            <TextBlock Text="Imóveis"
                                        Foreground="{StaticResource MutedBrush}" />
                             <TextBlock x:Name="TotalPropertiesText"
                                        FontSize="26"
@@ -170,7 +178,7 @@
                     </Border>
                     <Border Style="{StaticResource CardBorder}" Margin="0,0,12,0">
                         <StackPanel>
-                            <TextBlock Text="Para locacao"
+                            <TextBlock Text="Para locação"
                                        Foreground="{StaticResource MutedBrush}" />
                             <TextBlock x:Name="AvailableRentalsText"
                                        FontSize="26"
@@ -190,7 +198,7 @@
                     </Border>
                     <Border Style="{StaticResource CardBorder}">
                         <StackPanel>
-                            <TextBlock Text="Alugueis pendentes"
+                            <TextBlock Text="Aluguéis pendentes"
                                        Foreground="{StaticResource MutedBrush}" />
                             <TextBlock x:Name="PendingRentText"
                                        FontSize="26"
@@ -233,7 +241,7 @@
                             Style="{StaticResource CardBorder}"
                             Margin="18,0,0,0">
                         <StackPanel>
-                            <TextBlock Text="Imoveis no mapa"
+                            <TextBlock Text="Imóveis no mapa"
                                        FontSize="18"
                                        FontWeight="SemiBold" />
                             <TextBlock x:Name="DashboardStatusText"
@@ -267,7 +275,7 @@
                 </Grid>
             </Grid>
 
-            <Grid x:Name="UsersPanel" Grid.Row="1" Visibility="Collapsed">
+            <Grid x:Name="UsersPanel" Grid.Row="2" Visibility="Collapsed">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
@@ -275,7 +283,7 @@
 
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Left">
-                        <TextBlock Text="Usuarios"
+                        <TextBlock Text="Usuários"
                                    FontSize="30"
                                    FontWeight="SemiBold" />
                         <TextBlock Text="Gerencie acessos do sistema."
@@ -286,7 +294,7 @@
                             DockPanel.Dock="Right"
                             HorizontalAlignment="Right"
                             Click="NewUserButton_Click"
-                            Content="Novo usuario" />
+                            Content="Novo usuário" />
                 </DockPanel>
 
                 <Grid Grid.Row="1" Margin="0,22,0,0">
@@ -320,7 +328,7 @@
                                 <TextBlock Text="Cadastro"
                                            FontSize="20"
                                            FontWeight="SemiBold" />
-                                <TextBlock Text="Senha obrigatoria somente para novo usuario."
+                                <TextBlock Text="Senha obrigatória somente para novo usuário."
                                            Foreground="{StaticResource MutedBrush}"
                                            TextWrapping="Wrap"
                                            Margin="0,6,0,16" />
@@ -339,7 +347,7 @@
                                           Margin="0,6,0,12"
                                           SelectionChanged="UserRoleBox_SelectionChanged" />
 
-                                <TextBlock Text="Acessos do usuario normal"
+                                <TextBlock Text="Acessos do usuário normal"
                                            FontWeight="SemiBold" />
                                 <Border Background="{StaticResource SoftBrush}"
                                         BorderBrush="{StaticResource LineBrush}"
@@ -349,7 +357,7 @@
                                         Margin="0,6,0,12">
                                     <StackPanel>
                                         <TextBlock x:Name="AccessHelpText"
-                                                   Text="Administradores e desenvolvedores mantem acesso completo. Para usuarios normais, marque apenas as areas necessarias."
+                                                   Text="Administradores e desenvolvedores mantêm acesso completo. Para usuários normais, marque apenas as áreas necessárias."
                                                    Foreground="{StaticResource MutedBrush}"
                                                    TextWrapping="Wrap"
                                                    Margin="0,0,0,8" />
@@ -357,7 +365,7 @@
                                                   Content="Dashboard"
                                                   Margin="0,3" />
                                         <CheckBox x:Name="PropertiesAccessBox"
-                                                  Content="Imoveis"
+                                                  Content="Imóveis"
                                                   Margin="0,3" />
                                         <CheckBox x:Name="ContractsAccessBox"
                                                   Content="Contratos e locações"
@@ -395,13 +403,13 @@
                 </Grid>
             </Grid>
 
-            <Grid x:Name="DiagnosticsPanel" Grid.Row="1" Visibility="Collapsed">
+            <Grid x:Name="DiagnosticsPanel" Grid.Row="2" Visibility="Collapsed">
                 <Border Style="{StaticResource CardBorder}" Width="620" HorizontalAlignment="Left" VerticalAlignment="Top">
                     <StackPanel>
-                        <TextBlock Text="Diagnosticos"
+                        <TextBlock Text="Diagnósticos"
                                    FontSize="28"
                                    FontWeight="SemiBold" />
-                        <TextBlock Text="Area tecnica disponivel apenas para o perfil Desenvolvedor."
+                        <TextBlock Text="Área técnica disponível apenas para o perfil Desenvolvedor."
                                    Foreground="{StaticResource MutedBrush}"
                                    Margin="0,6,0,18" />
                         <TextBlock x:Name="DiagnosticsText"
