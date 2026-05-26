@@ -64,6 +64,74 @@ public partial class ShellWindow : Window
 
     public bool IsLogoutRequested { get; private set; }
 
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (IsInsideTitleBarButton(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        if (e.ClickCount == 2)
+        {
+            ToggleWindowMaximized();
+            return;
+        }
+
+        if (e.ButtonState == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
+    }
+
+    private static bool IsInsideTitleBarButton(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is Button)
+            {
+                return true;
+            }
+
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
+    }
+
+    private void TitleBarMinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void TitleBarMaximizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleWindowMaximized();
+    }
+
+    private void TitleBarCloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    private void ShellWindow_StateChanged(object? sender, EventArgs e)
+    {
+        UpdateMaximizeButtonIcon();
+    }
+
+    private void ToggleWindowMaximized()
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        UpdateMaximizeButtonIcon();
+    }
+
+    private void UpdateMaximizeButtonIcon()
+    {
+        if (TitleBarMaximizeButton is not null)
+        {
+            TitleBarMaximizeButton.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+        }
+    }
+
     private async Task LoadDashboardAsync()
     {
         try
