@@ -101,7 +101,7 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <Image Grid.RowSpan="2"
-                       Source="/Assets/Side_panel.png"
+                       Source="/Assets/Side_panel.jpg"
                        Stretch="Uniform"
                        VerticalAlignment="Top"
                        HorizontalAlignment="Stretch"
