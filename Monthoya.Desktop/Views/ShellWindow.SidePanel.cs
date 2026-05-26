@@ -9,10 +9,10 @@ public partial class ShellWindow
     protected override void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
-        StretchSidePanelBackground();
+        ConfigureSidePanelBackground();
     }
 
-    private void StretchSidePanelBackground()
+    private void ConfigureSidePanelBackground()
     {
         foreach (var image in FindVisualChildren<Image>(this))
         {
@@ -23,12 +23,14 @@ public partial class ShellWindow
                 continue;
             }
 
-            image.Stretch = Stretch.UniformToFill;
-            image.VerticalAlignment = VerticalAlignment.Stretch;
+            // Keep the artwork proportional when the window is maximized.
+            // Uniform shows the full background image instead of cropping it.
+            image.Stretch = Stretch.Uniform;
+            image.VerticalAlignment = VerticalAlignment.Top;
             image.HorizontalAlignment = HorizontalAlignment.Stretch;
 
-            // The sidebar content has padding in XAML. This negative margin lets the
-            // decorative background image cover the full sidebar while the menu keeps
+            // The sidebar has padding in XAML. This negative margin makes the
+            // decorative background use the full sidebar width while the menu keeps
             // its original spacing.
             image.Margin = new Thickness(-18, -190, -18, -18);
             image.IsHitTestVisible = false;
