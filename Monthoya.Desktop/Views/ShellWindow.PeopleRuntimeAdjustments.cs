@@ -10,7 +10,9 @@ public partial class ShellWindow
 {
     private bool _pessoasRuntimeAdjustmentsApplied;
     private readonly SemaphoreSlim _pessoasSelectionSemaphore = new(1, 1);
+    private readonly Dictionary<Guid, Guid?> _pessoasSelectedByTab = [];
     private int _pessoasSelectionVersion;
+    private bool _isRestoringPessoaTabSelection;
 
     static ShellWindow()
     {
@@ -46,7 +48,10 @@ public partial class ShellWindow
             Dispatcher.BeginInvoke(UpdatePeopleTopRowSpacingAndRolesVisibility, DispatcherPriority.Background);
 
         PessoasPanel.IsVisibleChanged += (_, _) =>
+        {
             Dispatcher.BeginInvoke(UpdatePeopleTopRowSpacingAndRolesVisibility, DispatcherPriority.Background);
+            QueueRestorePessoaSelectionForActiveTab();
+        };
 
         UpdatePeopleTopRowSpacingAndRolesVisibility();
     }
@@ -65,9 +70,19 @@ public partial class ShellWindow
 
             if (PessoasGrid.SelectedItem is not PessoaSummary pessoa)
             {
+                if (!_isRestoringPessoaTabSelection && _activeTab is not null && _activeTab.Page == ShellPage.Pessoas)
+                {
+                    _pessoasSelectedByTab[_activeTab.Id] = null;
+                }
+
                 SetPessoaDocumentoSelection(null);
                 await LoadPessoaDocumentosAsync(null);
                 return;
+            }
+
+            if (!_isRestoringPessoaTabSelection && _activeTab is not null && _activeTab.Page == ShellPage.Pessoas)
+            {
+                _pessoasSelectedByTab[_activeTab.Id] = pessoa.Id;
             }
 
             SetPessoaDocumentoSelection(pessoa);
@@ -95,6 +110,43 @@ public partial class ShellWindow
         {
             _pessoasSelectionSemaphore.Release();
         }
+    }
+
+    private void QueueRestorePessoaSelectionForActiveTab()
+    {
+        if (!PessoasPanel.IsVisible || _activeTab is null || _activeTab.Page != ShellPage.Pessoas)
+        {
+            return;
+        }
+
+        var tabId = _activeTab.Id;
+        _ = RestorePessoaSelectionForTabAsync(tabId);
+    }
+
+    private async Task RestorePessoaSelectionForTabAsync(Guid tabId)
+    {
+        await Task.Delay(180);
+
+        if (_activeTab is null || _activeTab.Id != tabId || _activeTab.Page != ShellPage.Pessoas)
+        {
+            return;
+        }
+
+        if (!_pessoasSelectedByTab.TryGetValue(tabId, out var pessoaId) || pessoaId is null)
+        {
+            return;
+        }
+
+        var pessoa = _pessoas.FirstOrDefault(x => x.Id == pessoaId.Value);
+        if (pessoa is null)
+        {
+            return;
+        }
+
+        _isRestoringPessoaTabSelection = true;
+        PessoasGrid.SelectedItem = pessoa;
+        PessoasGrid.ScrollIntoView(pessoa);
+        _isRestoringPessoaTabSelection = false;
     }
 
     private void UpdatePeopleTopRowSpacingAndRolesVisibility()
