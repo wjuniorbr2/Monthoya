@@ -8,12 +8,6 @@ public partial class ShellWindow
 {
     private bool _pessoasLayoutPatched;
 
-    protected override void OnContentRendered(EventArgs e)
-    {
-        base.OnContentRendered(e);
-        ApplyPessoasPanelLayoutPatch();
-    }
-
     private void ApplyPessoasPanelLayoutPatch()
     {
         if (_pessoasLayoutPatched)
