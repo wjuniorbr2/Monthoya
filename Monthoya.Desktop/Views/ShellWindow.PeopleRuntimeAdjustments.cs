@@ -1,12 +1,16 @@
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using Monthoya.Core.Entities;
 
 namespace Monthoya.Desktop.Views;
 
 public partial class ShellWindow
 {
     private bool _pessoasRuntimeAdjustmentsApplied;
+    private readonly SemaphoreSlim _pessoasSelectionSemaphore = new(1, 1);
+    private int _pessoasSelectionVersion;
 
     static ShellWindow()
     {
@@ -33,6 +37,11 @@ public partial class ShellWindow
 
         _pessoasRuntimeAdjustmentsApplied = true;
 
+        // Replace the original async-void selection handler with a serialized one.
+        // This prevents fast clicks from starting two database reads on the same DbContext.
+        PessoasGrid.SelectionChanged -= PessoasGrid_SelectionChanged;
+        PessoasGrid.SelectionChanged += SafePessoasGrid_SelectionChanged;
+
         PessoasGrid.SelectionChanged += (_, _) =>
             Dispatcher.BeginInvoke(UpdatePeopleTopRowSpacingAndRolesVisibility, DispatcherPriority.Background);
 
@@ -40,6 +49,52 @@ public partial class ShellWindow
             Dispatcher.BeginInvoke(UpdatePeopleTopRowSpacingAndRolesVisibility, DispatcherPriority.Background);
 
         UpdatePeopleTopRowSpacingAndRolesVisibility();
+    }
+
+    private async void SafePessoasGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        var selectionVersion = Interlocked.Increment(ref _pessoasSelectionVersion);
+
+        await _pessoasSelectionSemaphore.WaitAsync();
+        try
+        {
+            if (selectionVersion != _pessoasSelectionVersion)
+            {
+                return;
+            }
+
+            if (PessoasGrid.SelectedItem is not PessoaSummary pessoa)
+            {
+                SetPessoaDocumentoSelection(null);
+                await LoadPessoaDocumentosAsync(null);
+                return;
+            }
+
+            SetPessoaDocumentoSelection(pessoa);
+            var details = await _rentalManagementService.GetPessoaAsync(pessoa.Id);
+
+            if (selectionVersion != _pessoasSelectionVersion)
+            {
+                return;
+            }
+
+            _selectedPessoaDetails = details;
+            if (details is not null)
+            {
+                PopulatePessoaForm(details);
+                SetPessoaEditMode(false, isNew: false);
+            }
+
+            await LoadPessoaDocumentosAsync(pessoa.Id);
+        }
+        catch (Exception ex)
+        {
+            PessoaErrorText.Text = $"Não foi possível carregar a pessoa selecionada: {ex.Message}";
+        }
+        finally
+        {
+            _pessoasSelectionSemaphore.Release();
+        }
     }
 
     private void UpdatePeopleTopRowSpacingAndRolesVisibility()
