@@ -32,13 +32,16 @@ public partial class ShellWindow
             return;
         }
 
+        // Inside the Pessoas tab card:
+        // first row = search results card across the full width;
+        // second row = person form card plus document card.
         pessoasWorkspace.RowDefinitions.Clear();
         pessoasWorkspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(220) });
         pessoasWorkspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
         pessoasWorkspace.ColumnDefinitions.Clear();
+        pessoasWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(4, GridUnitType.Star) });
         pessoasWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        pessoasWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(390) });
 
         Grid.SetRow(resultsCard, 0);
         Grid.SetColumn(resultsCard, 0);
