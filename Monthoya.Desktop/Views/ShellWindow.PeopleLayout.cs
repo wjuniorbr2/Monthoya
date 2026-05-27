@@ -9,10 +9,12 @@ namespace Monthoya.Desktop.Views;
 public partial class ShellWindow
 {
     private bool _pessoasLayoutPatched;
+    private bool _isFormattingPessoaRgPatch;
     private Button? _topSavePessoaButton;
     private ComboBox? _pessoaEstadoCivilComboBox;
     private ComboBox? _pessoaWorkComboBox;
     private StackPanel? _pessoaRolesCell;
+    private StackPanel? _pessoaRolesTopCell;
 
     private void ApplyPessoasPanelLayoutPatch()
     {
@@ -42,9 +44,6 @@ public partial class ShellWindow
             return;
         }
 
-        // The current XAML has an inner left column grid containing results + documents,
-        // and the person form on the right. Rebuild the workspace so the results card
-        // takes the whole first row, then the form and documents sit below it.
         leftColumnGrid.Children.Remove(resultsCard);
         leftColumnGrid.Children.Remove(documentsCard);
         pessoasWorkspace.Children.Remove(leftColumnGrid);
@@ -96,6 +95,7 @@ public partial class ShellWindow
         ArrangePessoaAddressFieldsIntoRows();
         ApplyPessoaActionButtonVisibilityRules();
         ApplyPessoaResetRules();
+        AttachPessoaRgEightDigitFormatter();
         ApplyCompactPessoaFieldSizing();
     }
 
@@ -157,16 +157,31 @@ public partial class ShellWindow
         _selectedPessoaDetails = null;
         SetPessoaDocumentoSelection(null);
         ClearPessoaForm();
+        PessoaTipoBox.SelectedIndex = -1;
+        if (_pessoaEstadoCivilComboBox is not null)
+        {
+            _pessoaEstadoCivilComboBox.SelectedIndex = -1;
+            _pessoaEstadoCivilComboBox.Text = string.Empty;
+        }
+        if (_pessoaWorkComboBox is not null)
+        {
+            _pessoaWorkComboBox.SelectedIndex = -1;
+            _pessoaWorkComboBox.Text = string.Empty;
+        }
         SetPessoaEditMode(true, isNew: true);
-        SyncPessoaEstadoCivilComboFromTextBox();
         UpdatePessoaRolesVisibility();
     }
 
     private void UpdatePessoaRolesVisibility()
     {
+        var visibility = PessoasGrid.SelectedItem is null ? Visibility.Collapsed : Visibility.Visible;
+        if (_pessoaRolesTopCell is not null)
+        {
+            _pessoaRolesTopCell.Visibility = visibility;
+        }
         if (_pessoaRolesCell is not null)
         {
-            _pessoaRolesCell.Visibility = PessoasGrid.SelectedItem is null ? Visibility.Collapsed : Visibility.Visible;
+            _pessoaRolesCell.Visibility = visibility;
         }
     }
 
@@ -260,12 +275,11 @@ public partial class ShellWindow
 
         _pessoaRolesCell = new StackPanel
         {
-            Visibility = PessoasGrid.SelectedItem is null ? Visibility.Collapsed : Visibility.Visible,
             Children = { PessoaProprietarioBox, PessoaLocatarioBox, PessoaFiadorBox }
         };
 
-        AddTopCell(topGrid, 0, rolesLabel ?? new TextBlock { Text = "Funções atuais", FontWeight = FontWeights.SemiBold }, _pessoaRolesCell);
-        AddTopCell(topGrid, 1, typeLabel ?? new TextBlock { Text = "Tipo", FontWeight = FontWeights.SemiBold }, PessoaTipoBox, 18);
+        _pessoaRolesTopCell = AddTopCell(topGrid, 0, rolesLabel ?? new TextBlock { Text = "Funções atuais", FontWeight = FontWeights.SemiBold }, _pessoaRolesCell);
+        AddTopCell(topGrid, 1, typeLabel ?? new TextBlock { Text = "Tipo", FontWeight = FontWeights.SemiBold }, PessoaTipoBox, 0);
         AddTopCell(topGrid, 2, new TextBlock { Text = "Estado civil", FontWeight = FontWeights.SemiBold }, _pessoaEstadoCivilComboBox!, 18);
         AddTopCell(topGrid, 3, new TextBlock { Text = "Trabalho", FontWeight = FontWeights.SemiBold }, _pessoaWorkComboBox!, 18);
 
@@ -378,13 +392,14 @@ public partial class ShellWindow
         target.Children.Add(field);
     }
 
-    private static void AddTopCell(Grid grid, int column, TextBlock label, UIElement control, double leftMargin = 0)
+    private static StackPanel AddTopCell(Grid grid, int column, TextBlock label, UIElement control, double leftMargin = 0)
     {
         var stack = new StackPanel { Margin = new Thickness(leftMargin, 0, 0, 0) };
         stack.Children.Add(label);
         stack.Children.Add(control);
         Grid.SetColumn(stack, column);
         grid.Children.Add(stack);
+        return stack;
     }
 
     private void CreatePessoaEstadoCivilComboBox()
@@ -398,7 +413,8 @@ public partial class ShellWindow
         {
             Width = 170,
             Margin = new Thickness(0, 6, 0, 0),
-            IsEditable = true,
+            IsEditable = false,
+            SelectedIndex = -1,
             ItemsSource = new[]
             {
                 string.Empty,
@@ -413,12 +429,8 @@ public partial class ShellWindow
 
         _pessoaEstadoCivilComboBox.SelectionChanged += (_, _) =>
         {
-            if (_pessoaEstadoCivilComboBox.SelectedItem is string selected)
-            {
-                PessoaEstadoCivilBox.Text = selected;
-            }
+            PessoaEstadoCivilBox.Text = _pessoaEstadoCivilComboBox.SelectedItem as string ?? string.Empty;
         };
-        _pessoaEstadoCivilComboBox.LostKeyboardFocus += (_, _) => PessoaEstadoCivilBox.Text = _pessoaEstadoCivilComboBox.Text;
         PessoaEstadoCivilBox.TextChanged += (_, _) => SyncPessoaEstadoCivilComboFromTextBox();
         SyncPessoaEstadoCivilComboFromTextBox();
     }
@@ -430,7 +442,8 @@ public partial class ShellWindow
             return;
         }
 
-        _pessoaEstadoCivilComboBox.Text = PessoaEstadoCivilBox.Text;
+        var value = PessoaEstadoCivilBox.Text;
+        _pessoaEstadoCivilComboBox.SelectedItem = string.IsNullOrWhiteSpace(value) ? null : value;
     }
 
     private void CreatePessoaWorkComboBox()
@@ -440,8 +453,40 @@ public partial class ShellWindow
             Width = 150,
             Margin = new Thickness(0, 6, 0, 0),
             ItemsSource = new[] { "Não trabalha", "Trabalha" },
-            SelectedIndex = 0
+            SelectedIndex = -1
         };
+    }
+
+    private void AttachPessoaRgEightDigitFormatter()
+    {
+        PessoaRgBox.TextChanged += PessoaRgEightDigitFormatter_TextChanged;
+        PessoaConjugeRgBox.TextChanged += PessoaRgEightDigitFormatter_TextChanged;
+        PessoaResponsavelRgBox.TextChanged += PessoaRgEightDigitFormatter_TextChanged;
+    }
+
+    private void PessoaRgEightDigitFormatter_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_isFormattingPessoaRgPatch || sender is not TextBox textBox)
+        {
+            return;
+        }
+
+        var digits = new string((textBox.Text ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (digits.Length != 8)
+        {
+            return;
+        }
+
+        var formatted = $"{digits[..1]}.{digits.Substring(1, 3)}.{digits.Substring(4, 3)}-{digits[7..]}";
+        if (textBox.Text == formatted)
+        {
+            return;
+        }
+
+        _isFormattingPessoaRgPatch = true;
+        textBox.Text = formatted;
+        textBox.CaretIndex = formatted.Length;
+        _isFormattingPessoaRgPatch = false;
     }
 
     private void HideOriginalEstadoCivilField()
