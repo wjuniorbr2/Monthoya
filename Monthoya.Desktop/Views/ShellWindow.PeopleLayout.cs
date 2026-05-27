@@ -92,6 +92,8 @@ public partial class ShellWindow
         AddTopPessoaSaveButton(editCard);
         MovePessoaDocumentEditorToSideCard(editCard, documentsGrid);
         ApplyTopPessoaInfoLayout(editCard);
+        ArrangePessoaMainFieldsIntoRows(editCard);
+        ArrangePessoaAddressFieldsIntoRows();
         ApplyPessoaActionButtonVisibilityRules();
         ApplyPessoaResetRules();
         ApplyCompactPessoaFieldSizing();
@@ -265,10 +267,115 @@ public partial class ShellWindow
         AddTopCell(topGrid, 0, rolesLabel ?? new TextBlock { Text = "Funções atuais", FontWeight = FontWeights.SemiBold }, _pessoaRolesCell);
         AddTopCell(topGrid, 1, typeLabel ?? new TextBlock { Text = "Tipo", FontWeight = FontWeights.SemiBold }, PessoaTipoBox, 18);
         AddTopCell(topGrid, 2, new TextBlock { Text = "Estado civil", FontWeight = FontWeights.SemiBold }, _pessoaEstadoCivilComboBox!, 18);
-        AddTopCell(topGrid, 3, new TextBlock { Text = "Work", FontWeight = FontWeights.SemiBold }, _pessoaWorkComboBox!, 18);
+        AddTopCell(topGrid, 3, new TextBlock { Text = "Trabalho", FontWeight = FontWeights.SemiBold }, _pessoaWorkComboBox!, 18);
 
         formStack.Children.Insert(insertIndex, topGrid);
         UpdatePessoaRolesVisibility();
+    }
+
+    private void ArrangePessoaMainFieldsIntoRows(Border editCard)
+    {
+        if (editCard.Child is not ScrollViewer scrollViewer
+            || scrollViewer.Content is not StackPanel formStack
+            || formStack.Children.OfType<WrapPanel>().Any(panel => panel.Tag as string == "PessoaMainFieldsRow"))
+        {
+            return;
+        }
+
+        var topInfo = formStack.Children.OfType<Grid>().FirstOrDefault(grid => grid.Tag as string == "PessoaTopInfoGrid");
+        var insertIndex = topInfo is null ? 1 : formStack.Children.IndexOf(topInfo) + 1;
+
+        var row = new WrapPanel
+        {
+            Tag = "PessoaMainFieldsRow",
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+
+        MoveFieldToWrapPanel(formStack, row, "Nome / Razão social", PessoaNomeBox, 260);
+        MoveFieldToWrapPanel(formStack, row, "CPF/CNPJ", PessoaDocumentoBox, 170);
+        MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, row, "RG", PessoaRgBox, 150);
+        MoveFieldToWrapPanel(formStack, row, "Telefone", PessoaTelefoneBox, 160);
+        MoveFieldToWrapPanel(formStack, row, "E-mail", PessoaEmailBox, 260);
+
+        if (row.Children.Count > 0)
+        {
+            formStack.Children.Insert(insertIndex, row);
+        }
+    }
+
+    private void ArrangePessoaAddressFieldsIntoRows()
+    {
+        ArrangeAddressFields(PessoaFisicaFieldsPanel,
+            ("Rua", PessoaRuaBox, 300),
+            ("Número", PessoaNumeroBox, 90),
+            ("Complemento", PessoaComplementoBox, 220),
+            ("Bairro", PessoaBairroBox, 220),
+            ("Cidade", PessoaCidadeBox, 180),
+            ("Estado", PessoaEstadoBox, 80),
+            ("CEP", PessoaCepBox, 120));
+
+        ArrangeAddressFields(PessoaJuridicaFieldsPanel,
+            ("Rua da empresa", PessoaEmpresaRuaBox, 300),
+            ("Número da empresa", PessoaEmpresaNumeroBox, 90),
+            ("Complemento da empresa", PessoaEmpresaComplementoBox, 220),
+            ("Bairro da empresa", PessoaEmpresaBairroBox, 220),
+            ("Cidade da empresa", PessoaEmpresaCidadeBox, 180),
+            ("Estado da empresa", PessoaEmpresaEstadoBox, 80),
+            ("CEP da empresa", PessoaEmpresaCepBox, 120));
+    }
+
+    private static void ArrangeAddressFields(StackPanel parent, params (string Label, Control Control, double Width)[] fields)
+    {
+        if (parent.Children.OfType<WrapPanel>().Any(panel => panel.Tag as string == "PessoaAddressFieldsRow"))
+        {
+            return;
+        }
+
+        var row = new WrapPanel
+        {
+            Tag = "PessoaAddressFieldsRow",
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+
+        foreach (var field in fields)
+        {
+            MoveFieldToWrapPanel(parent, row, field.Label, field.Control, field.Width);
+        }
+
+        if (row.Children.Count == 0)
+        {
+            return;
+        }
+
+        var insertIndex = 0;
+        for (var index = 0; index < parent.Children.Count; index++)
+        {
+            if (parent.Children[index] is TextBlock block && block.Text.Contains("Endereço", StringComparison.OrdinalIgnoreCase))
+            {
+                insertIndex = index + 1;
+                break;
+            }
+        }
+
+        parent.Children.Insert(insertIndex, row);
+    }
+
+    private static void MoveFieldToWrapPanel(StackPanel source, WrapPanel target, string labelText, Control control, double width)
+    {
+        var label = RemoveTextBlock(source, labelText) ?? new TextBlock { Text = labelText, FontWeight = FontWeights.SemiBold };
+        RemoveChild(source, control);
+        control.Width = width;
+        control.HorizontalAlignment = HorizontalAlignment.Left;
+        control.Margin = new Thickness(0, 6, 0, 0);
+
+        var field = new StackPanel
+        {
+            Width = width,
+            Margin = new Thickness(0, 0, 14, 12)
+        };
+        field.Children.Add(label);
+        field.Children.Add(control);
+        target.Children.Add(field);
     }
 
     private static void AddTopCell(Grid grid, int column, TextBlock label, UIElement control, double leftMargin = 0)
@@ -332,7 +439,7 @@ public partial class ShellWindow
         {
             Width = 150,
             Margin = new Thickness(0, 6, 0, 0),
-            ItemsSource = new[] { "Not working", "Working" },
+            ItemsSource = new[] { "Não trabalha", "Trabalha" },
             SelectedIndex = 0
         };
     }
@@ -390,9 +497,15 @@ public partial class ShellWindow
     private void ApplyCompactPessoaFieldSizing()
     {
         SetCompact(PessoaTipoBox, 140);
+        SetCompact(PessoaNomeBox, 260);
         SetCompact(PessoaDocumentoBox, 170);
         SetCompact(PessoaRgBox, 150);
         SetCompact(PessoaTelefoneBox, 160);
+        SetCompact(PessoaEmailBox, 260);
+        SetCompact(PessoaRuaBox, 300);
+        SetCompact(PessoaComplementoBox, 220);
+        SetCompact(PessoaBairroBox, 220);
+        SetCompact(PessoaCidadeBox, 180);
         SetCompact(PessoaCepBox, 120);
         SetCompact(PessoaEstadoBox, 80);
         SetCompact(PessoaNumeroBox, 90);
@@ -401,6 +514,10 @@ public partial class ShellWindow
         SetCompact(PessoaConjugeRgBox, 150);
         SetCompact(PessoaConjugeTelefoneBox, 160);
         SetCompact(PessoaConjugeDataNascimentoBox, 140);
+        SetCompact(PessoaEmpresaRuaBox, 300);
+        SetCompact(PessoaEmpresaComplementoBox, 220);
+        SetCompact(PessoaEmpresaBairroBox, 220);
+        SetCompact(PessoaEmpresaCidadeBox, 180);
         SetCompact(PessoaEmpresaCepBox, 120);
         SetCompact(PessoaEmpresaEstadoBox, 80);
         SetCompact(PessoaEmpresaNumeroBox, 90);
