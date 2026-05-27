@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace Monthoya.Desktop.Views;
 
@@ -8,6 +10,8 @@ public partial class ShellWindow
 {
     private bool _pessoasLayoutPatched;
     private Button? _topSavePessoaButton;
+    private ComboBox? _pessoaEstadoCivilComboBox;
+    private ComboBox? _pessoaWorkComboBox;
 
     private void ApplyPessoasPanelLayoutPatch()
     {
@@ -86,6 +90,9 @@ public partial class ShellWindow
 
         AddTopPessoaSaveButton(editCard);
         MovePessoaDocumentEditorToSideCard(editCard, documentsGrid);
+        ApplyTopPessoaInfoLayout(editCard);
+        ApplyPessoaActionButtonVisibilityRules();
+        ApplyPessoaResetRules();
         ApplyCompactPessoaFieldSizing();
     }
 
@@ -104,11 +111,50 @@ public partial class ShellWindow
         {
             Content = "Salvar pessoa",
             Style = (Style)FindResource("PrimaryButton"),
-            Margin = new Thickness(0, 0, 8, 0),
-            Visibility = SavePessoaButton.Visibility
+            Margin = new Thickness(0, 0, 8, 0)
         };
+        _topSavePessoaButton.SetBinding(VisibilityProperty, new Binding(nameof(Visibility)) { Source = SavePessoaButton });
         _topSavePessoaButton.Click += SavePessoaButton_Click;
         actionButtons.Children.Insert(0, _topSavePessoaButton);
+    }
+
+    private void ApplyPessoaActionButtonVisibilityRules()
+    {
+        CollapseWhenDisabled(PessoaEditButton);
+        CollapseWhenDisabled(PessoaDeactivateButton);
+    }
+
+    private static void CollapseWhenDisabled(Button button)
+    {
+        button.Visibility = button.IsEnabled ? Visibility.Visible : Visibility.Collapsed;
+        button.IsEnabledChanged += (_, _) =>
+        {
+            button.Visibility = button.IsEnabled ? Visibility.Visible : Visibility.Collapsed;
+        };
+    }
+
+    private void ApplyPessoaResetRules()
+    {
+        PessoasPanel.IsVisibleChanged += (_, _) =>
+        {
+            if (PessoasPanel.IsVisible)
+            {
+                Dispatcher.BeginInvoke(ResetPessoaFormForPageOpen, DispatcherPriority.Background);
+            }
+        };
+
+        PessoasNavButton.Click += (_, _) => Dispatcher.BeginInvoke(ResetPessoaFormForPageOpen, DispatcherPriority.Background);
+    }
+
+    private void ResetPessoaFormForPageOpen()
+    {
+        PessoasGrid.SelectedItem = null;
+        _selectedPessoaId = null;
+        _selectedPessoaDetails = null;
+        SetPessoaDocumentoSelection(null);
+        ClearPessoaForm();
+        SetPessoaEditMode(true, isNew: true);
+        SyncPessoaEstadoCivilComboFromTextBox();
     }
 
     private void MovePessoaDocumentEditorToSideCard(Border editCard, Grid documentsGrid)
@@ -164,6 +210,154 @@ public partial class ShellWindow
 
         Grid.SetRow(editorScrollViewer, 2);
         documentsGrid.Children.Add(editorScrollViewer);
+    }
+
+    private void ApplyTopPessoaInfoLayout(Border editCard)
+    {
+        if (editCard.Child is not ScrollViewer scrollViewer
+            || scrollViewer.Content is not StackPanel formStack
+            || formStack.Children.OfType<Grid>().Any(grid => grid.Tag as string == "PessoaTopInfoGrid"))
+        {
+            return;
+        }
+
+        var headerIndex = formStack.Children.OfType<DockPanel>().Select(panel => formStack.Children.IndexOf(panel)).FirstOrDefault();
+        var insertIndex = headerIndex + 1;
+
+        var rolesLabel = RemoveTextBlock(formStack, "Funções atuais");
+        RemoveChild(formStack, PessoaProprietarioBox);
+        RemoveChild(formStack, PessoaLocatarioBox);
+        RemoveChild(formStack, PessoaFiadorBox);
+        var typeLabel = RemoveTextBlock(formStack, "Tipo");
+        RemoveChild(formStack, PessoaTipoBox);
+
+        HideOriginalEstadoCivilField();
+        CreatePessoaEstadoCivilComboBox();
+        CreatePessoaWorkComboBox();
+
+        var topGrid = new Grid
+        {
+            Tag = "PessoaTopInfoGrid",
+            Margin = new Thickness(0, 0, 0, 12)
+        };
+        topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        AddTopCell(topGrid, 0, rolesLabel ?? new TextBlock { Text = "Funções atuais", FontWeight = FontWeights.SemiBold }, new StackPanel
+        {
+            Children = { PessoaProprietarioBox, PessoaLocatarioBox, PessoaFiadorBox }
+        });
+
+        AddTopCell(topGrid, 1, typeLabel ?? new TextBlock { Text = "Tipo", FontWeight = FontWeights.SemiBold }, PessoaTipoBox, 18);
+        AddTopCell(topGrid, 2, new TextBlock { Text = "Estado civil", FontWeight = FontWeights.SemiBold }, _pessoaEstadoCivilComboBox!, 18);
+        AddTopCell(topGrid, 3, new TextBlock { Text = "Work", FontWeight = FontWeights.SemiBold }, _pessoaWorkComboBox!, 18);
+
+        formStack.Children.Insert(insertIndex, topGrid);
+    }
+
+    private static void AddTopCell(Grid grid, int column, TextBlock label, UIElement control, double leftMargin = 0)
+    {
+        var stack = new StackPanel { Margin = new Thickness(leftMargin, 0, 0, 0) };
+        stack.Children.Add(label);
+        stack.Children.Add(control);
+        Grid.SetColumn(stack, column);
+        grid.Children.Add(stack);
+    }
+
+    private void CreatePessoaEstadoCivilComboBox()
+    {
+        if (_pessoaEstadoCivilComboBox is not null)
+        {
+            return;
+        }
+
+        _pessoaEstadoCivilComboBox = new ComboBox
+        {
+            Width = 170,
+            Margin = new Thickness(0, 6, 0, 0),
+            IsEditable = true,
+            ItemsSource = new[]
+            {
+                string.Empty,
+                "Solteiro(a)",
+                "Casado(a)",
+                "União estável",
+                "Divorciado(a)",
+                "Separado(a)",
+                "Viúvo(a)"
+            }
+        };
+
+        _pessoaEstadoCivilComboBox.SelectionChanged += (_, _) =>
+        {
+            if (_pessoaEstadoCivilComboBox.SelectedItem is string selected)
+            {
+                PessoaEstadoCivilBox.Text = selected;
+            }
+        };
+        _pessoaEstadoCivilComboBox.LostKeyboardFocus += (_, _) => PessoaEstadoCivilBox.Text = _pessoaEstadoCivilComboBox.Text;
+        PessoaEstadoCivilBox.TextChanged += (_, _) => SyncPessoaEstadoCivilComboFromTextBox();
+        SyncPessoaEstadoCivilComboFromTextBox();
+    }
+
+    private void SyncPessoaEstadoCivilComboFromTextBox()
+    {
+        if (_pessoaEstadoCivilComboBox is null)
+        {
+            return;
+        }
+
+        _pessoaEstadoCivilComboBox.Text = PessoaEstadoCivilBox.Text;
+    }
+
+    private void CreatePessoaWorkComboBox()
+    {
+        _pessoaWorkComboBox ??= new ComboBox
+        {
+            Width = 150,
+            Margin = new Thickness(0, 6, 0, 0),
+            ItemsSource = new[] { "Not working", "Working" },
+            SelectedIndex = 0
+        };
+    }
+
+    private void HideOriginalEstadoCivilField()
+    {
+        PessoaEstadoCivilBox.Visibility = Visibility.Collapsed;
+        PessoaEstadoCivilBox.Width = 0;
+
+        if (PessoaEstadoCivilBox.Parent is Panel parent)
+        {
+            var index = parent.Children.IndexOf(PessoaEstadoCivilBox);
+            if (index > 0 && parent.Children[index - 1] is TextBlock label && label.Text == "Estado civil")
+            {
+                label.Visibility = Visibility.Collapsed;
+            }
+        }
+    }
+
+    private static bool RemoveChild(Panel parent, UIElement child)
+    {
+        if (parent.Children.Contains(child))
+        {
+            parent.Children.Remove(child);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static TextBlock? RemoveTextBlock(Panel parent, string text)
+    {
+        var match = parent.Children.OfType<TextBlock>().FirstOrDefault(block => block.Text == text);
+        if (match is not null)
+        {
+            parent.Children.Remove(match);
+        }
+
+        return match;
     }
 
     private static int FindDocumentEditorStart(StackPanel formStack)
