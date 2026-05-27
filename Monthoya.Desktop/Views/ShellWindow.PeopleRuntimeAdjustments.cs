@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,9 +11,20 @@ public partial class ShellWindow
 {
     private bool _pessoasRuntimeAdjustmentsApplied;
     private readonly SemaphoreSlim _pessoasSelectionSemaphore = new(1, 1);
-    private readonly Dictionary<Guid, Guid?> _pessoasSelectedByTab = [];
+    private readonly Dictionary<Guid, ShellTabUiState> _tabUiStates = [];
     private int _pessoasSelectionVersion;
     private bool _isRestoringPessoaTabSelection;
+
+    private sealed class ShellTabUiState
+    {
+        public ShellPage Page { get; set; }
+        public Dictionary<string, string?> TextValues { get; } = [];
+        public Dictionary<string, bool?> CheckValues { get; } = [];
+        public Dictionary<string, object?> SelectedValues { get; } = [];
+        public Dictionary<string, int> SelectedIndexes { get; } = [];
+        public Dictionary<string, DateTime?> DateValues { get; } = [];
+        public Dictionary<string, Guid?> SelectedRows { get; } = [];
+    }
 
     static ShellWindow()
     {
@@ -24,7 +36,7 @@ public partial class ShellWindow
         EventManager.RegisterClassHandler(
             typeof(ShellWindow),
             Button.ClickEvent,
-            new RoutedEventHandler(OnShellWindowButtonClickForPeopleRuntimeAdjustments),
+            new RoutedEventHandler(OnShellWindowButtonClickForTabState),
             true);
     }
 
@@ -36,18 +48,19 @@ public partial class ShellWindow
         }
     }
 
-    private static void OnShellWindowButtonClickForPeopleRuntimeAdjustments(object sender, RoutedEventArgs e)
+    private static void OnShellWindowButtonClickForTabState(object sender, RoutedEventArgs e)
     {
         if (sender is ShellWindow window)
         {
-            window.QueueRestorePessoaSelectionAfterPossibleTabChange();
+            window.SaveActiveTabUiState();
+            window.QueueRestoreActiveTabUiState();
         }
     }
 
-    private async void QueueRestorePessoaSelectionAfterPossibleTabChange()
+    private async void QueueRestoreActiveTabUiState()
     {
         await Task.Delay(350);
-        QueueRestorePessoaSelectionForActiveTab();
+        await RestoreActiveTabUiStateAsync();
     }
 
     private void ApplyPeopleRuntimeAdjustments()
@@ -70,7 +83,7 @@ public partial class ShellWindow
         PessoasPanel.IsVisibleChanged += (_, _) =>
         {
             Dispatcher.BeginInvoke(UpdatePeopleTopRowSpacingAndRolesVisibility, DispatcherPriority.Background);
-            QueueRestorePessoaSelectionForActiveTab();
+            _ = RestoreActiveTabUiStateAsync();
         };
 
         UpdatePeopleTopRowSpacingAndRolesVisibility();
@@ -92,7 +105,7 @@ public partial class ShellWindow
             {
                 if (!_isRestoringPessoaTabSelection && _activeTab is not null && _activeTab.Page == ShellPage.Pessoas)
                 {
-                    _pessoasSelectedByTab[_activeTab.Id] = null;
+                    SaveActiveTabUiState();
                 }
 
                 SetPessoaDocumentoSelection(null);
@@ -102,7 +115,7 @@ public partial class ShellWindow
 
             if (!_isRestoringPessoaTabSelection && _activeTab is not null && _activeTab.Page == ShellPage.Pessoas)
             {
-                _pessoasSelectedByTab[_activeTab.Id] = pessoa.Id;
+                SaveActiveTabUiState();
             }
 
             SetPessoaDocumentoSelection(pessoa);
@@ -132,41 +145,132 @@ public partial class ShellWindow
         }
     }
 
-    private void QueueRestorePessoaSelectionForActiveTab()
+    private void SaveActiveTabUiState()
     {
-        if (!PessoasPanel.IsVisible || _activeTab is null || _activeTab.Page != ShellPage.Pessoas)
+        if (_activeTab is null)
         {
             return;
         }
 
-        var tabId = _activeTab.Id;
-        _ = RestorePessoaSelectionForTabAsync(tabId);
+        var state = new ShellTabUiState { Page = _activeTab.Page };
+
+        foreach (var textBox in FindNamedVisualChildren<TextBox>(this))
+        {
+            state.TextValues[textBox.Name] = textBox.Text;
+        }
+
+        foreach (var comboBox in FindNamedVisualChildren<ComboBox>(this))
+        {
+            state.SelectedValues[comboBox.Name] = comboBox.SelectedValue;
+            state.SelectedIndexes[comboBox.Name] = comboBox.SelectedIndex;
+            state.TextValues[comboBox.Name] = comboBox.Text;
+        }
+
+        foreach (var checkBox in FindNamedVisualChildren<CheckBox>(this))
+        {
+            state.CheckValues[checkBox.Name] = checkBox.IsChecked;
+        }
+
+        foreach (var datePicker in FindNamedVisualChildren<DatePicker>(this))
+        {
+            state.DateValues[datePicker.Name] = datePicker.SelectedDate;
+            state.TextValues[datePicker.Name] = datePicker.Text;
+        }
+
+        foreach (var dataGrid in FindNamedVisualChildren<DataGrid>(this))
+        {
+            state.SelectedRows[dataGrid.Name] = TryGetItemId(dataGrid.SelectedItem);
+        }
+
+        _tabUiStates[_activeTab.Id] = state;
     }
 
-    private async Task RestorePessoaSelectionForTabAsync(Guid tabId)
+    private async Task RestoreActiveTabUiStateAsync()
     {
-        await Task.Delay(180);
-
-        if (_activeTab is null || _activeTab.Id != tabId || _activeTab.Page != ShellPage.Pessoas)
+        if (_activeTab is null)
         {
             return;
         }
 
-        if (!_pessoasSelectedByTab.TryGetValue(tabId, out var pessoaId) || pessoaId is null)
+        await Task.Delay(120);
+
+        if (_activeTab is null || !_tabUiStates.TryGetValue(_activeTab.Id, out var state))
+        {
+            // A new Pessoas tab should start blank instead of inheriting the last selected person
+            // from another tab, because the Pessoas view controls are physically shared.
+            if (_activeTab is not null && _activeTab.Page == ShellPage.Pessoas)
+            {
+                _isRestoringPessoaTabSelection = true;
+                PessoasGrid.SelectedItem = null;
+                ResetPessoaFormForPageOpen();
+                _isRestoringPessoaTabSelection = false;
+            }
+
+            return;
+        }
+
+        if (state.Page != _activeTab.Page)
         {
             return;
         }
 
-        var pessoa = _pessoas.FirstOrDefault(x => x.Id == pessoaId.Value);
-        if (pessoa is null)
+        foreach (var textBox in FindNamedVisualChildren<TextBox>(this))
         {
-            return;
+            if (state.TextValues.TryGetValue(textBox.Name, out var value))
+            {
+                textBox.Text = value ?? string.Empty;
+            }
+        }
+
+        foreach (var comboBox in FindNamedVisualChildren<ComboBox>(this))
+        {
+            if (state.SelectedValues.TryGetValue(comboBox.Name, out var selectedValue))
+            {
+                comboBox.SelectedValue = selectedValue;
+            }
+            else if (state.SelectedIndexes.TryGetValue(comboBox.Name, out var selectedIndex))
+            {
+                comboBox.SelectedIndex = selectedIndex;
+            }
+
+            if (state.TextValues.TryGetValue(comboBox.Name, out var text))
+            {
+                comboBox.Text = text ?? string.Empty;
+            }
+        }
+
+        foreach (var checkBox in FindNamedVisualChildren<CheckBox>(this))
+        {
+            if (state.CheckValues.TryGetValue(checkBox.Name, out var value))
+            {
+                checkBox.IsChecked = value;
+            }
+        }
+
+        foreach (var datePicker in FindNamedVisualChildren<DatePicker>(this))
+        {
+            if (state.DateValues.TryGetValue(datePicker.Name, out var value))
+            {
+                datePicker.SelectedDate = value;
+            }
+
+            if (state.TextValues.TryGetValue(datePicker.Name, out var text))
+            {
+                datePicker.Text = text ?? string.Empty;
+            }
         }
 
         _isRestoringPessoaTabSelection = true;
-        PessoasGrid.SelectedItem = pessoa;
-        PessoasGrid.ScrollIntoView(pessoa);
+        foreach (var dataGrid in FindNamedVisualChildren<DataGrid>(this))
+        {
+            if (state.SelectedRows.TryGetValue(dataGrid.Name, out var selectedId))
+            {
+                RestoreDataGridSelection(dataGrid, selectedId);
+            }
+        }
         _isRestoringPessoaTabSelection = false;
+
+        UpdatePeopleTopRowSpacingAndRolesVisibility();
     }
 
     private void UpdatePeopleTopRowSpacingAndRolesVisibility()
@@ -208,6 +312,48 @@ public partial class ShellWindow
     {
         return FindVisualChildrenForPeopleRuntimeAdjustment<Grid>(PessoasPanel)
             .FirstOrDefault(grid => grid.Tag as string == "PessoaTopInfoGrid");
+    }
+
+    private static void RestoreDataGridSelection(DataGrid dataGrid, Guid? selectedId)
+    {
+        if (selectedId is null)
+        {
+            dataGrid.SelectedItem = null;
+            return;
+        }
+
+        foreach (var item in dataGrid.ItemsSource ?? dataGrid.Items)
+        {
+            if (TryGetItemId(item) == selectedId.Value)
+            {
+                dataGrid.SelectedItem = item;
+                dataGrid.ScrollIntoView(item);
+                return;
+            }
+        }
+    }
+
+    private static Guid? TryGetItemId(object? item)
+    {
+        if (item is null)
+        {
+            return null;
+        }
+
+        var property = item.GetType().GetProperty("Id", BindingFlags.Instance | BindingFlags.Public);
+        if (property?.GetValue(item) is Guid id)
+        {
+            return id;
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<T> FindNamedVisualChildren<T>(DependencyObject parent)
+        where T : FrameworkElement
+    {
+        return FindVisualChildrenForPeopleRuntimeAdjustment<T>(parent)
+            .Where(element => !string.IsNullOrWhiteSpace(element.Name));
     }
 
     private static IEnumerable<T> FindVisualChildrenForPeopleRuntimeAdjustment<T>(DependencyObject parent)
