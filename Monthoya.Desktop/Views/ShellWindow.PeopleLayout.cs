@@ -7,6 +7,7 @@ namespace Monthoya.Desktop.Views;
 public partial class ShellWindow
 {
     private bool _pessoasLayoutPatched;
+    private Button? _topSavePessoaButton;
 
     private void ApplyPessoasPanelLayoutPatch()
     {
@@ -82,5 +83,133 @@ public partial class ShellWindow
         documentsCard.Margin = new Thickness(0, 18, 0, 0);
         documentsCard.HorizontalAlignment = HorizontalAlignment.Stretch;
         documentsCard.VerticalAlignment = VerticalAlignment.Stretch;
+
+        AddTopPessoaSaveButton(editCard);
+        MovePessoaDocumentEditorToSideCard(editCard, documentsGrid);
+        ApplyCompactPessoaFieldSizing();
+    }
+
+    private void AddTopPessoaSaveButton(Border editCard)
+    {
+        if (_topSavePessoaButton is not null
+            || editCard.Child is not ScrollViewer scrollViewer
+            || scrollViewer.Content is not StackPanel formStack
+            || formStack.Children.OfType<DockPanel>().FirstOrDefault() is not DockPanel header
+            || header.Children.OfType<StackPanel>().FirstOrDefault() is not StackPanel actionButtons)
+        {
+            return;
+        }
+
+        _topSavePessoaButton = new Button
+        {
+            Content = "Salvar pessoa",
+            Style = (Style)FindResource("PrimaryButton"),
+            Margin = new Thickness(0, 0, 8, 0),
+            Visibility = SavePessoaButton.Visibility
+        };
+        _topSavePessoaButton.Click += SavePessoaButton_Click;
+        actionButtons.Children.Insert(0, _topSavePessoaButton);
+    }
+
+    private void MovePessoaDocumentEditorToSideCard(Border editCard, Grid documentsGrid)
+    {
+        if (editCard.Child is not ScrollViewer scrollViewer
+            || scrollViewer.Content is not StackPanel formStack
+            || documentsGrid.Children.OfType<ScrollViewer>().Any(viewer => viewer.Tag as string == "PessoaDocumentEditor"))
+        {
+            return;
+        }
+
+        var documentStartIndex = FindDocumentEditorStart(formStack);
+        if (documentStartIndex < 0)
+        {
+            return;
+        }
+
+        var moveStartIndex = documentStartIndex;
+        if (documentStartIndex > 0 && formStack.Children[documentStartIndex - 1] is Border)
+        {
+            moveStartIndex = documentStartIndex - 1;
+        }
+
+        var documentEditorStack = new StackPanel { Margin = new Thickness(14, 12, 14, 14) };
+        while (formStack.Children.Count > moveStartIndex)
+        {
+            var child = formStack.Children[moveStartIndex];
+            formStack.Children.RemoveAt(moveStartIndex);
+
+            if (child is Border)
+            {
+                continue;
+            }
+
+            documentEditorStack.Children.Add(child);
+        }
+
+        documentsGrid.RowDefinitions.Clear();
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(210) });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+        PessoaDocumentosGrid.MaxHeight = 210;
+        PessoaDocumentosGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+        Grid.SetRow(PessoaDocumentosGrid, 1);
+
+        var editorScrollViewer = new ScrollViewer
+        {
+            Tag = "PessoaDocumentEditor",
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = documentEditorStack
+        };
+
+        Grid.SetRow(editorScrollViewer, 2);
+        documentsGrid.Children.Add(editorScrollViewer);
+    }
+
+    private static int FindDocumentEditorStart(StackPanel formStack)
+    {
+        for (var index = 0; index < formStack.Children.Count; index++)
+        {
+            if (formStack.Children[index] is TextBlock { Text: "Documento digitalizado" })
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    private void ApplyCompactPessoaFieldSizing()
+    {
+        SetCompact(PessoaTipoBox, 140);
+        SetCompact(PessoaDocumentoBox, 170);
+        SetCompact(PessoaRgBox, 150);
+        SetCompact(PessoaTelefoneBox, 160);
+        SetCompact(PessoaCepBox, 120);
+        SetCompact(PessoaEstadoBox, 80);
+        SetCompact(PessoaNumeroBox, 90);
+        SetCompact(PessoaDataNascimentoBox, 140);
+        SetCompact(PessoaConjugeCpfBox, 170);
+        SetCompact(PessoaConjugeRgBox, 150);
+        SetCompact(PessoaConjugeTelefoneBox, 160);
+        SetCompact(PessoaConjugeDataNascimentoBox, 140);
+        SetCompact(PessoaEmpresaCepBox, 120);
+        SetCompact(PessoaEmpresaEstadoBox, 80);
+        SetCompact(PessoaEmpresaNumeroBox, 90);
+        SetCompact(PessoaResponsavelCpfBox, 170);
+        SetCompact(PessoaResponsavelRgBox, 150);
+        SetCompact(PessoaResponsavelTelefoneBox, 160);
+        SetCompact(PessoaResponsavelCepBox, 120);
+        SetCompact(PessoaResponsavelEstadoBox, 80);
+        SetCompact(PessoaResponsavelNumeroBox, 90);
+        SetCompact(PessoaResponsavelDataNascimentoBox, 140);
+        SetCompact(PessoaTelefoneEmpresaTrabalhoBox, 160);
+        SetCompact(PessoaResponsavelTelefoneEmpresaTrabalhoBox, 160);
+    }
+
+    private static void SetCompact(Control control, double width)
+    {
+        control.Width = width;
+        control.HorizontalAlignment = HorizontalAlignment.Left;
     }
 }
