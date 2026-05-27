@@ -20,6 +20,12 @@ public partial class ShellWindow
             typeof(ShellWindow),
             LoadedEvent,
             new RoutedEventHandler(OnShellWindowLoadedForPeopleRuntimeAdjustments));
+
+        EventManager.RegisterClassHandler(
+            typeof(ShellWindow),
+            Button.ClickEvent,
+            new RoutedEventHandler(OnShellWindowButtonClickForPeopleRuntimeAdjustments),
+            true);
     }
 
     private static void OnShellWindowLoadedForPeopleRuntimeAdjustments(object sender, RoutedEventArgs e)
@@ -28,6 +34,20 @@ public partial class ShellWindow
         {
             window.Dispatcher.BeginInvoke(window.ApplyPeopleRuntimeAdjustments, DispatcherPriority.ContextIdle);
         }
+    }
+
+    private static void OnShellWindowButtonClickForPeopleRuntimeAdjustments(object sender, RoutedEventArgs e)
+    {
+        if (sender is ShellWindow window)
+        {
+            window.QueueRestorePessoaSelectionAfterPossibleTabChange();
+        }
+    }
+
+    private async void QueueRestorePessoaSelectionAfterPossibleTabChange()
+    {
+        await Task.Delay(350);
+        QueueRestorePessoaSelectionForActiveTab();
     }
 
     private void ApplyPeopleRuntimeAdjustments()
