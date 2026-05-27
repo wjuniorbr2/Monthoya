@@ -12,6 +12,7 @@ public partial class ShellWindow
     private Button? _topSavePessoaButton;
     private ComboBox? _pessoaEstadoCivilComboBox;
     private ComboBox? _pessoaWorkComboBox;
+    private StackPanel? _pessoaRolesCell;
 
     private void ApplyPessoasPanelLayoutPatch()
     {
@@ -144,6 +145,7 @@ public partial class ShellWindow
         };
 
         PessoasNavButton.Click += (_, _) => Dispatcher.BeginInvoke(ResetPessoaFormForPageOpen, DispatcherPriority.Background);
+        PessoasGrid.SelectionChanged += (_, _) => Dispatcher.BeginInvoke(UpdatePessoaRolesVisibility, DispatcherPriority.Background);
     }
 
     private void ResetPessoaFormForPageOpen()
@@ -155,6 +157,15 @@ public partial class ShellWindow
         ClearPessoaForm();
         SetPessoaEditMode(true, isNew: true);
         SyncPessoaEstadoCivilComboFromTextBox();
+        UpdatePessoaRolesVisibility();
+    }
+
+    private void UpdatePessoaRolesVisibility()
+    {
+        if (_pessoaRolesCell is not null)
+        {
+            _pessoaRolesCell.Visibility = PessoasGrid.SelectedItem is null ? Visibility.Collapsed : Visibility.Visible;
+        }
     }
 
     private void MovePessoaDocumentEditorToSideCard(Border editCard, Grid documentsGrid)
@@ -245,16 +256,19 @@ public partial class ShellWindow
         topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         topGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-        AddTopCell(topGrid, 0, rolesLabel ?? new TextBlock { Text = "Funções atuais", FontWeight = FontWeights.SemiBold }, new StackPanel
+        _pessoaRolesCell = new StackPanel
         {
+            Visibility = PessoasGrid.SelectedItem is null ? Visibility.Collapsed : Visibility.Visible,
             Children = { PessoaProprietarioBox, PessoaLocatarioBox, PessoaFiadorBox }
-        });
+        };
 
+        AddTopCell(topGrid, 0, rolesLabel ?? new TextBlock { Text = "Funções atuais", FontWeight = FontWeights.SemiBold }, _pessoaRolesCell);
         AddTopCell(topGrid, 1, typeLabel ?? new TextBlock { Text = "Tipo", FontWeight = FontWeights.SemiBold }, PessoaTipoBox, 18);
         AddTopCell(topGrid, 2, new TextBlock { Text = "Estado civil", FontWeight = FontWeights.SemiBold }, _pessoaEstadoCivilComboBox!, 18);
         AddTopCell(topGrid, 3, new TextBlock { Text = "Work", FontWeight = FontWeights.SemiBold }, _pessoaWorkComboBox!, 18);
 
         formStack.Children.Insert(insertIndex, topGrid);
+        UpdatePessoaRolesVisibility();
     }
 
     private static void AddTopCell(Grid grid, int column, TextBlock label, UIElement control, double leftMargin = 0)
