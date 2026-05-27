@@ -10,6 +10,7 @@ public partial class ShellWindow
     {
         base.OnContentRendered(e);
         ConfigureSidePanelBackground();
+        ApplyPessoasPanelLayoutPatch();
     }
 
     private void ConfigureSidePanelBackground()
