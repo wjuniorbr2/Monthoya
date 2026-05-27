@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,10 @@ public partial class App : Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        var brazilianCulture = CultureInfo.GetCultureInfo("pt-BR");
+        CultureInfo.DefaultThreadCurrentCulture = brazilianCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = brazilianCulture;
 
         _host = Host.CreateDefaultBuilder(e.Args)
             .ConfigureAppConfiguration(configuration =>

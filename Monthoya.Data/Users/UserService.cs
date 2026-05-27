@@ -114,6 +114,23 @@ public sealed class UserService(
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<bool> VerifyPasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return false;
+        }
+
+        var user = await dbContext.Users.SingleOrDefaultAsync(x => x.Id == userId, cancellationToken);
+        if (user is null || !user.IsActive)
+        {
+            return false;
+        }
+
+        var verification = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+        return verification != PasswordVerificationResult.Failed;
+    }
+
     private static UserAccess NormalizeAccessForRole(UserRole role, UserAccess access) =>
         role switch
         {

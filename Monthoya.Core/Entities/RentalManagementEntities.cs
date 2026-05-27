@@ -15,6 +15,7 @@ public enum NotaFiscalStatus { Rascunho = 0, Emitida = 1, Cancelada = 2, Erro = 
 public enum CertificadoTipo { A1 = 0 }
 public enum CertificadoStatus { Ativo = 0, Vencido = 1, Revogado = 2, Inativo = 3 }
 public enum DocumentoModeloStatusRevisao { Inicial = 0, PendenteRevisao = 1, Aprovado = 2 }
+public enum DocumentoOcrStatus { NaoProcessado = 0, Processado = 1, Erro = 2 }
 public enum DimobStatus { Rascunho = 0, Conferida = 1, Exportada = 2, Entregue = 3, Retificada = 4 }
 public enum ManutencaoStatus { Solicitada = 0, EmAndamento = 1, Concluida = 2, Cancelada = 3 }
 public enum VistoriaTipo { Entrada = 0, Saida = 1, Periodica = 2, Outros = 3 }
@@ -45,7 +46,13 @@ public sealed class PessoaFisica
     public Guid PessoaId { get; set; }
     public Pessoa? Pessoa { get; set; }
     public string Nome { get; set; } = string.Empty;
-    public string? Endereco { get; set; }
+    public string? Rua { get; set; }
+    public string? Numero { get; set; }
+    public string? Complemento { get; set; }
+    public string? Bairro { get; set; }
+    public string? Cidade { get; set; }
+    public string? Estado { get; set; }
+    public string? Cep { get; set; }
     public string? EstadoCivil { get; set; }
     public string? Nacionalidade { get; set; }
     public DateOnly? DataNascimento { get; set; }
@@ -74,9 +81,21 @@ public sealed class PessoaJuridica
     public Pessoa? Pessoa { get; set; }
     public string NomeEmpresa { get; set; } = string.Empty;
     public string? Cnpj { get; set; }
-    public string? EnderecoEmpresa { get; set; }
+    public string? EmpresaRua { get; set; }
+    public string? EmpresaNumero { get; set; }
+    public string? EmpresaComplemento { get; set; }
+    public string? EmpresaBairro { get; set; }
+    public string? EmpresaCidade { get; set; }
+    public string? EmpresaEstado { get; set; }
+    public string? EmpresaCep { get; set; }
     public string? ResponsavelNome { get; set; }
-    public string? ResponsavelEndereco { get; set; }
+    public string? ResponsavelRua { get; set; }
+    public string? ResponsavelNumero { get; set; }
+    public string? ResponsavelComplemento { get; set; }
+    public string? ResponsavelBairro { get; set; }
+    public string? ResponsavelCidade { get; set; }
+    public string? ResponsavelEstado { get; set; }
+    public string? ResponsavelCep { get; set; }
     public string? ResponsavelEstadoCivil { get; set; }
     public string? ResponsavelNacionalidade { get; set; }
     public DateOnly? ResponsavelDataNascimento { get; set; }
@@ -97,12 +116,18 @@ public sealed class PessoaDocumento : BaseEntity
     public Guid PessoaId { get; set; }
     public Pessoa? Pessoa { get; set; }
     public string Tipo { get; set; } = "outros";
+    public string DocumentoDe { get; set; } = "pessoa";
     public string Nome { get; set; } = string.Empty;
     public string StoragePath { get; set; } = string.Empty;
     public string? ContentType { get; set; }
     public DateOnly? DataValidade { get; set; }
     public RegistroStatus Status { get; set; } = RegistroStatus.Ativo;
     public string? Observacoes { get; set; }
+    public DocumentoOcrStatus OcrStatus { get; set; } = DocumentoOcrStatus.NaoProcessado;
+    public string? OcrTextoExtraido { get; set; }
+    public DateTimeOffset? OcrProcessadoEmUtc { get; set; }
+    public string? OcrErroMensagem { get; set; }
+    public string? OcrCamposAplicados { get; set; }
 }
 
 public sealed class Imovel : BaseEntity
@@ -128,6 +153,18 @@ public sealed class Imovel : BaseEntity
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
     public string? Observacoes { get; set; }
+    public ICollection<ImovelImagem> Imagens { get; set; } = new List<ImovelImagem>();
+}
+
+public sealed class ImovelImagem : BaseEntity
+{
+    public Guid ImovelId { get; set; }
+    public Imovel? Imovel { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public string StoragePath { get; set; } = string.Empty;
+    public string? ContentType { get; set; }
+    public int DisplayOrder { get; set; }
+    public RegistroStatus Status { get; set; } = RegistroStatus.Ativo;
 }
 
 public sealed class Locacao : BaseEntity

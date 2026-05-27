@@ -23,11 +23,10 @@ public partial class ShellWindow
                 continue;
             }
 
-            // Keep the artwork proportional when the window is maximized.
-            // Uniform shows the full background image instead of cropping it.
-            image.Stretch = Stretch.Uniform;
+            // Keep the sidebar covered as the window height changes.
+            image.Stretch = Stretch.UniformToFill;
             image.VerticalAlignment = VerticalAlignment.Top;
-            image.HorizontalAlignment = HorizontalAlignment.Stretch;
+            image.HorizontalAlignment = HorizontalAlignment.Center;
 
             // The sidebar has padding in XAML. This negative margin makes the
             // decorative background use the full sidebar width while the menu keeps

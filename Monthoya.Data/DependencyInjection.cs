@@ -2,9 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Monthoya.Core.Entities;
+using Monthoya.Core.Integrations;
 using Monthoya.Core.Services;
 using Monthoya.Data.Dashboard;
+using Monthoya.Data.Documents;
 using Monthoya.Data.RentalManagement;
+using Monthoya.Data.Storage;
 using Monthoya.Data.Users;
 using Microsoft.AspNetCore.Identity;
 
@@ -28,6 +31,8 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<IRentalManagementService, RentalManagementService>();
+        services.AddScoped<IFileStorageService, ConfiguredFileStorageService>();
+        services.AddScoped<IDocumentOcrService, LocalDocumentOcrService>();
         services.AddScoped<IBoletoProvider, LocalBoletoProvider>();
         services.AddScoped<INfseProvider, ManualPortalNfseProvider>();
 

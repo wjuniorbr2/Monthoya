@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,8 +22,13 @@ public partial class ShellWindow : Window
     private ShellTab? _activeTab;
     private ShellPage _activeModulePage;
     private IReadOnlyList<PessoaSummary> _pessoas = [];
+    private IReadOnlyList<PessoaDocumentoSummary> _pessoaDocumentos = [];
     private IReadOnlyList<ImovelSummary> _imoveis = [];
     private IReadOnlyList<object> _moduleItems = [];
+    private Guid? _selectedPessoaId;
+    private PessoaDetails? _selectedPessoaDetails;
+    private bool _isPessoaEditing = true;
+    private bool _isFormattingPessoaText;
 
     public ShellWindow(
         AuthenticatedUser currentUser,
@@ -46,10 +52,22 @@ public partial class ShellWindow : Window
         PessoaTipoBox.SelectedValuePath = "Tipo";
         PessoaTipoBox.DisplayMemberPath = "Label";
         PessoaTipoBox.SelectedValue = TipoPessoa.Fisica;
+        TogglePessoaTypePanels();
         PessoaDocumentoTipoBox.ItemsSource = PessoaDocumentoTipoOptions;
         PessoaDocumentoTipoBox.SelectedValuePath = "Tipo";
         PessoaDocumentoTipoBox.DisplayMemberPath = "Label";
         PessoaDocumentoTipoBox.SelectedValue = "cpf";
+        PessoaDocumentoDonoBox.ItemsSource = PessoaDocumentoDonoOptions;
+        PessoaDocumentoDonoBox.SelectedValuePath = "Tipo";
+        PessoaDocumentoDonoBox.DisplayMemberPath = "Label";
+        PessoaDocumentoDonoBox.SelectedValue = "pessoa";
+        PessoaStatusFilterBox.ItemsSource = PessoaStatusFilterOptions;
+        PessoaStatusFilterBox.SelectedValuePath = "Status";
+        PessoaStatusFilterBox.DisplayMemberPath = "Label";
+        PessoaStatusFilterBox.SelectedValue = "ativo";
+        SetPessoaDocumentoSelection(null);
+        ConfigurePessoaInputBehavior();
+        SetPessoaEditMode(true, isNew: true);
         ImovelFinalidadeBox.ItemsSource = ImovelFinalidadeOptions;
         ImovelFinalidadeBox.SelectedValuePath = "Finalidade";
         ImovelFinalidadeBox.DisplayMemberPath = "Label";
@@ -418,6 +436,210 @@ public partial class ShellWindow : Window
     private static DateOnly? ToDateOnly(DateTime? value) =>
         value.HasValue ? DateOnly.FromDateTime(value.Value) : null;
 
+    private static DateTime? ToDateTime(DateOnly? value) =>
+        value.HasValue ? value.Value.ToDateTime(TimeOnly.MinValue) : null;
+
+    private void ConfigurePessoaInputBehavior()
+    {
+        foreach (var textBox in new[]
+        {
+            PessoaDocumentoBox, PessoaConjugeCpfBox, PessoaResponsavelCpfBox,
+            PessoaTelefoneBox, PessoaConjugeTelefoneBox, PessoaResponsavelTelefoneBox, PessoaTelefoneEmpresaTrabalhoBox, PessoaResponsavelTelefoneEmpresaTrabalhoBox,
+            PessoaCepBox, PessoaEmpresaCepBox, PessoaResponsavelCepBox,
+            PessoaRgBox, PessoaConjugeRgBox, PessoaResponsavelRgBox
+        })
+        {
+            textBox.PreviewTextInput += NumericMaskedTextBox_PreviewTextInput;
+            DataObject.AddPastingHandler(textBox, NumericMaskedTextBox_OnPaste);
+        }
+
+        PessoaDocumentoBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaDocumentoBox, FormatCpfOrCnpj);
+        PessoaConjugeCpfBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaConjugeCpfBox, FormatCpf);
+        PessoaResponsavelCpfBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelCpfBox, FormatCpf);
+        PessoaTelefoneBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaTelefoneBox, FormatBrazilPhone);
+        PessoaConjugeTelefoneBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaConjugeTelefoneBox, FormatBrazilPhone);
+        PessoaResponsavelTelefoneBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelTelefoneBox, FormatBrazilPhone);
+        PessoaTelefoneEmpresaTrabalhoBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaTelefoneEmpresaTrabalhoBox, FormatBrazilPhone);
+        PessoaResponsavelTelefoneEmpresaTrabalhoBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelTelefoneEmpresaTrabalhoBox, FormatBrazilPhone);
+        PessoaCepBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaCepBox, FormatCep);
+        PessoaEmpresaCepBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaEmpresaCepBox, FormatCep);
+        PessoaResponsavelCepBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelCepBox, FormatCep);
+        PessoaRgBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaRgBox, FormatRg);
+        PessoaConjugeRgBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaConjugeRgBox, FormatRg);
+        PessoaResponsavelRgBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelRgBox, FormatRg);
+
+        foreach (var datePicker in new[] { PessoaDataNascimentoBox, PessoaConjugeDataNascimentoBox, PessoaResponsavelDataNascimentoBox, PessoaDocumentoValidadeBox })
+        {
+            datePicker.Language = System.Windows.Markup.XmlLanguage.GetLanguage("pt-BR");
+            datePicker.SelectedDateFormat = DatePickerFormat.Short;
+            datePicker.CalendarOpened += (_, _) =>
+            {
+                if (datePicker.SelectedDate is null)
+                {
+                    datePicker.DisplayDate = new DateTime(2000, 1, 1);
+                }
+            };
+            datePicker.KeyDown += PessoaDatePicker_KeyDown;
+            datePicker.LostKeyboardFocus += PessoaDatePicker_LostKeyboardFocus;
+        }
+    }
+
+    private void NumericMaskedTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (Regex.IsMatch(e.Text, @"^\d+$"))
+        {
+            return;
+        }
+
+        e.Handled = true;
+        PessoaErrorText.Text = "Digite apenas números. Pontos, traços, parênteses e espaços são preenchidos automaticamente pelo sistema.";
+    }
+
+    private void NumericMaskedTextBox_OnPaste(object sender, DataObjectPastingEventArgs e)
+    {
+        if (!e.DataObject.GetDataPresent(DataFormats.Text))
+        {
+            return;
+        }
+
+        var text = e.DataObject.GetData(DataFormats.Text) as string ?? string.Empty;
+        if (Regex.IsMatch(text, @"^\d+$"))
+        {
+            return;
+        }
+
+        e.CancelCommand();
+        PessoaErrorText.Text = "Cole apenas números. Pontos, traços, parênteses e espaços são preenchidos automaticamente pelo sistema.";
+    }
+
+    private void FormatMaskedTextBox(TextBox textBox, Func<string, string> formatter)
+    {
+        if (_isFormattingPessoaText)
+        {
+            return;
+        }
+
+        _isFormattingPessoaText = true;
+        var formatted = formatter(OnlyDigits(textBox.Text));
+        textBox.Text = formatted;
+        textBox.CaretIndex = formatted.Length;
+        _isFormattingPessoaText = false;
+    }
+
+    private void PessoaDatePicker_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter || sender is not DatePicker datePicker)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        TryApplyBrazilianDate(datePicker);
+    }
+
+    private void PessoaDatePicker_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is DatePicker datePicker)
+        {
+            TryApplyBrazilianDate(datePicker);
+        }
+    }
+
+    private bool TryApplyBrazilianDate(DatePicker datePicker)
+    {
+        var text = datePicker.Text?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return true;
+        }
+
+        var digits = OnlyDigits(text);
+        if (digits.Length == 6)
+        {
+            PessoaErrorText.Text = "Use o ano com quatro números. Exemplo: 25/04/1998.";
+            return false;
+        }
+
+        if (digits.Length != 8)
+        {
+            PessoaErrorText.Text = "Data inválida. Use dia/mês/ano no formato brasileiro. Exemplo: 25/04/1998.";
+            return false;
+        }
+
+        var normalized = $"{digits[..2]}/{digits.Substring(2, 2)}/{digits.Substring(4, 4)}";
+        if (!DateTime.TryParseExact(normalized, "dd/MM/yyyy", CultureInfo.GetCultureInfo("pt-BR"), DateTimeStyles.None, out var parsed))
+        {
+            PessoaErrorText.Text = "Data inválida. Use dia/mês/ano no formato brasileiro. Exemplo: 25/04/1998.";
+            return false;
+        }
+
+        datePicker.SelectedDate = parsed;
+        datePicker.Text = parsed.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("pt-BR"));
+        PessoaErrorText.Text = string.Empty;
+        return true;
+    }
+
+    private static string OnlyDigits(string? value) =>
+        Regex.Replace(value ?? string.Empty, @"\D", string.Empty);
+
+    private static string FormatCpfOrCnpj(string digits) =>
+        digits.Length > 11 ? FormatCnpj(digits) : FormatCpf(digits);
+
+    private static string FormatCpf(string digits)
+    {
+        digits = digits.Length > 11 ? digits[..11] : digits;
+        return digits.Length switch
+        {
+            <= 3 => digits,
+            <= 6 => $"{digits[..3]}.{digits[3..]}",
+            <= 9 => $"{digits[..3]}.{digits.Substring(3, 3)}.{digits[6..]}",
+            _ => $"{digits[..3]}.{digits.Substring(3, 3)}.{digits.Substring(6, 3)}-{digits[9..]}"
+        };
+    }
+
+    private static string FormatCnpj(string digits)
+    {
+        digits = digits.Length > 14 ? digits[..14] : digits;
+        return digits.Length switch
+        {
+            <= 2 => digits,
+            <= 5 => $"{digits[..2]}.{digits[2..]}",
+            <= 8 => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits[5..]}",
+            <= 12 => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}/{digits[8..]}",
+            _ => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}/{digits.Substring(8, 4)}-{digits[12..]}"
+        };
+    }
+
+    private static string FormatBrazilPhone(string digits)
+    {
+        digits = digits.Length > 11 ? digits[..11] : digits;
+        if (digits.Length <= 2) return digits.Length == 0 ? string.Empty : $"({digits}";
+        var ddd = digits[..2];
+        var number = digits[2..];
+        if (number.Length <= 4) return $"({ddd}) {number}";
+        return number.Length <= 8
+            ? $"({ddd}) {number[..4]}-{number[4..]}"
+            : $"({ddd}) {number[..5]}-{number[5..]}";
+    }
+
+    private static string FormatCep(string digits)
+    {
+        digits = digits.Length > 8 ? digits[..8] : digits;
+        return digits.Length <= 5 ? digits : $"{digits[..5]}-{digits[5..]}";
+    }
+
+    private static string FormatRg(string digits)
+    {
+        digits = digits.Length > 9 ? digits[..9] : digits;
+        return digits.Length switch
+        {
+            <= 2 => digits,
+            <= 5 => $"{digits[..2]}.{digits[2..]}",
+            <= 8 => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits[5..]}",
+            _ => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}-{digits[8..]}"
+        };
+    }
+
     private static decimal? ParseNullableDecimal(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -534,12 +756,9 @@ public partial class ShellWindow : Window
     {
         _pessoas = await _rentalManagementService.GetPessoasAsync();
         ApplyPessoasFilter();
-        PessoaDocumentoPessoaBox.ItemsSource = _pessoas;
 
-        var proprietarios = _pessoas
-            .Where(x => x.Roles.Contains("Proprietário", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        ImovelProprietarioBox.ItemsSource = proprietarios;
+        ImovelProprietarioBox.ItemsSource = _pessoas.Where(x => x.Status == "Ativo").ToList();
+        await LoadPessoaDocumentosAsync(_selectedPessoaId);
     }
 
     private async Task LoadImoveisAsync()
@@ -548,11 +767,7 @@ public partial class ShellWindow : Window
         ApplyImoveisFilter();
 
         _pessoas = await _rentalManagementService.GetPessoasAsync();
-        var proprietarios = _pessoas
-            .Where(x => x.Roles.Contains("Proprietário", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        ImovelProprietarioBox.ItemsSource = proprietarios;
-        PessoaDocumentoPessoaBox.ItemsSource = _pessoas;
+        ImovelProprietarioBox.ItemsSource = _pessoas.Where(x => x.Status == "Ativo").ToList();
     }
 
     private async void ReloadPessoasButton_Click(object sender, RoutedEventArgs e) => await LoadPessoasAsync();
@@ -561,14 +776,179 @@ public partial class ShellWindow : Window
 
     private void PessoasSearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyPessoasFilter();
 
+    private void PessoaStatusFilterBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyPessoasFilter();
+
     private void ImoveisSearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyImoveisFilter();
 
     private void ModuleSearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyModuleFilter();
 
+    private async void PessoasGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (PessoasGrid.SelectedItem is not PessoaSummary pessoa)
+        {
+            SetPessoaDocumentoSelection(null);
+            await LoadPessoaDocumentosAsync(null);
+            return;
+        }
+
+        SetPessoaDocumentoSelection(pessoa);
+        _selectedPessoaDetails = await _rentalManagementService.GetPessoaAsync(pessoa.Id);
+        if (_selectedPessoaDetails is not null)
+        {
+            PopulatePessoaForm(_selectedPessoaDetails);
+            SetPessoaEditMode(false, isNew: false);
+        }
+
+        await LoadPessoaDocumentosAsync(pessoa.Id);
+    }
+
+    private void PessoaTipoBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        TogglePessoaTypePanels();
+    }
+
+    private void TogglePessoaTypePanels()
+    {
+        if (PessoaFisicaFieldsPanel is null || PessoaJuridicaFieldsPanel is null)
+        {
+            return;
+        }
+
+        var tipo = PessoaTipoBox.SelectedValue is TipoPessoa selectedTipo ? selectedTipo : TipoPessoa.Fisica;
+        PessoaFisicaFieldsPanel.Visibility = tipo == TipoPessoa.Fisica ? Visibility.Visible : Visibility.Collapsed;
+        PessoaJuridicaFieldsPanel.Visibility = tipo == TipoPessoa.Juridica ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async Task LoadPessoaDocumentosAsync(Guid? pessoaId)
+    {
+        if (!pessoaId.HasValue)
+        {
+            _pessoaDocumentos = [];
+            PessoaDocumentosGrid.ItemsSource = _pessoaDocumentos;
+            PessoaDocumentosTitleText.Text = "Documentos da pessoa selecionada";
+            return;
+        }
+
+        _pessoaDocumentos = await _rentalManagementService.GetPessoaDocumentosAsync(pessoaId.Value);
+        PessoaDocumentosGrid.ItemsSource = _pessoaDocumentos;
+        PessoaDocumentosTitleText.Text = _pessoaDocumentos.Count == 0
+            ? "Nenhum documento cadastrado para esta pessoa"
+            : "Documentos da pessoa selecionada";
+    }
+
+    private void SetPessoaDocumentoSelection(PessoaSummary? pessoa)
+    {
+        _selectedPessoaId = pessoa?.Id;
+        PessoaDocumentoPessoaText.Text = pessoa is null ? "Nenhuma pessoa selecionada" : pessoa.Nome;
+        SavePessoaDocumentoButton.IsEnabled = pessoa is not null;
+        PessoaProprietarioBox.IsChecked = pessoa?.IsProprietario == true;
+        PessoaLocatarioBox.IsChecked = pessoa?.IsLocatario == true;
+        PessoaFiadorBox.IsChecked = pessoa?.IsFiador == true;
+    }
+
+    private CreatePessoaRequest BuildPessoaRequest()
+    {
+        var tipo = PessoaTipoBox.SelectedValue is TipoPessoa selectedTipo ? selectedTipo : TipoPessoa.Fisica;
+        return new CreatePessoaRequest(
+            TipoPessoa: tipo,
+            NomeDisplay: PessoaNomeBox.Text,
+            Telefone: PessoaTelefoneBox.Text,
+            Email: PessoaEmailBox.Text,
+            Documento: PessoaDocumentoBox.Text,
+            Observacoes: PessoaObservacoesBox.Text,
+            Endereco: null,
+            Rua: tipo == TipoPessoa.Fisica ? PessoaRuaBox.Text : PessoaEmpresaRuaBox.Text,
+            Numero: tipo == TipoPessoa.Fisica ? PessoaNumeroBox.Text : PessoaEmpresaNumeroBox.Text,
+            Complemento: tipo == TipoPessoa.Fisica ? PessoaComplementoBox.Text : PessoaEmpresaComplementoBox.Text,
+            Bairro: tipo == TipoPessoa.Fisica ? PessoaBairroBox.Text : PessoaEmpresaBairroBox.Text,
+            Cidade: tipo == TipoPessoa.Fisica ? PessoaCidadeBox.Text : PessoaEmpresaCidadeBox.Text,
+            Estado: tipo == TipoPessoa.Fisica ? PessoaEstadoBox.Text : PessoaEmpresaEstadoBox.Text,
+            Cep: tipo == TipoPessoa.Fisica ? PessoaCepBox.Text : PessoaEmpresaCepBox.Text,
+            EstadoCivil: PessoaEstadoCivilBox.Text,
+            Nacionalidade: PessoaNacionalidadeBox.Text,
+            DataNascimento: ToDateOnly(PessoaDataNascimentoBox.SelectedDate),
+            Rg: PessoaRgBox.Text,
+            Profissao: PessoaProfissaoBox.Text,
+            OndeTrabalha: PessoaOndeTrabalhaBox.Text,
+            EnderecoTrabalho: PessoaEnderecoTrabalhoBox.Text,
+            NomeEmpresaTrabalho: PessoaNomeEmpresaTrabalhoBox.Text,
+            TelefoneEmpresaTrabalho: PessoaTelefoneEmpresaTrabalhoBox.Text,
+            DadosBancarios: PessoaDadosBancariosBox.Text,
+            ConjugeNome: PessoaConjugeNomeBox.Text,
+            ConjugeRg: PessoaConjugeRgBox.Text,
+            ConjugeCpf: PessoaConjugeCpfBox.Text,
+            ConjugeDataNascimento: ToDateOnly(PessoaConjugeDataNascimentoBox.SelectedDate),
+            ConjugeProfissao: PessoaConjugeProfissaoBox.Text,
+            ConjugeNacionalidade: PessoaConjugeNacionalidadeBox.Text,
+            ConjugeTelefone: PessoaConjugeTelefoneBox.Text,
+            ResponsavelNome: PessoaResponsavelNomeBox.Text,
+            ResponsavelEndereco: null,
+            ResponsavelRua: PessoaResponsavelRuaBox.Text,
+            ResponsavelNumero: PessoaResponsavelNumeroBox.Text,
+            ResponsavelComplemento: PessoaResponsavelComplementoBox.Text,
+            ResponsavelBairro: PessoaResponsavelBairroBox.Text,
+            ResponsavelCidade: PessoaResponsavelCidadeBox.Text,
+            ResponsavelEstado: PessoaResponsavelEstadoBox.Text,
+            ResponsavelCep: PessoaResponsavelCepBox.Text,
+            ResponsavelEstadoCivil: PessoaResponsavelEstadoCivilBox.Text,
+            ResponsavelNacionalidade: PessoaResponsavelNacionalidadeBox.Text,
+            ResponsavelDataNascimento: ToDateOnly(PessoaResponsavelDataNascimentoBox.SelectedDate),
+            ResponsavelTelefone: PessoaResponsavelTelefoneBox.Text,
+            ResponsavelEmail: PessoaResponsavelEmailBox.Text,
+            ResponsavelRg: PessoaResponsavelRgBox.Text,
+            ResponsavelCpf: PessoaResponsavelCpfBox.Text,
+            ResponsavelProfissao: PessoaResponsavelProfissaoBox.Text,
+            ResponsavelOndeTrabalha: PessoaResponsavelOndeTrabalhaBox.Text,
+            ResponsavelEnderecoTrabalho: PessoaResponsavelEnderecoTrabalhoBox.Text,
+            ResponsavelNomeEmpresaTrabalho: PessoaResponsavelNomeEmpresaTrabalhoBox.Text,
+            ResponsavelTelefoneEmpresaTrabalho: PessoaResponsavelTelefoneEmpresaTrabalhoBox.Text,
+            ResponsavelDadosBancarios: PessoaResponsavelDadosBancariosBox.Text);
+    }
+
+    private bool ValidatePessoaForm()
+    {
+        if (!ValidateEmail(PessoaEmailBox.Text, "E-mail"))
+        {
+            return false;
+        }
+
+        if (!ValidateEmail(PessoaResponsavelEmailBox.Text, "E-mail do responsável"))
+        {
+            return false;
+        }
+
+        return TryApplyBrazilianDate(PessoaDataNascimentoBox)
+            && TryApplyBrazilianDate(PessoaConjugeDataNascimentoBox)
+            && TryApplyBrazilianDate(PessoaResponsavelDataNascimentoBox);
+    }
+
+    private bool ValidateEmail(string value, string fieldName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return true;
+        }
+
+        if (Regex.IsMatch(value.Trim(), @"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$", RegexOptions.CultureInvariant))
+        {
+            return true;
+        }
+
+        PessoaErrorText.Text = $"{fieldName} não está no formato correto. Exemplo: cliente@email.com";
+        return false;
+    }
+
     private void ApplyPessoasFilter()
     {
         var query = PessoasSearchBox.Text;
+        var statusFilter = PessoaStatusFilterBox.SelectedValue as string ?? "ativo";
         PessoasGrid.ItemsSource = _pessoas
+            .Where(x => statusFilter switch
+            {
+                "inativo" => x.Status == "Inativo",
+                "todos" => true,
+                _ => x.Status == "Ativo"
+            })
             .Where(x => ContainsSearch(query, x.Nome, x.Documento, x.Roles, x.Telefone, x.Email))
             .ToList();
     }
@@ -599,55 +979,24 @@ public partial class ShellWindow : Window
 
         try
         {
-            var roles = new List<PessoaRoleTipo>();
-            if (PessoaProprietarioBox.IsChecked == true) roles.Add(PessoaRoleTipo.Proprietario);
-            if (PessoaLocatarioBox.IsChecked == true) roles.Add(PessoaRoleTipo.Locatario);
-            if (PessoaFiadorBox.IsChecked == true) roles.Add(PessoaRoleTipo.Fiador);
+            if (!ValidatePessoaForm())
+            {
+                return;
+            }
 
-            var tipo = PessoaTipoBox.SelectedValue is TipoPessoa selectedTipo ? selectedTipo : TipoPessoa.Fisica;
-            await _rentalManagementService.CreatePessoaAsync(new CreatePessoaRequest(
-                TipoPessoa: tipo,
-                NomeDisplay: PessoaNomeBox.Text,
-                Telefone: PessoaTelefoneBox.Text,
-                Email: PessoaEmailBox.Text,
-                Documento: PessoaDocumentoBox.Text,
-                Roles: roles.ToArray(),
-                Observacoes: PessoaObservacoesBox.Text,
-                Endereco: tipo == TipoPessoa.Fisica ? PessoaEnderecoBox.Text : PessoaJuridicaEnderecoEmpresaBox.Text,
-                EstadoCivil: PessoaEstadoCivilBox.Text,
-                Nacionalidade: PessoaNacionalidadeBox.Text,
-                DataNascimento: ToDateOnly(PessoaDataNascimentoBox.SelectedDate),
-                Rg: PessoaRgBox.Text,
-                Profissao: PessoaProfissaoBox.Text,
-                OndeTrabalha: PessoaOndeTrabalhaBox.Text,
-                EnderecoTrabalho: PessoaEnderecoTrabalhoBox.Text,
-                NomeEmpresaTrabalho: PessoaNomeEmpresaTrabalhoBox.Text,
-                TelefoneEmpresaTrabalho: PessoaTelefoneEmpresaTrabalhoBox.Text,
-                DadosBancarios: PessoaDadosBancariosBox.Text,
-                ConjugeNome: PessoaConjugeNomeBox.Text,
-                ConjugeRg: PessoaConjugeRgBox.Text,
-                ConjugeCpf: PessoaConjugeCpfBox.Text,
-                ConjugeDataNascimento: ToDateOnly(PessoaConjugeDataNascimentoBox.SelectedDate),
-                ConjugeProfissao: PessoaConjugeProfissaoBox.Text,
-                ConjugeNacionalidade: PessoaConjugeNacionalidadeBox.Text,
-                ConjugeTelefone: PessoaConjugeTelefoneBox.Text,
-                ResponsavelNome: PessoaResponsavelNomeBox.Text,
-                ResponsavelEndereco: PessoaResponsavelEnderecoBox.Text,
-                ResponsavelEstadoCivil: PessoaResponsavelEstadoCivilBox.Text,
-                ResponsavelNacionalidade: PessoaResponsavelNacionalidadeBox.Text,
-                ResponsavelDataNascimento: ToDateOnly(PessoaResponsavelDataNascimentoBox.SelectedDate),
-                ResponsavelTelefone: PessoaResponsavelTelefoneBox.Text,
-                ResponsavelEmail: PessoaResponsavelEmailBox.Text,
-                ResponsavelRg: PessoaResponsavelRgBox.Text,
-                ResponsavelCpf: PessoaResponsavelCpfBox.Text,
-                ResponsavelProfissao: PessoaResponsavelProfissaoBox.Text,
-                ResponsavelOndeTrabalha: PessoaResponsavelOndeTrabalhaBox.Text,
-                ResponsavelEnderecoTrabalho: PessoaResponsavelEnderecoTrabalhoBox.Text,
-                ResponsavelNomeEmpresaTrabalho: PessoaResponsavelNomeEmpresaTrabalhoBox.Text,
-                ResponsavelTelefoneEmpresaTrabalho: PessoaResponsavelTelefoneEmpresaTrabalhoBox.Text,
-                ResponsavelDadosBancarios: PessoaResponsavelDadosBancariosBox.Text));
+            var request = BuildPessoaRequest();
+            if (_selectedPessoaId.HasValue && _selectedPessoaDetails is not null)
+            {
+                await _rentalManagementService.UpdatePessoaAsync(new UpdatePessoaRequest(_selectedPessoaId.Value, request));
+                SetPessoaEditMode(false, isNew: false);
+            }
+            else
+            {
+                await _rentalManagementService.CreatePessoaAsync(request);
+                ClearPessoaForm();
+                SetPessoaEditMode(true, isNew: true);
+            }
 
-            ClearPessoaForm();
             await LoadPessoasAsync();
         }
         catch (Exception ex)
@@ -655,15 +1004,15 @@ public partial class ShellWindow : Window
             PessoaErrorText.Text = ex.Message;
         }
     }
-
     private async void SavePessoaDocumentoButton_Click(object sender, RoutedEventArgs e)
     {
         PessoaDocumentoErrorText.Text = string.Empty;
 
         try
         {
-            var pessoaId = PessoaDocumentoPessoaBox.SelectedValue is Guid selectedPessoaId ? selectedPessoaId : Guid.Empty;
+            var pessoaId = _selectedPessoaId ?? Guid.Empty;
             var tipo = PessoaDocumentoTipoBox.SelectedValue as string ?? "outros";
+            var documentoDe = PessoaDocumentoDonoBox.SelectedValue as string ?? "pessoa";
 
             await _rentalManagementService.CreatePessoaDocumentoAsync(new CreatePessoaDocumentoRequest(
                 pessoaId,
@@ -672,12 +1021,15 @@ public partial class ShellWindow : Window
                 PessoaDocumentoArquivoBox.Text,
                 null,
                 ToDateOnly(PessoaDocumentoValidadeBox.SelectedDate),
-                PessoaDocumentoObservacoesBox.Text));
+                PessoaDocumentoObservacoesBox.Text,
+                documentoDe));
 
             PessoaDocumentoNomeBox.Clear();
             PessoaDocumentoArquivoBox.Clear();
             PessoaDocumentoValidadeBox.SelectedDate = null;
             PessoaDocumentoObservacoesBox.Clear();
+            await LoadPessoasAsync();
+            await LoadPessoaDocumentosAsync(_selectedPessoaId);
         }
         catch (Exception ex)
         {
@@ -695,7 +1047,13 @@ public partial class ShellWindow : Window
         PessoaProprietarioBox.IsChecked = false;
         PessoaLocatarioBox.IsChecked = false;
         PessoaFiadorBox.IsChecked = false;
-        PessoaEnderecoBox.Clear();
+        PessoaRuaBox.Clear();
+        PessoaNumeroBox.Clear();
+        PessoaComplementoBox.Clear();
+        PessoaBairroBox.Clear();
+        PessoaCidadeBox.Clear();
+        PessoaEstadoBox.Clear();
+        PessoaCepBox.Clear();
         PessoaRgBox.Clear();
         PessoaEstadoCivilBox.Clear();
         PessoaNacionalidadeBox.Clear();
@@ -713,9 +1071,21 @@ public partial class ShellWindow : Window
         PessoaConjugeProfissaoBox.Clear();
         PessoaConjugeNacionalidadeBox.Clear();
         PessoaConjugeTelefoneBox.Clear();
-        PessoaJuridicaEnderecoEmpresaBox.Clear();
+        PessoaEmpresaRuaBox.Clear();
+        PessoaEmpresaNumeroBox.Clear();
+        PessoaEmpresaComplementoBox.Clear();
+        PessoaEmpresaBairroBox.Clear();
+        PessoaEmpresaCidadeBox.Clear();
+        PessoaEmpresaEstadoBox.Clear();
+        PessoaEmpresaCepBox.Clear();
         PessoaResponsavelNomeBox.Clear();
-        PessoaResponsavelEnderecoBox.Clear();
+        PessoaResponsavelRuaBox.Clear();
+        PessoaResponsavelNumeroBox.Clear();
+        PessoaResponsavelComplementoBox.Clear();
+        PessoaResponsavelBairroBox.Clear();
+        PessoaResponsavelCidadeBox.Clear();
+        PessoaResponsavelEstadoBox.Clear();
+        PessoaResponsavelCepBox.Clear();
         PessoaResponsavelEstadoCivilBox.Clear();
         PessoaResponsavelNacionalidadeBox.Clear();
         PessoaResponsavelDataNascimentoBox.SelectedDate = null;
@@ -729,6 +1099,237 @@ public partial class ShellWindow : Window
         PessoaResponsavelNomeEmpresaTrabalhoBox.Clear();
         PessoaResponsavelTelefoneEmpresaTrabalhoBox.Clear();
         PessoaResponsavelDadosBancariosBox.Clear();
+    }
+
+    private void PopulatePessoaForm(PessoaDetails details)
+    {
+        var dados = details.Dados;
+        PessoaFormTitleText.Text = details.Summary.Nome;
+        PessoaTipoBox.SelectedValue = dados.TipoPessoa;
+        PessoaNomeBox.Text = dados.NomeDisplay;
+        PessoaDocumentoBox.Text = dados.Documento ?? string.Empty;
+        PessoaTelefoneBox.Text = dados.Telefone ?? string.Empty;
+        PessoaEmailBox.Text = dados.Email ?? string.Empty;
+        PessoaObservacoesBox.Text = dados.Observacoes ?? string.Empty;
+        PessoaRuaBox.Text = dados.Rua ?? string.Empty;
+        PessoaNumeroBox.Text = dados.Numero ?? string.Empty;
+        PessoaComplementoBox.Text = dados.Complemento ?? string.Empty;
+        PessoaBairroBox.Text = dados.Bairro ?? string.Empty;
+        PessoaCidadeBox.Text = dados.Cidade ?? string.Empty;
+        PessoaEstadoBox.Text = dados.Estado ?? string.Empty;
+        PessoaCepBox.Text = dados.Cep ?? string.Empty;
+        PessoaRgBox.Text = dados.Rg ?? string.Empty;
+        PessoaEstadoCivilBox.Text = dados.EstadoCivil ?? string.Empty;
+        PessoaNacionalidadeBox.Text = dados.Nacionalidade ?? string.Empty;
+        PessoaDataNascimentoBox.SelectedDate = ToDateTime(dados.DataNascimento);
+        PessoaProfissaoBox.Text = dados.Profissao ?? string.Empty;
+        PessoaOndeTrabalhaBox.Text = dados.OndeTrabalha ?? string.Empty;
+        PessoaEnderecoTrabalhoBox.Text = dados.EnderecoTrabalho ?? string.Empty;
+        PessoaNomeEmpresaTrabalhoBox.Text = dados.NomeEmpresaTrabalho ?? string.Empty;
+        PessoaTelefoneEmpresaTrabalhoBox.Text = dados.TelefoneEmpresaTrabalho ?? string.Empty;
+        PessoaDadosBancariosBox.Text = dados.DadosBancarios ?? string.Empty;
+        PessoaConjugeNomeBox.Text = dados.ConjugeNome ?? string.Empty;
+        PessoaConjugeRgBox.Text = dados.ConjugeRg ?? string.Empty;
+        PessoaConjugeCpfBox.Text = dados.ConjugeCpf ?? string.Empty;
+        PessoaConjugeDataNascimentoBox.SelectedDate = ToDateTime(dados.ConjugeDataNascimento);
+        PessoaConjugeProfissaoBox.Text = dados.ConjugeProfissao ?? string.Empty;
+        PessoaConjugeNacionalidadeBox.Text = dados.ConjugeNacionalidade ?? string.Empty;
+        PessoaConjugeTelefoneBox.Text = dados.ConjugeTelefone ?? string.Empty;
+        PessoaEmpresaRuaBox.Text = dados.Rua ?? string.Empty;
+        PessoaEmpresaNumeroBox.Text = dados.Numero ?? string.Empty;
+        PessoaEmpresaComplementoBox.Text = dados.Complemento ?? string.Empty;
+        PessoaEmpresaBairroBox.Text = dados.Bairro ?? string.Empty;
+        PessoaEmpresaCidadeBox.Text = dados.Cidade ?? string.Empty;
+        PessoaEmpresaEstadoBox.Text = dados.Estado ?? string.Empty;
+        PessoaEmpresaCepBox.Text = dados.Cep ?? string.Empty;
+        PessoaResponsavelNomeBox.Text = dados.ResponsavelNome ?? string.Empty;
+        PessoaResponsavelRuaBox.Text = dados.ResponsavelRua ?? string.Empty;
+        PessoaResponsavelNumeroBox.Text = dados.ResponsavelNumero ?? string.Empty;
+        PessoaResponsavelComplementoBox.Text = dados.ResponsavelComplemento ?? string.Empty;
+        PessoaResponsavelBairroBox.Text = dados.ResponsavelBairro ?? string.Empty;
+        PessoaResponsavelCidadeBox.Text = dados.ResponsavelCidade ?? string.Empty;
+        PessoaResponsavelEstadoBox.Text = dados.ResponsavelEstado ?? string.Empty;
+        PessoaResponsavelCepBox.Text = dados.ResponsavelCep ?? string.Empty;
+        PessoaResponsavelEstadoCivilBox.Text = dados.ResponsavelEstadoCivil ?? string.Empty;
+        PessoaResponsavelNacionalidadeBox.Text = dados.ResponsavelNacionalidade ?? string.Empty;
+        PessoaResponsavelDataNascimentoBox.SelectedDate = ToDateTime(dados.ResponsavelDataNascimento);
+        PessoaResponsavelTelefoneBox.Text = dados.ResponsavelTelefone ?? string.Empty;
+        PessoaResponsavelEmailBox.Text = dados.ResponsavelEmail ?? string.Empty;
+        PessoaResponsavelRgBox.Text = dados.ResponsavelRg ?? string.Empty;
+        PessoaResponsavelCpfBox.Text = dados.ResponsavelCpf ?? string.Empty;
+        PessoaResponsavelProfissaoBox.Text = dados.ResponsavelProfissao ?? string.Empty;
+        PessoaResponsavelOndeTrabalhaBox.Text = dados.ResponsavelOndeTrabalha ?? string.Empty;
+        PessoaResponsavelEnderecoTrabalhoBox.Text = dados.ResponsavelEnderecoTrabalho ?? string.Empty;
+        PessoaResponsavelNomeEmpresaTrabalhoBox.Text = dados.ResponsavelNomeEmpresaTrabalho ?? string.Empty;
+        PessoaResponsavelTelefoneEmpresaTrabalhoBox.Text = dados.ResponsavelTelefoneEmpresaTrabalho ?? string.Empty;
+        PessoaResponsavelDadosBancariosBox.Text = dados.ResponsavelDadosBancarios ?? string.Empty;
+        PessoaErrorText.Text = string.Empty;
+        TogglePessoaTypePanels();
+    }
+
+    private void SetPessoaEditMode(bool isEditing, bool isNew)
+    {
+        _isPessoaEditing = isEditing;
+        PessoaFormTitleText.Text = isNew ? "Nova pessoa" : PessoaFormTitleText.Text;
+        SavePessoaButton.Visibility = isEditing ? Visibility.Visible : Visibility.Collapsed;
+        CancelPessoaEditButton.Visibility = isEditing && !isNew ? Visibility.Visible : Visibility.Collapsed;
+        PessoaEditButton.IsEnabled = !isEditing && _selectedPessoaId.HasValue;
+        PessoaDeactivateButton.IsEnabled = !isEditing && _selectedPessoaId.HasValue;
+
+        foreach (var textBox in GetPessoaTextBoxes())
+        {
+            textBox.IsReadOnly = !isEditing;
+        }
+
+        foreach (var datePicker in new[] { PessoaDataNascimentoBox, PessoaConjugeDataNascimentoBox, PessoaResponsavelDataNascimentoBox })
+        {
+            datePicker.IsEnabled = isEditing;
+        }
+
+        PessoaTipoBox.IsEnabled = isEditing;
+    }
+
+    private IEnumerable<TextBox> GetPessoaTextBoxes()
+    {
+        yield return PessoaNomeBox;
+        yield return PessoaDocumentoBox;
+        yield return PessoaTelefoneBox;
+        yield return PessoaEmailBox;
+        yield return PessoaRuaBox;
+        yield return PessoaNumeroBox;
+        yield return PessoaComplementoBox;
+        yield return PessoaBairroBox;
+        yield return PessoaCidadeBox;
+        yield return PessoaEstadoBox;
+        yield return PessoaCepBox;
+        yield return PessoaRgBox;
+        yield return PessoaEstadoCivilBox;
+        yield return PessoaNacionalidadeBox;
+        yield return PessoaProfissaoBox;
+        yield return PessoaOndeTrabalhaBox;
+        yield return PessoaEnderecoTrabalhoBox;
+        yield return PessoaNomeEmpresaTrabalhoBox;
+        yield return PessoaTelefoneEmpresaTrabalhoBox;
+        yield return PessoaDadosBancariosBox;
+        yield return PessoaConjugeNomeBox;
+        yield return PessoaConjugeRgBox;
+        yield return PessoaConjugeCpfBox;
+        yield return PessoaConjugeProfissaoBox;
+        yield return PessoaConjugeNacionalidadeBox;
+        yield return PessoaConjugeTelefoneBox;
+        yield return PessoaEmpresaRuaBox;
+        yield return PessoaEmpresaNumeroBox;
+        yield return PessoaEmpresaComplementoBox;
+        yield return PessoaEmpresaBairroBox;
+        yield return PessoaEmpresaCidadeBox;
+        yield return PessoaEmpresaEstadoBox;
+        yield return PessoaEmpresaCepBox;
+        yield return PessoaResponsavelNomeBox;
+        yield return PessoaResponsavelRuaBox;
+        yield return PessoaResponsavelNumeroBox;
+        yield return PessoaResponsavelComplementoBox;
+        yield return PessoaResponsavelBairroBox;
+        yield return PessoaResponsavelCidadeBox;
+        yield return PessoaResponsavelEstadoBox;
+        yield return PessoaResponsavelCepBox;
+        yield return PessoaResponsavelEstadoCivilBox;
+        yield return PessoaResponsavelNacionalidadeBox;
+        yield return PessoaResponsavelTelefoneBox;
+        yield return PessoaResponsavelEmailBox;
+        yield return PessoaResponsavelRgBox;
+        yield return PessoaResponsavelCpfBox;
+        yield return PessoaResponsavelProfissaoBox;
+        yield return PessoaResponsavelOndeTrabalhaBox;
+        yield return PessoaResponsavelEnderecoTrabalhoBox;
+        yield return PessoaResponsavelNomeEmpresaTrabalhoBox;
+        yield return PessoaResponsavelTelefoneEmpresaTrabalhoBox;
+        yield return PessoaResponsavelDadosBancariosBox;
+        yield return PessoaObservacoesBox;
+    }
+
+    private void NewPessoaButton_Click(object sender, RoutedEventArgs e)
+    {
+        PessoasGrid.SelectedItem = null;
+        _selectedPessoaId = null;
+        _selectedPessoaDetails = null;
+        SetPessoaDocumentoSelection(null);
+        ClearPessoaForm();
+        SetPessoaEditMode(true, isNew: true);
+    }
+
+    private void EditPessoaButton_Click(object sender, RoutedEventArgs e) =>
+        SetPessoaEditMode(true, isNew: false);
+
+    private void CancelPessoaEditButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selectedPessoaDetails is not null)
+        {
+            PopulatePessoaForm(_selectedPessoaDetails);
+            SetPessoaEditMode(false, isNew: false);
+        }
+    }
+
+    private async void DeactivatePessoaButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_selectedPessoaId.HasValue)
+        {
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            "Remover esta pessoa apenas altera o status para inativo. Deseja continuar?",
+            "Confirmar remoção",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var password = PromptPassword("Digite sua senha para confirmar a remoção.");
+        if (password is null)
+        {
+            return;
+        }
+
+        if (!await _userService.VerifyPasswordAsync(_currentUser.Id, password))
+        {
+            PessoaErrorText.Text = "Senha incorreta. A pessoa não foi removida.";
+            return;
+        }
+
+        await _rentalManagementService.SetPessoaActiveAsync(_selectedPessoaId.Value, false);
+        _selectedPessoaId = null;
+        _selectedPessoaDetails = null;
+        ClearPessoaForm();
+        SetPessoaDocumentoSelection(null);
+        SetPessoaEditMode(true, isNew: true);
+        await LoadPessoasAsync();
+    }
+
+    private static string? PromptPassword(string message)
+    {
+        var window = new Window
+        {
+            Title = "Confirmação",
+            Width = 360,
+            Height = 180,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            ResizeMode = ResizeMode.NoResize
+        };
+        var panel = new StackPanel { Margin = new Thickness(18) };
+        panel.Children.Add(new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 10) });
+        var passwordBox = new PasswordBox { Margin = new Thickness(0, 0, 0, 14) };
+        panel.Children.Add(passwordBox);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        var ok = new Button { Content = "Confirmar", Width = 92, Margin = new Thickness(0, 0, 8, 0), IsDefault = true };
+        var cancel = new Button { Content = "Cancelar", Width = 82, IsCancel = true };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        panel.Children.Add(buttons);
+        ok.Click += (_, _) => window.DialogResult = true;
+        window.Content = panel;
+        return window.ShowDialog() == true ? passwordBox.Password : null;
     }
 
     private async void SaveImovelButton_Click(object sender, RoutedEventArgs e)
@@ -1111,6 +1712,8 @@ public partial class ShellWindow : Window
     private sealed record TipoPessoaOption(string Label, TipoPessoa Tipo);
     private sealed record ImovelFinalidadeOption(string Label, ImovelFinalidade Finalidade);
     private sealed record PessoaDocumentoTipoOption(string Label, string Tipo);
+    private sealed record PessoaDocumentoDonoOption(string Label, string Tipo);
+    private sealed record PessoaStatusFilterOption(string Label, string Status);
     private sealed record ModuleDefinition(string Title, string Subtitle, string Notice, string ActionText);
 
     private static readonly IReadOnlyList<UserRoleOption> UserRoleOptions =
@@ -1145,5 +1748,19 @@ public partial class ShellWindow : Window
         new("Procuração/autorização", "procuracao"),
         new("Dados bancários", "dados_bancarios"),
         new("Outros", "outros")
+    ];
+
+    private static readonly IReadOnlyList<PessoaDocumentoDonoOption> PessoaDocumentoDonoOptions =
+    [
+        new("Pessoa", "pessoa"),
+        new("Cônjuge", "conjuge"),
+        new("Empresa onde trabalha", "empresa_trabalho")
+    ];
+
+    private static readonly IReadOnlyList<PessoaStatusFilterOption> PessoaStatusFilterOptions =
+    [
+        new("Ativos", "ativo"),
+        new("Inativos", "inativo"),
+        new("Todos", "todos")
     ];
 }

@@ -27,7 +27,6 @@
     <Resource Include="Assets\Logo_bg.png" />
     <Resource Include="Assets\Logo_icon2.png" />
     <Resource Include="Assets\Monthoya.ico" />
-    <Resource Include="Assets\Side_panel.jpg" />
     <Resource Include="Assets\Side_panel.png" />
   </ItemGroup>
 

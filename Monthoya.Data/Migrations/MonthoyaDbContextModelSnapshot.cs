@@ -716,6 +716,48 @@ namespace Monthoya.Data.Migrations
                     b.ToTable("imoveis", (string)null);
                 });
 
+            modelBuilder.Entity("Monthoya.Core.Entities.ImovelImagem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)");
+
+                    b.Property<Guid>("ImovelId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ImovelId", "DisplayOrder");
+
+                    b.ToTable("imovel_imagens", (string)null);
+                });
+
             modelBuilder.Entity("Monthoya.Core.Entities.IndiceReajuste", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1313,6 +1355,13 @@ namespace Monthoya.Data.Migrations
                     b.Property<DateOnly?>("DataValidade")
                         .HasColumnType("date");
 
+                    b.Property<string>("DocumentoDe")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasDefaultValue("pessoa");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(220)
@@ -1321,6 +1370,23 @@ namespace Monthoya.Data.Migrations
                     b.Property<string>("Observacoes")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("OcrCamposAplicados")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("OcrErroMensagem")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset?>("OcrProcessadoEmUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("OcrStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OcrTextoExtraido")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("PessoaId")
                         .HasColumnType("uuid");
@@ -1352,6 +1418,22 @@ namespace Monthoya.Data.Migrations
                 {
                     b.Property<Guid>("PessoaId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Bairro")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Cep")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Cidade")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("Complemento")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
                     b.Property<string>("ConjugeCpf")
                         .HasColumnType("text");
@@ -1387,11 +1469,12 @@ namespace Monthoya.Data.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("text");
 
-                    b.Property<string>("Endereco")
-                        .HasColumnType("text");
-
                     b.Property<string>("EnderecoTrabalho")
                         .HasColumnType("text");
+
+                    b.Property<string>("Estado")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
 
                     b.Property<string>("EstadoCivil")
                         .HasColumnType("text");
@@ -1407,6 +1490,10 @@ namespace Monthoya.Data.Migrations
                     b.Property<string>("NomeEmpresaTrabalho")
                         .HasColumnType("text");
 
+                    b.Property<string>("Numero")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<string>("OndeTrabalha")
                         .HasColumnType("text");
 
@@ -1415,6 +1502,10 @@ namespace Monthoya.Data.Migrations
 
                     b.Property<string>("Rg")
                         .HasColumnType("text");
+
+                    b.Property<string>("Rua")
+                        .HasMaxLength(220)
+                        .HasColumnType("character varying(220)");
 
                     b.Property<string>("Telefone")
                         .HasColumnType("text");
@@ -1440,13 +1531,54 @@ namespace Monthoya.Data.Migrations
                         .HasMaxLength(24)
                         .HasColumnType("character varying(24)");
 
-                    b.Property<string>("EnderecoEmpresa")
-                        .HasColumnType("text");
+                    b.Property<string>("EmpresaBairro")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("EmpresaCep")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("EmpresaCidade")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("EmpresaComplemento")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("EmpresaEstado")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
+
+                    b.Property<string>("EmpresaNumero")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<string>("EmpresaRua")
+                        .HasMaxLength(220)
+                        .HasColumnType("character varying(220)");
 
                     b.Property<string>("NomeEmpresa")
                         .IsRequired()
                         .HasMaxLength(220)
                         .HasColumnType("character varying(220)");
+
+                    b.Property<string>("ResponsavelBairro")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("ResponsavelCep")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("ResponsavelCidade")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<string>("ResponsavelComplemento")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
                     b.Property<string>("ResponsavelCpf")
                         .HasColumnType("text");
@@ -1460,11 +1592,12 @@ namespace Monthoya.Data.Migrations
                     b.Property<string>("ResponsavelEmail")
                         .HasColumnType("text");
 
-                    b.Property<string>("ResponsavelEndereco")
-                        .HasColumnType("text");
-
                     b.Property<string>("ResponsavelEnderecoTrabalho")
                         .HasColumnType("text");
+
+                    b.Property<string>("ResponsavelEstado")
+                        .HasMaxLength(2)
+                        .HasColumnType("character varying(2)");
 
                     b.Property<string>("ResponsavelEstadoCivil")
                         .HasColumnType("text");
@@ -1478,6 +1611,10 @@ namespace Monthoya.Data.Migrations
                     b.Property<string>("ResponsavelNomeEmpresaTrabalho")
                         .HasColumnType("text");
 
+                    b.Property<string>("ResponsavelNumero")
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
                     b.Property<string>("ResponsavelOndeTrabalha")
                         .HasColumnType("text");
 
@@ -1486,6 +1623,10 @@ namespace Monthoya.Data.Migrations
 
                     b.Property<string>("ResponsavelRg")
                         .HasColumnType("text");
+
+                    b.Property<string>("ResponsavelRua")
+                        .HasMaxLength(220)
+                        .HasColumnType("character varying(220)");
 
                     b.Property<string>("ResponsavelTelefone")
                         .HasColumnType("text");
@@ -1813,6 +1954,17 @@ namespace Monthoya.Data.Migrations
                     b.Navigation("Proprietario");
                 });
 
+            modelBuilder.Entity("Monthoya.Core.Entities.ImovelImagem", b =>
+                {
+                    b.HasOne("Monthoya.Core.Entities.Imovel", "Imovel")
+                        .WithMany("Imagens")
+                        .HasForeignKey("ImovelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Imovel");
+                });
+
             modelBuilder.Entity("Monthoya.Core.Entities.Locacao", b =>
                 {
                     b.HasOne("Monthoya.Core.Entities.Imovel", "Imovel")
@@ -1966,6 +2118,11 @@ namespace Monthoya.Data.Migrations
             modelBuilder.Entity("Monthoya.Core.Entities.Contract", b =>
                 {
                     b.Navigation("RentInstallments");
+                });
+
+            modelBuilder.Entity("Monthoya.Core.Entities.Imovel", b =>
+                {
+                    b.Navigation("Imagens");
                 });
 
             modelBuilder.Entity("Monthoya.Core.Entities.Locacao", b =>

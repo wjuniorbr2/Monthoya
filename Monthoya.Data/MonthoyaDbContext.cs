@@ -33,6 +33,7 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
     public DbSet<PessoaFisica> PessoasFisicas => Set<PessoaFisica>();
     public DbSet<PessoaJuridica> PessoasJuridicas => Set<PessoaJuridica>();
     public DbSet<Imovel> Imoveis => Set<Imovel>();
+    public DbSet<ImovelImagem> ImovelImagens => Set<ImovelImagem>();
     public DbSet<Locacao> Locacoes => Set<Locacao>();
     public DbSet<LocacaoFiador> LocacaoFiadores => Set<LocacaoFiador>();
     public DbSet<IndiceReajuste> IndicesReajuste => Set<IndiceReajuste>();
@@ -193,10 +194,14 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
         {
             entity.ToTable("pessoa_documentos");
             entity.Property(x => x.Tipo).HasMaxLength(80).IsRequired();
+            entity.Property(x => x.DocumentoDe).HasMaxLength(40).HasDefaultValue("pessoa");
             entity.Property(x => x.Nome).HasMaxLength(220).IsRequired();
             entity.Property(x => x.StoragePath).HasMaxLength(1000).IsRequired();
             entity.Property(x => x.ContentType).HasMaxLength(100);
             entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.Property(x => x.OcrTextoExtraido);
+            entity.Property(x => x.OcrErroMensagem).HasMaxLength(2000);
+            entity.Property(x => x.OcrCamposAplicados).HasMaxLength(1000);
             entity.HasOne(x => x.Pessoa).WithMany(x => x.Documentos).HasForeignKey(x => x.PessoaId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(x => new { x.PessoaId, x.Tipo });
         });
@@ -206,6 +211,13 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.ToTable("pessoa_fisica");
             entity.HasKey(x => x.PessoaId);
             entity.Property(x => x.Nome).HasMaxLength(220).IsRequired();
+            entity.Property(x => x.Rua).HasMaxLength(220);
+            entity.Property(x => x.Numero).HasMaxLength(40);
+            entity.Property(x => x.Complemento).HasMaxLength(120);
+            entity.Property(x => x.Bairro).HasMaxLength(120);
+            entity.Property(x => x.Cidade).HasMaxLength(120);
+            entity.Property(x => x.Estado).HasMaxLength(2);
+            entity.Property(x => x.Cep).HasMaxLength(20);
             entity.Property(x => x.Cpf).HasMaxLength(20);
             entity.HasIndex(x => x.Cpf).IsUnique().HasFilter("\"Cpf\" IS NOT NULL AND \"Cpf\" <> ''");
             entity.HasOne(x => x.Pessoa).WithOne(x => x.PessoaFisica).HasForeignKey<PessoaFisica>(x => x.PessoaId).OnDelete(DeleteBehavior.Cascade);
@@ -217,6 +229,20 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.HasKey(x => x.PessoaId);
             entity.Property(x => x.NomeEmpresa).HasMaxLength(220).IsRequired();
             entity.Property(x => x.Cnpj).HasMaxLength(24);
+            entity.Property(x => x.EmpresaRua).HasMaxLength(220);
+            entity.Property(x => x.EmpresaNumero).HasMaxLength(40);
+            entity.Property(x => x.EmpresaComplemento).HasMaxLength(120);
+            entity.Property(x => x.EmpresaBairro).HasMaxLength(120);
+            entity.Property(x => x.EmpresaCidade).HasMaxLength(120);
+            entity.Property(x => x.EmpresaEstado).HasMaxLength(2);
+            entity.Property(x => x.EmpresaCep).HasMaxLength(20);
+            entity.Property(x => x.ResponsavelRua).HasMaxLength(220);
+            entity.Property(x => x.ResponsavelNumero).HasMaxLength(40);
+            entity.Property(x => x.ResponsavelComplemento).HasMaxLength(120);
+            entity.Property(x => x.ResponsavelBairro).HasMaxLength(120);
+            entity.Property(x => x.ResponsavelCidade).HasMaxLength(120);
+            entity.Property(x => x.ResponsavelEstado).HasMaxLength(2);
+            entity.Property(x => x.ResponsavelCep).HasMaxLength(20);
             entity.HasIndex(x => x.Cnpj).IsUnique().HasFilter("\"Cnpj\" IS NOT NULL AND \"Cnpj\" <> ''");
             entity.HasOne(x => x.Pessoa).WithOne(x => x.PessoaJuridica).HasForeignKey<PessoaJuridica>(x => x.PessoaId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -232,6 +258,16 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.Latitude).HasPrecision(9, 6);
             entity.Property(x => x.Longitude).HasPrecision(9, 6);
             entity.HasOne(x => x.Proprietario).WithMany().HasForeignKey(x => x.ProprietarioId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ImovelImagem>(entity =>
+        {
+            entity.ToTable("imovel_imagens");
+            entity.Property(x => x.FileName).HasMaxLength(260).IsRequired();
+            entity.Property(x => x.StoragePath).HasMaxLength(1000).IsRequired();
+            entity.Property(x => x.ContentType).HasMaxLength(100);
+            entity.HasOne(x => x.Imovel).WithMany(x => x.Imagens).HasForeignKey(x => x.ImovelId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.ImovelId, x.DisplayOrder });
         });
 
         modelBuilder.Entity<Locacao>(entity =>

@@ -5,11 +5,17 @@ namespace Monthoya.Core.Services;
 public interface IRentalManagementService
 {
     Task<IReadOnlyList<PessoaSummary>> GetPessoasAsync(CancellationToken cancellationToken = default);
+    Task<PessoaDetails?> GetPessoaAsync(Guid pessoaId, CancellationToken cancellationToken = default);
     Task<PessoaSummary> CreatePessoaAsync(CreatePessoaRequest request, CancellationToken cancellationToken = default);
+    Task<PessoaSummary> UpdatePessoaAsync(UpdatePessoaRequest request, CancellationToken cancellationToken = default);
+    Task SetPessoaActiveAsync(Guid pessoaId, bool isActive, CancellationToken cancellationToken = default);
     Task<PessoaDocumentoSummary> CreatePessoaDocumentoAsync(CreatePessoaDocumentoRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosAsync(Guid? pessoaId = null, CancellationToken cancellationToken = default);
+    Task<PessoaContratoAutofillContext?> GetPessoaContratoAutofillContextAsync(Guid pessoaId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ImovelSummary>> GetImoveisAsync(CancellationToken cancellationToken = default);
     Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default);
+    Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<IndiceReajusteSummary>> GetIndicesReajusteAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FinanceiroSummary>> GetLancamentosFinanceirosAsync(CancellationToken cancellationToken = default);
@@ -27,9 +33,16 @@ public sealed record CreatePessoaRequest(
     string? Telefone,
     string? Email,
     string? Documento,
-    PessoaRoleTipo[] Roles,
-    string? Observacoes,
+    PessoaRoleTipo[]? Roles = null,
+    string? Observacoes = null,
     string? Endereco = null,
+    string? Rua = null,
+    string? Numero = null,
+    string? Complemento = null,
+    string? Bairro = null,
+    string? Cidade = null,
+    string? Estado = null,
+    string? Cep = null,
     string? EstadoCivil = null,
     string? Nacionalidade = null,
     DateOnly? DataNascimento = null,
@@ -49,6 +62,13 @@ public sealed record CreatePessoaRequest(
     string? ConjugeTelefone = null,
     string? ResponsavelNome = null,
     string? ResponsavelEndereco = null,
+    string? ResponsavelRua = null,
+    string? ResponsavelNumero = null,
+    string? ResponsavelComplemento = null,
+    string? ResponsavelBairro = null,
+    string? ResponsavelCidade = null,
+    string? ResponsavelEstado = null,
+    string? ResponsavelCep = null,
     string? ResponsavelEstadoCivil = null,
     string? ResponsavelNacionalidade = null,
     DateOnly? ResponsavelDataNascimento = null,
@@ -70,7 +90,10 @@ public sealed record CreatePessoaDocumentoRequest(
     string StoragePath,
     string? ContentType,
     DateOnly? DataValidade,
-    string? Observacoes);
+    string? Observacoes,
+    string? DocumentoDe = null);
+
+public sealed record UpdatePessoaRequest(Guid Id, CreatePessoaRequest Pessoa);
 
 public sealed record CreateImovelRequest(
     Guid ProprietarioId,
@@ -93,9 +116,47 @@ public sealed record CreateImovelRequest(
     decimal? Latitude = null,
     decimal? Longitude = null);
 
-public sealed record PessoaSummary(Guid Id, string Nome, string Tipo, string Roles, string? Documento, string? Telefone, string? Email, string Status);
-public sealed record PessoaDocumentoSummary(Guid Id, Guid PessoaId, string Pessoa, string Tipo, string Nome, string StoragePath, DateOnly? DataValidade, string Status);
+public sealed record CreateImovelImagemRequest(
+    Guid ImovelId,
+    string FileName,
+    string StoragePath,
+    string? ContentType,
+    int DisplayOrder = 0);
+
+public sealed record PessoaSummary(
+    Guid Id,
+    string Nome,
+    string Tipo,
+    string Roles,
+    string? Documento,
+    string? Telefone,
+    string? Email,
+    string Status,
+    bool IsProprietario,
+    bool IsLocatario,
+    bool IsFiador);
+public sealed record PessoaDetails(PessoaSummary Summary, CreatePessoaRequest Dados);
+public sealed record PessoaDocumentoSummary(
+    Guid Id,
+    Guid PessoaId,
+    string Pessoa,
+    string Tipo,
+    string DocumentoDe,
+    string Nome,
+    string StoragePath,
+    DateOnly? DataValidade,
+    string Status,
+    string OcrStatus,
+    string? OcrTextoExtraido,
+    DateTimeOffset? OcrProcessadoEmUtc,
+    string? OcrErroMensagem,
+    string? OcrCamposAplicados);
+public sealed record PessoaContratoAutofillContext(
+    PessoaSummary Pessoa,
+    IReadOnlyList<PessoaDocumentoSummary> Documentos,
+    string TextoDocumentosOcr);
 public sealed record ImovelSummary(Guid Id, string Endereco, string? Bairro, string Proprietario, string Finalidade, string Status, decimal? ValorAluguel);
+public sealed record ImovelImagemSummary(Guid Id, Guid ImovelId, string FileName, string StoragePath, string? ContentType, int DisplayOrder, string Status);
 public sealed record LocacaoSummary(Guid Id, string Imovel, string Proprietario, string Locatario, string Fiadores, decimal ValorAluguel, string Status);
 public sealed record IndiceReajusteSummary(Guid Id, string Nome, string Codigo, string Tipo, decimal? Percentual, string Ativo);
 public sealed record FinanceiroSummary(Guid Id, string Tipo, string Categoria, string Descricao, decimal Valor, DateOnly DataVencimento, string Status);

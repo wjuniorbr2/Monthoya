@@ -11,4 +11,6 @@ public interface IUserService
     Task<UserSummary> UpdateUserAsync(UpdateUserRequest request, CancellationToken cancellationToken = default);
 
     Task SetUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default);
+
+    Task<bool> VerifyPasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default);
 }
