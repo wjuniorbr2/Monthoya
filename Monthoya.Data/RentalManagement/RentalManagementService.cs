@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Integrations;
@@ -12,7 +12,16 @@ public sealed class RentalManagementService(
     IDocumentOcrService? documentOcrService = null,
     IFileStorageService? fileStorageService = null) : IRentalManagementService
 {
+    private readonly SemaphoreSlim _dbContextGate = new(1, 1);
+    private readonly AsyncLocal<int> _dbContextGateDepth = new();
+
     public async Task<IReadOnlyList<PessoaSummary>> GetPessoasAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await GetPessoasCoreAsync(cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<PessoaSummary>> GetPessoasCoreAsync(CancellationToken cancellationToken)
     {
         var pessoas = await dbContext.Pessoas
             .AsNoTracking()
@@ -53,8 +62,8 @@ public sealed class RentalManagementService(
                 x.NomeDisplay,
                 x.TipoPessoa == TipoPessoa.Fisica ? "Física" : "Jurídica",
                 GetPessoaRolesLabel(isProprietario, isLocatario, isFiador),
-                x.TipoPessoa == TipoPessoa.Fisica ? x.PessoaFisica?.Cpf : x.PessoaJuridica?.Cnpj,
-                x.Telefone,
+                FormatCpfCnpjForDisplay(x.TipoPessoa, x.TipoPessoa == TipoPessoa.Fisica ? x.PessoaFisica?.Cpf : x.PessoaJuridica?.Cnpj),
+                FormatPhoneForDisplay(x.Telefone),
                 x.Email,
                 x.Status == RegistroStatus.Ativo ? "Ativo" : "Inativo",
                 isProprietario,
@@ -65,6 +74,7 @@ public sealed class RentalManagementService(
 
     public async Task<PessoaDetails?> GetPessoaAsync(Guid pessoaId, CancellationToken cancellationToken = default)
     {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
         var pessoa = await dbContext.Pessoas
             .AsNoTracking()
             .Include(x => x.PessoaFisica)
@@ -76,12 +86,13 @@ public sealed class RentalManagementService(
             return null;
         }
 
-        var summary = (await GetPessoasAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
+        var summary = (await GetPessoasCoreAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
         return new PessoaDetails(summary, ToPessoaRequest(pessoa));
     }
 
     public async Task<PessoaSummary> CreatePessoaAsync(CreatePessoaRequest request, CancellationToken cancellationToken = default)
     {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(request.NomeDisplay))
         {
             throw new InvalidOperationException("Informe o nome da pessoa.");
@@ -91,7 +102,7 @@ public sealed class RentalManagementService(
         {
             TipoPessoa = request.TipoPessoa,
             NomeDisplay = request.NomeDisplay.Trim(),
-            Telefone = request.Telefone?.Trim(),
+            Telefone = DigitsOrNull(request.Telefone),
             Email = request.Email?.Trim(),
             Observacoes = request.Observacoes?.Trim()
         };
@@ -107,27 +118,62 @@ public sealed class RentalManagementService(
                 Bairro = TrimOrNull(request.Bairro),
                 Cidade = TrimOrNull(request.Cidade),
                 Estado = NormalizeState(request.Estado),
-                Cep = TrimOrNull(request.Cep),
+                Cep = DigitsOrNull(request.Cep),
                 EstadoCivil = TrimOrNull(request.EstadoCivil),
+                PossuiTrabalho = request.PossuiTrabalho,
+                PossuiPet = request.PossuiPet,
+                PetQual = TrimOrNull(request.PetQual),
                 Nacionalidade = TrimOrNull(request.Nacionalidade),
                 DataNascimento = request.DataNascimento,
-                Rg = TrimOrNull(request.Rg),
-                Cpf = request.Documento?.Trim(),
+                Rg = DigitsOrNull(request.Rg),
+                Cpf = DigitsOrNull(request.Documento),
                 Telefone = pessoa.Telefone,
                 Email = pessoa.Email,
                 Profissao = TrimOrNull(request.Profissao),
                 OndeTrabalha = TrimOrNull(request.OndeTrabalha),
                 EnderecoTrabalho = TrimOrNull(request.EnderecoTrabalho),
                 NomeEmpresaTrabalho = TrimOrNull(request.NomeEmpresaTrabalho),
-                TelefoneEmpresaTrabalho = TrimOrNull(request.TelefoneEmpresaTrabalho),
+                CnpjEmpresaTrabalho = DigitsOrNull(request.CnpjEmpresaTrabalho),
+                TelefoneEmpresaTrabalho = DigitsOrNull(request.TelefoneEmpresaTrabalho),
+                EmailEmpresaTrabalho = TrimOrNull(request.EmailEmpresaTrabalho),
+                CargoTrabalho = TrimOrNull(request.CargoTrabalho),
+                RendaTrabalho = request.RendaTrabalho,
+                TempoEmprego = TrimOrNull(request.TempoEmprego),
+                TipoComprovanteRenda = TrimOrNull(request.TipoComprovanteRenda),
+                EmpresaRua = TrimOrNull(request.EmpresaRua),
+                EmpresaNumero = TrimOrNull(request.EmpresaNumero),
+                EmpresaComplemento = TrimOrNull(request.EmpresaComplemento),
+                EmpresaBairro = TrimOrNull(request.EmpresaBairro),
+                EmpresaCidade = TrimOrNull(request.EmpresaCidade),
+                EmpresaEstado = NormalizeState(request.EmpresaEstado),
+                EmpresaCep = DigitsOrNull(request.EmpresaCep),
                 DadosBancarios = TrimOrNull(request.DadosBancarios),
                 ConjugeNome = TrimOrNull(request.ConjugeNome),
-                ConjugeRg = TrimOrNull(request.ConjugeRg),
-                ConjugeCpf = TrimOrNull(request.ConjugeCpf),
+                ConjugeRg = DigitsOrNull(request.ConjugeRg),
+                ConjugeCpf = DigitsOrNull(request.ConjugeCpf),
+                ConjugeEmail = TrimOrNull(request.ConjugeEmail),
                 ConjugeDataNascimento = request.ConjugeDataNascimento,
                 ConjugeProfissao = TrimOrNull(request.ConjugeProfissao),
                 ConjugeNacionalidade = TrimOrNull(request.ConjugeNacionalidade),
-                ConjugeTelefone = TrimOrNull(request.ConjugeTelefone)
+                ConjugeTelefone = DigitsOrNull(request.ConjugeTelefone),
+                ConjugeDadosBancarios = TrimOrNull(request.ConjugeDadosBancarios),
+                ConjugeObservacoes = TrimOrNull(request.ConjugeObservacoes),
+                ConjugePossuiTrabalho = request.ConjugePossuiTrabalho,
+                ConjugeNomeEmpresaTrabalho = TrimOrNull(request.ConjugeNomeEmpresaTrabalho),
+                ConjugeCnpjEmpresaTrabalho = DigitsOrNull(request.ConjugeCnpjEmpresaTrabalho),
+                ConjugeTelefoneEmpresaTrabalho = DigitsOrNull(request.ConjugeTelefoneEmpresaTrabalho),
+                ConjugeEmailEmpresaTrabalho = TrimOrNull(request.ConjugeEmailEmpresaTrabalho),
+                ConjugeCargoTrabalho = TrimOrNull(request.ConjugeCargoTrabalho),
+                ConjugeRendaTrabalho = request.ConjugeRendaTrabalho,
+                ConjugeTempoEmprego = TrimOrNull(request.ConjugeTempoEmprego),
+                ConjugeTipoComprovanteRenda = TrimOrNull(request.ConjugeTipoComprovanteRenda),
+                ConjugeEmpresaRua = TrimOrNull(request.ConjugeEmpresaRua),
+                ConjugeEmpresaNumero = TrimOrNull(request.ConjugeEmpresaNumero),
+                ConjugeEmpresaComplemento = TrimOrNull(request.ConjugeEmpresaComplemento),
+                ConjugeEmpresaBairro = TrimOrNull(request.ConjugeEmpresaBairro),
+                ConjugeEmpresaCidade = TrimOrNull(request.ConjugeEmpresaCidade),
+                ConjugeEmpresaEstado = NormalizeState(request.ConjugeEmpresaEstado),
+                ConjugeEmpresaCep = DigitsOrNull(request.ConjugeEmpresaCep)
             };
         }
         else
@@ -135,46 +181,55 @@ public sealed class RentalManagementService(
             pessoa.PessoaJuridica = new PessoaJuridica
             {
                 NomeEmpresa = pessoa.NomeDisplay,
-                Cnpj = request.Documento?.Trim(),
+                NomeFantasia = TrimOrNull(request.NomeFantasia),
+                Atividade = TrimOrNull(request.Atividade),
+                ReceitaMensal = request.ReceitaMensal,
+                Cnpj = DigitsOrNull(request.Documento),
+                InscricaoEstadual = DigitsOrNull(request.InscricaoEstadual),
+                InscricaoMunicipal = DigitsOrNull(request.InscricaoMunicipal),
+                DataAbertura = request.DataAbertura,
                 EmpresaRua = TrimOrNull(request.Rua),
                 EmpresaNumero = TrimOrNull(request.Numero),
                 EmpresaComplemento = TrimOrNull(request.Complemento),
                 EmpresaBairro = TrimOrNull(request.Bairro),
                 EmpresaCidade = TrimOrNull(request.Cidade),
                 EmpresaEstado = NormalizeState(request.Estado),
-                EmpresaCep = TrimOrNull(request.Cep),
+                EmpresaCep = DigitsOrNull(request.Cep),
                 ResponsavelNome = TrimOrNull(request.ResponsavelNome),
+                ResponsavelCargo = TrimOrNull(request.ResponsavelCargo),
                 ResponsavelRua = TrimOrNull(request.ResponsavelRua),
                 ResponsavelNumero = TrimOrNull(request.ResponsavelNumero),
                 ResponsavelComplemento = TrimOrNull(request.ResponsavelComplemento),
                 ResponsavelBairro = TrimOrNull(request.ResponsavelBairro),
                 ResponsavelCidade = TrimOrNull(request.ResponsavelCidade),
                 ResponsavelEstado = NormalizeState(request.ResponsavelEstado),
-                ResponsavelCep = TrimOrNull(request.ResponsavelCep),
+                ResponsavelCep = DigitsOrNull(request.ResponsavelCep),
                 ResponsavelEstadoCivil = TrimOrNull(request.ResponsavelEstadoCivil),
                 ResponsavelNacionalidade = TrimOrNull(request.ResponsavelNacionalidade),
                 ResponsavelDataNascimento = request.ResponsavelDataNascimento,
                 ResponsavelEmail = pessoa.Email,
                 ResponsavelTelefone = pessoa.Telefone,
-                ResponsavelRg = TrimOrNull(request.ResponsavelRg),
-                ResponsavelCpf = TrimOrNull(request.ResponsavelCpf),
+                ResponsavelRg = DigitsOrNull(request.ResponsavelRg),
+                ResponsavelCpf = DigitsOrNull(request.ResponsavelCpf),
                 ResponsavelProfissao = TrimOrNull(request.ResponsavelProfissao),
                 ResponsavelOndeTrabalha = TrimOrNull(request.ResponsavelOndeTrabalha),
                 ResponsavelEnderecoTrabalho = TrimOrNull(request.ResponsavelEnderecoTrabalho),
                 ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.ResponsavelNomeEmpresaTrabalho),
-                ResponsavelTelefoneEmpresaTrabalho = TrimOrNull(request.ResponsavelTelefoneEmpresaTrabalho),
-                ResponsavelDadosBancarios = TrimOrNull(request.ResponsavelDadosBancarios)
+                ResponsavelTelefoneEmpresaTrabalho = DigitsOrNull(request.ResponsavelTelefoneEmpresaTrabalho),
+                ResponsavelDadosBancarios = TrimOrNull(request.ResponsavelDadosBancarios),
+                ResponsavelObservacoes = TrimOrNull(request.ResponsavelObservacoes)
             };
         }
 
         dbContext.Pessoas.Add(pessoa);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return (await GetPessoasAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
+        return (await GetPessoasCoreAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
     }
 
     public async Task<PessoaSummary> UpdatePessoaAsync(UpdatePessoaRequest request, CancellationToken cancellationToken = default)
     {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
         if (request.Id == Guid.Empty)
         {
             throw new InvalidOperationException("Selecione a pessoa para editar.");
@@ -189,11 +244,11 @@ public sealed class RentalManagementService(
             .Include(x => x.PessoaFisica)
             .Include(x => x.PessoaJuridica)
             .SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
-            ?? throw new InvalidOperationException("Pessoa nÃ£o encontrada.");
+            ?? throw new InvalidOperationException("Pessoa não encontrada.");
 
         pessoa.TipoPessoa = request.Pessoa.TipoPessoa;
         pessoa.NomeDisplay = request.Pessoa.NomeDisplay.Trim();
-        pessoa.Telefone = TrimOrNull(request.Pessoa.Telefone);
+        pessoa.Telefone = DigitsOrNull(request.Pessoa.Telefone);
         pessoa.Email = TrimOrNull(request.Pessoa.Email);
         pessoa.Observacoes = TrimOrNull(request.Pessoa.Observacoes);
         pessoa.UpdatedAtUtc = DateTimeOffset.UtcNow;
@@ -214,27 +269,62 @@ public sealed class RentalManagementService(
             pessoa.PessoaFisica.Bairro = TrimOrNull(request.Pessoa.Bairro);
             pessoa.PessoaFisica.Cidade = TrimOrNull(request.Pessoa.Cidade);
             pessoa.PessoaFisica.Estado = NormalizeState(request.Pessoa.Estado);
-            pessoa.PessoaFisica.Cep = TrimOrNull(request.Pessoa.Cep);
+            pessoa.PessoaFisica.Cep = DigitsOrNull(request.Pessoa.Cep);
             pessoa.PessoaFisica.EstadoCivil = TrimOrNull(request.Pessoa.EstadoCivil);
+            pessoa.PessoaFisica.PossuiTrabalho = request.Pessoa.PossuiTrabalho;
+            pessoa.PessoaFisica.PossuiPet = request.Pessoa.PossuiPet;
+            pessoa.PessoaFisica.PetQual = TrimOrNull(request.Pessoa.PetQual);
             pessoa.PessoaFisica.Nacionalidade = TrimOrNull(request.Pessoa.Nacionalidade);
             pessoa.PessoaFisica.DataNascimento = request.Pessoa.DataNascimento;
-            pessoa.PessoaFisica.Rg = TrimOrNull(request.Pessoa.Rg);
-            pessoa.PessoaFisica.Cpf = TrimOrNull(request.Pessoa.Documento);
+            pessoa.PessoaFisica.Rg = DigitsOrNull(request.Pessoa.Rg);
+            pessoa.PessoaFisica.Cpf = DigitsOrNull(request.Pessoa.Documento);
             pessoa.PessoaFisica.Telefone = pessoa.Telefone;
             pessoa.PessoaFisica.Email = pessoa.Email;
             pessoa.PessoaFisica.Profissao = TrimOrNull(request.Pessoa.Profissao);
             pessoa.PessoaFisica.OndeTrabalha = TrimOrNull(request.Pessoa.OndeTrabalha);
             pessoa.PessoaFisica.EnderecoTrabalho = TrimOrNull(request.Pessoa.EnderecoTrabalho);
             pessoa.PessoaFisica.NomeEmpresaTrabalho = TrimOrNull(request.Pessoa.NomeEmpresaTrabalho);
-            pessoa.PessoaFisica.TelefoneEmpresaTrabalho = TrimOrNull(request.Pessoa.TelefoneEmpresaTrabalho);
+            pessoa.PessoaFisica.CnpjEmpresaTrabalho = DigitsOrNull(request.Pessoa.CnpjEmpresaTrabalho);
+            pessoa.PessoaFisica.TelefoneEmpresaTrabalho = DigitsOrNull(request.Pessoa.TelefoneEmpresaTrabalho);
+            pessoa.PessoaFisica.EmailEmpresaTrabalho = TrimOrNull(request.Pessoa.EmailEmpresaTrabalho);
+            pessoa.PessoaFisica.CargoTrabalho = TrimOrNull(request.Pessoa.CargoTrabalho);
+            pessoa.PessoaFisica.RendaTrabalho = request.Pessoa.RendaTrabalho;
+            pessoa.PessoaFisica.TempoEmprego = TrimOrNull(request.Pessoa.TempoEmprego);
+            pessoa.PessoaFisica.TipoComprovanteRenda = TrimOrNull(request.Pessoa.TipoComprovanteRenda);
+            pessoa.PessoaFisica.EmpresaRua = TrimOrNull(request.Pessoa.EmpresaRua);
+            pessoa.PessoaFisica.EmpresaNumero = TrimOrNull(request.Pessoa.EmpresaNumero);
+            pessoa.PessoaFisica.EmpresaComplemento = TrimOrNull(request.Pessoa.EmpresaComplemento);
+            pessoa.PessoaFisica.EmpresaBairro = TrimOrNull(request.Pessoa.EmpresaBairro);
+            pessoa.PessoaFisica.EmpresaCidade = TrimOrNull(request.Pessoa.EmpresaCidade);
+            pessoa.PessoaFisica.EmpresaEstado = NormalizeState(request.Pessoa.EmpresaEstado);
+            pessoa.PessoaFisica.EmpresaCep = DigitsOrNull(request.Pessoa.EmpresaCep);
             pessoa.PessoaFisica.DadosBancarios = TrimOrNull(request.Pessoa.DadosBancarios);
             pessoa.PessoaFisica.ConjugeNome = TrimOrNull(request.Pessoa.ConjugeNome);
-            pessoa.PessoaFisica.ConjugeRg = TrimOrNull(request.Pessoa.ConjugeRg);
-            pessoa.PessoaFisica.ConjugeCpf = TrimOrNull(request.Pessoa.ConjugeCpf);
+            pessoa.PessoaFisica.ConjugeRg = DigitsOrNull(request.Pessoa.ConjugeRg);
+            pessoa.PessoaFisica.ConjugeCpf = DigitsOrNull(request.Pessoa.ConjugeCpf);
+            pessoa.PessoaFisica.ConjugeEmail = TrimOrNull(request.Pessoa.ConjugeEmail);
             pessoa.PessoaFisica.ConjugeDataNascimento = request.Pessoa.ConjugeDataNascimento;
             pessoa.PessoaFisica.ConjugeProfissao = TrimOrNull(request.Pessoa.ConjugeProfissao);
             pessoa.PessoaFisica.ConjugeNacionalidade = TrimOrNull(request.Pessoa.ConjugeNacionalidade);
-            pessoa.PessoaFisica.ConjugeTelefone = TrimOrNull(request.Pessoa.ConjugeTelefone);
+            pessoa.PessoaFisica.ConjugeTelefone = DigitsOrNull(request.Pessoa.ConjugeTelefone);
+            pessoa.PessoaFisica.ConjugeDadosBancarios = TrimOrNull(request.Pessoa.ConjugeDadosBancarios);
+            pessoa.PessoaFisica.ConjugeObservacoes = TrimOrNull(request.Pessoa.ConjugeObservacoes);
+            pessoa.PessoaFisica.ConjugePossuiTrabalho = request.Pessoa.ConjugePossuiTrabalho;
+            pessoa.PessoaFisica.ConjugeNomeEmpresaTrabalho = TrimOrNull(request.Pessoa.ConjugeNomeEmpresaTrabalho);
+            pessoa.PessoaFisica.ConjugeCnpjEmpresaTrabalho = DigitsOrNull(request.Pessoa.ConjugeCnpjEmpresaTrabalho);
+            pessoa.PessoaFisica.ConjugeTelefoneEmpresaTrabalho = DigitsOrNull(request.Pessoa.ConjugeTelefoneEmpresaTrabalho);
+            pessoa.PessoaFisica.ConjugeEmailEmpresaTrabalho = TrimOrNull(request.Pessoa.ConjugeEmailEmpresaTrabalho);
+            pessoa.PessoaFisica.ConjugeCargoTrabalho = TrimOrNull(request.Pessoa.ConjugeCargoTrabalho);
+            pessoa.PessoaFisica.ConjugeRendaTrabalho = request.Pessoa.ConjugeRendaTrabalho;
+            pessoa.PessoaFisica.ConjugeTempoEmprego = TrimOrNull(request.Pessoa.ConjugeTempoEmprego);
+            pessoa.PessoaFisica.ConjugeTipoComprovanteRenda = TrimOrNull(request.Pessoa.ConjugeTipoComprovanteRenda);
+            pessoa.PessoaFisica.ConjugeEmpresaRua = TrimOrNull(request.Pessoa.ConjugeEmpresaRua);
+            pessoa.PessoaFisica.ConjugeEmpresaNumero = TrimOrNull(request.Pessoa.ConjugeEmpresaNumero);
+            pessoa.PessoaFisica.ConjugeEmpresaComplemento = TrimOrNull(request.Pessoa.ConjugeEmpresaComplemento);
+            pessoa.PessoaFisica.ConjugeEmpresaBairro = TrimOrNull(request.Pessoa.ConjugeEmpresaBairro);
+            pessoa.PessoaFisica.ConjugeEmpresaCidade = TrimOrNull(request.Pessoa.ConjugeEmpresaCidade);
+            pessoa.PessoaFisica.ConjugeEmpresaEstado = NormalizeState(request.Pessoa.ConjugeEmpresaEstado);
+            pessoa.PessoaFisica.ConjugeEmpresaCep = DigitsOrNull(request.Pessoa.ConjugeEmpresaCep);
         }
         else
         {
@@ -246,45 +336,54 @@ public sealed class RentalManagementService(
 
             pessoa.PessoaJuridica ??= new PessoaJuridica { PessoaId = pessoa.Id };
             pessoa.PessoaJuridica.NomeEmpresa = pessoa.NomeDisplay;
-            pessoa.PessoaJuridica.Cnpj = TrimOrNull(request.Pessoa.Documento);
+            pessoa.PessoaJuridica.NomeFantasia = TrimOrNull(request.Pessoa.NomeFantasia);
+            pessoa.PessoaJuridica.Atividade = TrimOrNull(request.Pessoa.Atividade);
+            pessoa.PessoaJuridica.ReceitaMensal = request.Pessoa.ReceitaMensal;
+            pessoa.PessoaJuridica.Cnpj = DigitsOrNull(request.Pessoa.Documento);
+            pessoa.PessoaJuridica.InscricaoEstadual = DigitsOrNull(request.Pessoa.InscricaoEstadual);
+            pessoa.PessoaJuridica.InscricaoMunicipal = DigitsOrNull(request.Pessoa.InscricaoMunicipal);
+            pessoa.PessoaJuridica.DataAbertura = request.Pessoa.DataAbertura;
             pessoa.PessoaJuridica.EmpresaRua = TrimOrNull(request.Pessoa.Rua);
             pessoa.PessoaJuridica.EmpresaNumero = TrimOrNull(request.Pessoa.Numero);
             pessoa.PessoaJuridica.EmpresaComplemento = TrimOrNull(request.Pessoa.Complemento);
             pessoa.PessoaJuridica.EmpresaBairro = TrimOrNull(request.Pessoa.Bairro);
             pessoa.PessoaJuridica.EmpresaCidade = TrimOrNull(request.Pessoa.Cidade);
             pessoa.PessoaJuridica.EmpresaEstado = NormalizeState(request.Pessoa.Estado);
-            pessoa.PessoaJuridica.EmpresaCep = TrimOrNull(request.Pessoa.Cep);
+            pessoa.PessoaJuridica.EmpresaCep = DigitsOrNull(request.Pessoa.Cep);
             pessoa.PessoaJuridica.ResponsavelNome = TrimOrNull(request.Pessoa.ResponsavelNome);
+            pessoa.PessoaJuridica.ResponsavelCargo = TrimOrNull(request.Pessoa.ResponsavelCargo);
             pessoa.PessoaJuridica.ResponsavelRua = TrimOrNull(request.Pessoa.ResponsavelRua);
             pessoa.PessoaJuridica.ResponsavelNumero = TrimOrNull(request.Pessoa.ResponsavelNumero);
             pessoa.PessoaJuridica.ResponsavelComplemento = TrimOrNull(request.Pessoa.ResponsavelComplemento);
             pessoa.PessoaJuridica.ResponsavelBairro = TrimOrNull(request.Pessoa.ResponsavelBairro);
             pessoa.PessoaJuridica.ResponsavelCidade = TrimOrNull(request.Pessoa.ResponsavelCidade);
             pessoa.PessoaJuridica.ResponsavelEstado = NormalizeState(request.Pessoa.ResponsavelEstado);
-            pessoa.PessoaJuridica.ResponsavelCep = TrimOrNull(request.Pessoa.ResponsavelCep);
+            pessoa.PessoaJuridica.ResponsavelCep = DigitsOrNull(request.Pessoa.ResponsavelCep);
             pessoa.PessoaJuridica.ResponsavelEstadoCivil = TrimOrNull(request.Pessoa.ResponsavelEstadoCivil);
             pessoa.PessoaJuridica.ResponsavelNacionalidade = TrimOrNull(request.Pessoa.ResponsavelNacionalidade);
             pessoa.PessoaJuridica.ResponsavelDataNascimento = request.Pessoa.ResponsavelDataNascimento;
-            pessoa.PessoaJuridica.ResponsavelTelefone = TrimOrNull(request.Pessoa.ResponsavelTelefone) ?? pessoa.Telefone;
+            pessoa.PessoaJuridica.ResponsavelTelefone = DigitsOrNull(request.Pessoa.ResponsavelTelefone) ?? pessoa.Telefone;
             pessoa.PessoaJuridica.ResponsavelEmail = TrimOrNull(request.Pessoa.ResponsavelEmail) ?? pessoa.Email;
-            pessoa.PessoaJuridica.ResponsavelRg = TrimOrNull(request.Pessoa.ResponsavelRg);
-            pessoa.PessoaJuridica.ResponsavelCpf = TrimOrNull(request.Pessoa.ResponsavelCpf);
+            pessoa.PessoaJuridica.ResponsavelRg = DigitsOrNull(request.Pessoa.ResponsavelRg);
+            pessoa.PessoaJuridica.ResponsavelCpf = DigitsOrNull(request.Pessoa.ResponsavelCpf);
             pessoa.PessoaJuridica.ResponsavelProfissao = TrimOrNull(request.Pessoa.ResponsavelProfissao);
             pessoa.PessoaJuridica.ResponsavelOndeTrabalha = TrimOrNull(request.Pessoa.ResponsavelOndeTrabalha);
             pessoa.PessoaJuridica.ResponsavelEnderecoTrabalho = TrimOrNull(request.Pessoa.ResponsavelEnderecoTrabalho);
             pessoa.PessoaJuridica.ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.Pessoa.ResponsavelNomeEmpresaTrabalho);
-            pessoa.PessoaJuridica.ResponsavelTelefoneEmpresaTrabalho = TrimOrNull(request.Pessoa.ResponsavelTelefoneEmpresaTrabalho);
+            pessoa.PessoaJuridica.ResponsavelTelefoneEmpresaTrabalho = DigitsOrNull(request.Pessoa.ResponsavelTelefoneEmpresaTrabalho);
             pessoa.PessoaJuridica.ResponsavelDadosBancarios = TrimOrNull(request.Pessoa.ResponsavelDadosBancarios);
+            pessoa.PessoaJuridica.ResponsavelObservacoes = TrimOrNull(request.Pessoa.ResponsavelObservacoes);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-        return (await GetPessoasAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
+        return (await GetPessoasCoreAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
     }
 
     public async Task SetPessoaActiveAsync(Guid pessoaId, bool isActive, CancellationToken cancellationToken = default)
     {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
         var pessoa = await dbContext.Pessoas.SingleOrDefaultAsync(x => x.Id == pessoaId, cancellationToken)
-            ?? throw new InvalidOperationException("Pessoa nÃ£o encontrada.");
+            ?? throw new InvalidOperationException("Pessoa não encontrada.");
 
         pessoa.Status = isActive ? RegistroStatus.Ativo : RegistroStatus.Inativo;
         pessoa.UpdatedAtUtc = DateTimeOffset.UtcNow;
@@ -293,6 +392,7 @@ public sealed class RentalManagementService(
 
     public async Task<PessoaDocumentoSummary> CreatePessoaDocumentoAsync(CreatePessoaDocumentoRequest request, CancellationToken cancellationToken = default)
     {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
         if (request.PessoaId == Guid.Empty)
         {
             throw new InvalidOperationException("Selecione a pessoa do documento.");
@@ -344,10 +444,16 @@ public sealed class RentalManagementService(
         dbContext.PessoaDocumentos.Add(documento);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return (await GetPessoaDocumentosAsync(request.PessoaId, cancellationToken)).Single(x => x.Id == documento.Id);
+        return (await GetPessoaDocumentosCoreAsync(request.PessoaId, cancellationToken)).Single(x => x.Id == documento.Id);
     }
 
     public async Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosAsync(Guid? pessoaId = null, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await GetPessoaDocumentosCoreAsync(pessoaId, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosCoreAsync(Guid? pessoaId, CancellationToken cancellationToken)
     {
         var query = dbContext.PessoaDocumentos
             .AsNoTracking()
@@ -383,13 +489,14 @@ public sealed class RentalManagementService(
 
     public async Task<PessoaContratoAutofillContext?> GetPessoaContratoAutofillContextAsync(Guid pessoaId, CancellationToken cancellationToken = default)
     {
-        var pessoa = (await GetPessoasAsync(cancellationToken)).SingleOrDefault(x => x.Id == pessoaId);
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        var pessoa = (await GetPessoasCoreAsync(cancellationToken)).SingleOrDefault(x => x.Id == pessoaId);
         if (pessoa is null)
         {
             return null;
         }
 
-        var documentos = await GetPessoaDocumentosAsync(pessoaId, cancellationToken);
+        var documentos = await GetPessoaDocumentosCoreAsync(pessoaId, cancellationToken);
         var textoOcr = string.Join(
             Environment.NewLine,
             documentos
@@ -400,6 +507,12 @@ public sealed class RentalManagementService(
     }
 
     public async Task<IReadOnlyList<ImovelSummary>> GetImoveisAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await GetImoveisCoreAsync(cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<ImovelSummary>> GetImoveisCoreAsync(CancellationToken cancellationToken)
     {
         var imoveis = await dbContext.Imoveis
             .AsNoTracking()
@@ -419,6 +532,7 @@ public sealed class RentalManagementService(
 
     public async Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default)
     {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
         if (request.ProprietarioId == Guid.Empty)
         {
             throw new InvalidOperationException("Selecione um proprietário.");
@@ -459,11 +573,12 @@ public sealed class RentalManagementService(
         dbContext.Imoveis.Add(imovel);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return (await GetImoveisAsync(cancellationToken)).Single(x => x.Id == imovel.Id);
+        return (await GetImoveisCoreAsync(cancellationToken)).Single(x => x.Id == imovel.Id);
     }
 
     public async Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default)
     {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
         if (request.ImovelId == Guid.Empty)
         {
             throw new InvalidOperationException("Selecione o imóvel da foto.");
@@ -494,11 +609,18 @@ public sealed class RentalManagementService(
         dbContext.Set<ImovelImagem>().Add(imagem);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return (await GetImovelImagensAsync(request.ImovelId, cancellationToken)).Single(x => x.Id == imagem.Id);
+        return (await GetImovelImagensCoreAsync(request.ImovelId, cancellationToken)).Single(x => x.Id == imagem.Id);
     }
 
-    public async Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default) =>
-        await dbContext.Set<ImovelImagem>()
+    public async Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await GetImovelImagensCoreAsync(imovelId, cancellationToken);
+    }
+
+    private async Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensCoreAsync(Guid imovelId, CancellationToken cancellationToken)
+    {
+        return await dbContext.Set<ImovelImagem>()
             .AsNoTracking()
             .Where(x => x.ImovelId == imovelId)
             .OrderBy(x => x.DisplayOrder)
@@ -512,9 +634,11 @@ public sealed class RentalManagementService(
                 x.DisplayOrder,
                 x.Status == RegistroStatus.Ativo ? "Ativo" : "Inativo"))
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default)
     {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
         var locacoes = await dbContext.Locacoes
             .AsNoTracking()
             .Include(x => x.Imovel)
@@ -535,45 +659,112 @@ public sealed class RentalManagementService(
             GetEnumLabel(x.Status))).ToList();
     }
 
-    public async Task<IReadOnlyList<IndiceReajusteSummary>> GetIndicesReajusteAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.IndicesReajuste.AsNoTracking().OrderBy(x => x.Nome)
+    public async Task<IReadOnlyList<IndiceReajusteSummary>> GetIndicesReajusteAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await dbContext.IndicesReajuste.AsNoTracking().OrderBy(x => x.Nome)
             .Select(x => new IndiceReajusteSummary(x.Id, x.Nome, x.Codigo, x.Tipo == ReajusteTipo.Oficial ? "Oficial" : "Custom/manual", x.Percentual, x.Ativo ? "Ativo" : "Inativo"))
             .ToListAsync(cancellationToken);
+    }
 
-    public async Task<IReadOnlyList<FinanceiroSummary>> GetLancamentosFinanceirosAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.LancamentosFinanceiros.AsNoTracking().OrderBy(x => x.DataVencimento)
+    public async Task<IReadOnlyList<FinanceiroSummary>> GetLancamentosFinanceirosAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await dbContext.LancamentosFinanceiros.AsNoTracking().OrderBy(x => x.DataVencimento)
             .Select(x => new FinanceiroSummary(x.Id, x.Tipo.ToString(), x.Categoria, x.Descricao, x.Valor, x.DataVencimento, x.Status.ToString()))
             .ToListAsync(cancellationToken);
+    }
 
-    public async Task<IReadOnlyList<BoletoSummary>> GetBoletosAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.Boletos.AsNoTracking().OrderBy(x => x.DataVencimento)
+    public async Task<IReadOnlyList<BoletoSummary>> GetBoletosAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await dbContext.Boletos.AsNoTracking().OrderBy(x => x.DataVencimento)
             .Select(x => new BoletoSummary(x.Id, x.Status.ToString(), x.Valor, x.DataVencimento, x.BancoProvider))
             .ToListAsync(cancellationToken);
+    }
 
-    public async Task<IReadOnlyList<NotaFiscalSummary>> GetNotasFiscaisAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.NotasFiscais.AsNoTracking().OrderByDescending(x => x.CreatedAtUtc)
+    public async Task<IReadOnlyList<NotaFiscalSummary>> GetNotasFiscaisAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await dbContext.NotasFiscais.AsNoTracking().OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => new NotaFiscalSummary(x.Id, x.Status.ToString(), x.ValorServico, x.Provider, x.Numero, x.CodigoVerificacao))
             .ToListAsync(cancellationToken);
+    }
 
-    public async Task<IReadOnlyList<DocumentoModeloSummary>> GetDocumentoModelosAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.DocumentosModelos.AsNoTracking().OrderBy(x => x.Tipo)
+    public async Task<IReadOnlyList<DocumentoModeloSummary>> GetDocumentoModelosAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await dbContext.DocumentosModelos.AsNoTracking().OrderBy(x => x.Tipo)
             .Select(x => new DocumentoModeloSummary(x.Id, x.Tipo, x.Nome, x.StatusRevisao.ToString(), x.Ativo ? "Ativo" : "Inativo"))
             .ToListAsync(cancellationToken);
+    }
 
-    public async Task<IReadOnlyList<DimobDeclaracaoSummary>> GetDimobDeclaracoesAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.DimobDeclaracoes.AsNoTracking().OrderByDescending(x => x.AnoCalendario)
+    public async Task<IReadOnlyList<DimobDeclaracaoSummary>> GetDimobDeclaracoesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await dbContext.DimobDeclaracoes.AsNoTracking().OrderByDescending(x => x.AnoCalendario)
             .Select(x => new DimobDeclaracaoSummary(x.Id, x.AnoCalendario, x.Status.ToString(), x.Observacoes))
             .ToListAsync(cancellationToken);
+    }
 
-    public async Task<IReadOnlyList<ManutencaoSummary>> GetManutencoesAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.ManutencoesImovel.AsNoTracking().OrderByDescending(x => x.DataSolicitacao)
+    public async Task<IReadOnlyList<ManutencaoSummary>> GetManutencoesAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await dbContext.ManutencoesImovel.AsNoTracking().OrderByDescending(x => x.DataSolicitacao)
             .Select(x => new ManutencaoSummary(x.Id, x.Descricao, x.Status.ToString(), x.DataSolicitacao, x.Valor))
             .ToListAsync(cancellationToken);
+    }
 
-    public async Task<IReadOnlyList<VistoriaSummary>> GetVistoriasAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.Vistorias.AsNoTracking().OrderByDescending(x => x.DataVistoria)
+    public async Task<IReadOnlyList<VistoriaSummary>> GetVistoriasAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        return await dbContext.Vistorias.AsNoTracking().OrderByDescending(x => x.DataVistoria)
             .Select(x => new VistoriaSummary(x.Id, x.Tipo.ToString(), x.DataVistoria, x.Responsavel, x.Status))
             .ToListAsync(cancellationToken);
+    }
+
+    private async ValueTask<DbContextOperationScope> EnterDbContextOperationAsync(CancellationToken cancellationToken)
+    {
+        if (_dbContextGateDepth.Value > 0)
+        {
+            _dbContextGateDepth.Value++;
+            return new DbContextOperationScope(this, releaseGate: false);
+        }
+
+        await _dbContextGate.WaitAsync(cancellationToken);
+        _dbContextGateDepth.Value = 1;
+        return new DbContextOperationScope(this, releaseGate: true);
+    }
+
+    private sealed class DbContextOperationScope : IAsyncDisposable
+    {
+        private readonly RentalManagementService _service;
+        private readonly bool _releaseGate;
+        private int _disposed;
+
+        public DbContextOperationScope(RentalManagementService service, bool releaseGate)
+        {
+            _service = service;
+            _releaseGate = releaseGate;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            if (System.Threading.Interlocked.Exchange(ref _disposed, 1) == 1)
+            {
+                return ValueTask.CompletedTask;
+            }
+
+            _service._dbContextGateDepth.Value = Math.Max(0, _service._dbContextGateDepth.Value - 1);
+            if (_releaseGate)
+            {
+                _service._dbContextGateDepth.Value = 0;
+                _service._dbContextGate.Release();
+            }
+
+            return ValueTask.CompletedTask;
+        }
+    }
 
     private async Task<string> StorePessoaDocumentoAsync(
         Guid documentoId,
@@ -643,9 +834,9 @@ public sealed class RentalManagementService(
 
         if (pessoa.TipoPessoa == TipoPessoa.Fisica && pessoa.PessoaFisica is not null)
         {
-            FillIfBlank(() => pessoa.PessoaFisica.Cpf, value => pessoa.PessoaFisica.Cpf = value, values.Cpf, "CPF", filledFields);
-            FillIfBlank(() => pessoa.PessoaFisica.Rg, value => pessoa.PessoaFisica.Rg = value, values.Rg, "RG", filledFields);
-            FillIfBlank(() => pessoa.PessoaFisica.Cep, value => pessoa.PessoaFisica.Cep = value, values.Cep, "CEP", filledFields);
+            FillIfBlank(() => pessoa.PessoaFisica.Cpf, value => pessoa.PessoaFisica.Cpf = value, DigitsOrNull(values.Cpf), "CPF", filledFields);
+            FillIfBlank(() => pessoa.PessoaFisica.Rg, value => pessoa.PessoaFisica.Rg = value, DigitsOrNull(values.Rg), "RG", filledFields);
+            FillIfBlank(() => pessoa.PessoaFisica.Cep, value => pessoa.PessoaFisica.Cep = value, DigitsOrNull(values.Cep), "CEP", filledFields);
             FillIfBlank(() => pessoa.PessoaFisica.Rua, value => pessoa.PessoaFisica.Rua = value, values.Endereco, "Rua", filledFields);
             FillIfBlank(() => pessoa.PessoaFisica.Nome, value =>
             {
@@ -659,8 +850,8 @@ public sealed class RentalManagementService(
 
         if (pessoa.TipoPessoa == TipoPessoa.Juridica && pessoa.PessoaJuridica is not null)
         {
-            FillIfBlank(() => pessoa.PessoaJuridica.Cnpj, value => pessoa.PessoaJuridica.Cnpj = value, values.Cnpj, "CNPJ", filledFields);
-            FillIfBlank(() => pessoa.PessoaJuridica.EmpresaCep, value => pessoa.PessoaJuridica.EmpresaCep = value, values.Cep, "CEP da empresa", filledFields);
+            FillIfBlank(() => pessoa.PessoaJuridica.Cnpj, value => pessoa.PessoaJuridica.Cnpj = value, DigitsOrNull(values.Cnpj), "CNPJ", filledFields);
+            FillIfBlank(() => pessoa.PessoaJuridica.EmpresaCep, value => pessoa.PessoaJuridica.EmpresaCep = value, DigitsOrNull(values.Cep), "CEP da empresa", filledFields);
             FillIfBlank(() => pessoa.PessoaJuridica.EmpresaRua, value => pessoa.PessoaJuridica.EmpresaRua = value, values.Endereco, "Rua da empresa", filledFields);
             FillIfBlank(() => pessoa.PessoaJuridica.NomeEmpresa, value =>
             {
@@ -737,58 +928,96 @@ public sealed class RentalManagementService(
         {
             var fisica = pessoa.PessoaFisica;
             return new CreatePessoaRequest(
-                pessoa.TipoPessoa,
-                pessoa.NomeDisplay,
-                pessoa.Telefone,
-                pessoa.Email,
-                fisica.Cpf,
-                null,
-                pessoa.Observacoes,
-                null,
-                fisica.Rua,
-                fisica.Numero,
-                fisica.Complemento,
-                fisica.Bairro,
-                fisica.Cidade,
-                fisica.Estado,
-                fisica.Cep,
-                fisica.EstadoCivil,
-                fisica.Nacionalidade,
-                fisica.DataNascimento,
-                fisica.Rg,
-                fisica.Profissao,
-                fisica.OndeTrabalha,
-                fisica.EnderecoTrabalho,
-                fisica.NomeEmpresaTrabalho,
-                fisica.TelefoneEmpresaTrabalho,
-                fisica.DadosBancarios,
-                fisica.ConjugeNome,
-                fisica.ConjugeRg,
-                fisica.ConjugeCpf,
-                fisica.ConjugeDataNascimento,
-                fisica.ConjugeProfissao,
-                fisica.ConjugeNacionalidade,
-                fisica.ConjugeTelefone);
+                TipoPessoa: pessoa.TipoPessoa,
+                NomeDisplay: pessoa.NomeDisplay,
+                Telefone: FormatPhoneForDisplay(fisica.Telefone ?? pessoa.Telefone),
+                Email: fisica.Email ?? pessoa.Email,
+                Documento: FormatCpf(fisica.Cpf),
+                Observacoes: pessoa.Observacoes,
+                Rua: fisica.Rua,
+                Numero: fisica.Numero,
+                Complemento: fisica.Complemento,
+                Bairro: fisica.Bairro,
+                Cidade: fisica.Cidade,
+                Estado: fisica.Estado,
+                Cep: FormatCepForDisplay(fisica.Cep),
+                EstadoCivil: fisica.EstadoCivil,
+                PossuiTrabalho: fisica.PossuiTrabalho,
+                PossuiPet: fisica.PossuiPet,
+                PetQual: fisica.PetQual,
+                Nacionalidade: fisica.Nacionalidade,
+                DataNascimento: fisica.DataNascimento,
+                Rg: FormatRgForDisplay(fisica.Rg),
+                Profissao: fisica.Profissao,
+                OndeTrabalha: fisica.OndeTrabalha,
+                EnderecoTrabalho: fisica.EnderecoTrabalho,
+                NomeEmpresaTrabalho: fisica.NomeEmpresaTrabalho,
+                CnpjEmpresaTrabalho: FormatCnpj(fisica.CnpjEmpresaTrabalho),
+                TelefoneEmpresaTrabalho: FormatPhoneForDisplay(fisica.TelefoneEmpresaTrabalho),
+                EmailEmpresaTrabalho: fisica.EmailEmpresaTrabalho,
+                CargoTrabalho: fisica.CargoTrabalho,
+                RendaTrabalho: fisica.RendaTrabalho,
+                TempoEmprego: fisica.TempoEmprego,
+                TipoComprovanteRenda: fisica.TipoComprovanteRenda,
+                EmpresaRua: fisica.EmpresaRua,
+                EmpresaNumero: fisica.EmpresaNumero,
+                EmpresaComplemento: fisica.EmpresaComplemento,
+                EmpresaBairro: fisica.EmpresaBairro,
+                EmpresaCidade: fisica.EmpresaCidade,
+                EmpresaEstado: fisica.EmpresaEstado,
+                EmpresaCep: FormatCepForDisplay(fisica.EmpresaCep),
+                DadosBancarios: fisica.DadosBancarios,
+                ConjugeNome: fisica.ConjugeNome,
+                ConjugeRg: FormatRgForDisplay(fisica.ConjugeRg),
+                ConjugeCpf: FormatCpf(fisica.ConjugeCpf),
+                ConjugeEmail: fisica.ConjugeEmail,
+                ConjugeDataNascimento: fisica.ConjugeDataNascimento,
+                ConjugeProfissao: fisica.ConjugeProfissao,
+                ConjugeNacionalidade: fisica.ConjugeNacionalidade,
+                ConjugeTelefone: FormatPhoneForDisplay(fisica.ConjugeTelefone),
+                ConjugeDadosBancarios: fisica.ConjugeDadosBancarios,
+                ConjugeObservacoes: fisica.ConjugeObservacoes,
+                ConjugePossuiTrabalho: fisica.ConjugePossuiTrabalho,
+                ConjugeNomeEmpresaTrabalho: fisica.ConjugeNomeEmpresaTrabalho,
+                ConjugeCnpjEmpresaTrabalho: FormatCnpj(fisica.ConjugeCnpjEmpresaTrabalho),
+                ConjugeTelefoneEmpresaTrabalho: FormatPhoneForDisplay(fisica.ConjugeTelefoneEmpresaTrabalho),
+                ConjugeEmailEmpresaTrabalho: fisica.ConjugeEmailEmpresaTrabalho,
+                ConjugeCargoTrabalho: fisica.ConjugeCargoTrabalho,
+                ConjugeRendaTrabalho: fisica.ConjugeRendaTrabalho,
+                ConjugeTempoEmprego: fisica.ConjugeTempoEmprego,
+                ConjugeTipoComprovanteRenda: fisica.ConjugeTipoComprovanteRenda,
+                ConjugeEmpresaRua: fisica.ConjugeEmpresaRua,
+                ConjugeEmpresaNumero: fisica.ConjugeEmpresaNumero,
+                ConjugeEmpresaComplemento: fisica.ConjugeEmpresaComplemento,
+                ConjugeEmpresaBairro: fisica.ConjugeEmpresaBairro,
+                ConjugeEmpresaCidade: fisica.ConjugeEmpresaCidade,
+                ConjugeEmpresaEstado: fisica.ConjugeEmpresaEstado,
+                ConjugeEmpresaCep: FormatCepForDisplay(fisica.ConjugeEmpresaCep));
         }
 
         var juridica = pessoa.PessoaJuridica;
         return new CreatePessoaRequest(
-            pessoa.TipoPessoa,
-            pessoa.NomeDisplay,
-            pessoa.Telefone,
-            pessoa.Email,
-            juridica?.Cnpj,
-            null,
-            pessoa.Observacoes,
-            null,
-            juridica?.EmpresaRua,
-            juridica?.EmpresaNumero,
-            juridica?.EmpresaComplemento,
-            juridica?.EmpresaBairro,
-            juridica?.EmpresaCidade,
-            juridica?.EmpresaEstado,
-            juridica?.EmpresaCep,
+            TipoPessoa: pessoa.TipoPessoa,
+            NomeDisplay: pessoa.NomeDisplay,
+            Telefone: FormatPhoneForDisplay(pessoa.Telefone),
+            Email: pessoa.Email,
+            Documento: FormatCnpj(juridica?.Cnpj),
+            Observacoes: pessoa.Observacoes,
+            Rua: juridica?.EmpresaRua,
+            Numero: juridica?.EmpresaNumero,
+            Complemento: juridica?.EmpresaComplemento,
+            Bairro: juridica?.EmpresaBairro,
+            Cidade: juridica?.EmpresaCidade,
+            Estado: juridica?.EmpresaEstado,
+            Cep: FormatCepForDisplay(juridica?.EmpresaCep),
+            NomeFantasia: juridica?.NomeFantasia,
+            Atividade: juridica?.Atividade,
+            ReceitaMensal: juridica?.ReceitaMensal,
+            InscricaoEstadual: juridica?.InscricaoEstadual,
+            InscricaoMunicipal: juridica?.InscricaoMunicipal,
+            DataAbertura: juridica?.DataAbertura,
             ResponsavelNome: juridica?.ResponsavelNome,
+            ResponsavelCargo: juridica?.ResponsavelCargo,
             ResponsavelEndereco: null,
             ResponsavelRua: juridica?.ResponsavelRua,
             ResponsavelNumero: juridica?.ResponsavelNumero,
@@ -796,20 +1025,21 @@ public sealed class RentalManagementService(
             ResponsavelBairro: juridica?.ResponsavelBairro,
             ResponsavelCidade: juridica?.ResponsavelCidade,
             ResponsavelEstado: juridica?.ResponsavelEstado,
-            ResponsavelCep: juridica?.ResponsavelCep,
+            ResponsavelCep: FormatCepForDisplay(juridica?.ResponsavelCep),
             ResponsavelEstadoCivil: juridica?.ResponsavelEstadoCivil,
             ResponsavelNacionalidade: juridica?.ResponsavelNacionalidade,
             ResponsavelDataNascimento: juridica?.ResponsavelDataNascimento,
-            ResponsavelTelefone: juridica?.ResponsavelTelefone,
+            ResponsavelTelefone: FormatPhoneForDisplay(juridica?.ResponsavelTelefone),
             ResponsavelEmail: juridica?.ResponsavelEmail,
-            ResponsavelRg: juridica?.ResponsavelRg,
-            ResponsavelCpf: juridica?.ResponsavelCpf,
+            ResponsavelRg: FormatRgForDisplay(juridica?.ResponsavelRg),
+            ResponsavelCpf: FormatCpf(juridica?.ResponsavelCpf),
             ResponsavelProfissao: juridica?.ResponsavelProfissao,
             ResponsavelOndeTrabalha: juridica?.ResponsavelOndeTrabalha,
             ResponsavelEnderecoTrabalho: juridica?.ResponsavelEnderecoTrabalho,
             ResponsavelNomeEmpresaTrabalho: juridica?.ResponsavelNomeEmpresaTrabalho,
-            ResponsavelTelefoneEmpresaTrabalho: juridica?.ResponsavelTelefoneEmpresaTrabalho,
-            ResponsavelDadosBancarios: juridica?.ResponsavelDadosBancarios);
+            ResponsavelTelefoneEmpresaTrabalho: FormatPhoneForDisplay(juridica?.ResponsavelTelefoneEmpresaTrabalho),
+            ResponsavelDadosBancarios: juridica?.ResponsavelDadosBancarios,
+            ResponsavelObservacoes: juridica?.ResponsavelObservacoes);
     }
 
     private static string NormalizeStoredPath(string storagePath) =>
@@ -850,6 +1080,116 @@ public sealed class RentalManagementService(
 
     private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+    private static string? DigitsOrNull(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var digits = Regex.Replace(value, @"\D", string.Empty);
+        return digits.Length == 0 ? null : digits;
+    }
+
+    private static string? FormatCpfCnpjForDisplay(TipoPessoa tipoPessoa, string? value)
+    {
+        var digits = DigitsOrNull(value);
+        return tipoPessoa == TipoPessoa.Juridica ? FormatCnpj(digits) : FormatCpf(digits);
+    }
+
+    private static string? FormatCpf(string? value)
+    {
+        var digits = DigitsOrNull(value);
+        if (digits is null)
+        {
+            return null;
+        }
+
+        digits = digits.Length > 11 ? digits[..11] : digits;
+        return digits.Length switch
+        {
+            <= 3 => digits,
+            <= 6 => $"{digits[..3]}.{digits[3..]}",
+            <= 9 => $"{digits[..3]}.{digits.Substring(3, 3)}.{digits[6..]}",
+            _ => $"{digits[..3]}.{digits.Substring(3, 3)}.{digits.Substring(6, 3)}-{digits[9..]}"
+        };
+    }
+
+    private static string? FormatCnpj(string? value)
+    {
+        var digits = DigitsOrNull(value);
+        if (digits is null)
+        {
+            return null;
+        }
+
+        digits = digits.Length > 14 ? digits[..14] : digits;
+        return digits.Length switch
+        {
+            <= 2 => digits,
+            <= 5 => $"{digits[..2]}.{digits[2..]}",
+            <= 8 => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits[5..]}",
+            <= 12 => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}/{digits[8..]}",
+            _ => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}/{digits.Substring(8, 4)}-{digits[12..]}"
+        };
+    }
+
+    private static string? FormatPhoneForDisplay(string? value)
+    {
+        var digits = DigitsOrNull(value);
+        if (digits is null)
+        {
+            return null;
+        }
+
+        digits = digits.Length > 11 ? digits[..11] : digits;
+        if (digits.Length <= 2)
+        {
+            return digits;
+        }
+
+        var ddd = digits[..2];
+        var number = digits[2..];
+        if (number.Length <= 4)
+        {
+            return $"({ddd}) {number}";
+        }
+
+        return number.Length <= 8
+            ? $"({ddd}) {number[..4]}-{number[4..]}"
+            : $"({ddd}) {number[..5]}-{number[5..]}";
+    }
+
+    private static string? FormatCepForDisplay(string? value)
+    {
+        var digits = DigitsOrNull(value);
+        if (digits is null)
+        {
+            return null;
+        }
+
+        digits = digits.Length > 8 ? digits[..8] : digits;
+        return digits.Length <= 5 ? digits : $"{digits[..5]}-{digits[5..]}";
+    }
+
+    private static string? FormatRgForDisplay(string? value)
+    {
+        var digits = DigitsOrNull(value);
+        if (digits is null)
+        {
+            return null;
+        }
+
+        digits = digits.Length > 9 ? digits[..9] : digits;
+        return digits.Length switch
+        {
+            <= 2 => digits,
+            <= 5 => $"{digits[..2]}.{digits[2..]}",
+            <= 8 => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits[5..]}",
+            _ => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}-{digits[8..]}"
+        };
+    }
+
     private static string? NormalizeState(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToUpperInvariant();
 
@@ -865,3 +1205,5 @@ public sealed class RentalManagementService(
         string? Cep,
         string? Endereco);
 }
+
+
