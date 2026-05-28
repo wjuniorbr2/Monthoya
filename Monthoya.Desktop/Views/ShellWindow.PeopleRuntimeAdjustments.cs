@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Monthoya.Core.Services;
 
@@ -9,6 +10,7 @@ namespace Monthoya.Desktop.Views;
 public partial class ShellWindow
 {
     private bool _pessoasRuntimeAdjustmentsApplied;
+    private bool _newPessoaButtonResetHandlerApplied;
     private readonly SemaphoreSlim _pessoasSelectionSemaphore = new(1, 1);
     private int _pessoasSelectionVersion;
 
@@ -48,7 +50,57 @@ public partial class ShellWindow
         PessoasPanel.IsVisibleChanged += (_, _) =>
             Dispatcher.BeginInvoke(UpdatePeopleTopRowSpacingAndRolesVisibility, DispatcherPriority.Background);
 
+        AttachNewPessoaButtonResetHandler();
+        ApplyTitleBarCaptionButtonColors();
         UpdatePeopleTopRowSpacingAndRolesVisibility();
+    }
+
+    private void AttachNewPessoaButtonResetHandler()
+    {
+        if (_newPessoaButtonResetHandlerApplied)
+        {
+            return;
+        }
+
+        var newPessoaButton = FindVisualChildrenForPeopleRuntimeAdjustment<Button>(PessoasPanel)
+            .FirstOrDefault(button => string.Equals(button.Content as string, "Novo", StringComparison.Ordinal));
+
+        if (newPessoaButton is null)
+        {
+            return;
+        }
+
+        _newPessoaButtonResetHandlerApplied = true;
+        newPessoaButton.Click += (_, _) =>
+            Dispatcher.BeginInvoke(ClearActivePessoaTabSecondaryText, DispatcherPriority.Background);
+    }
+
+    private void ClearActivePessoaTabSecondaryText()
+    {
+        if (_activeTab?.Page != ShellPage.Pessoas)
+        {
+            return;
+        }
+
+        _activeTab.SelectedPessoaName = "Criar Novo";
+        _selectedPessoaDetails = null;
+        RenderTabs();
+        SaveActiveTabState();
+    }
+
+    private void ApplyTitleBarCaptionButtonColors()
+    {
+        foreach (var button in FindVisualChildrenForPeopleRuntimeAdjustment<Button>(this))
+        {
+            if (button == TitleBarMaximizeButton
+                || string.Equals(button.Content as string, "\uE921", StringComparison.Ordinal)
+                || string.Equals(button.Content as string, "\uE922", StringComparison.Ordinal)
+                || string.Equals(button.Content as string, "\uE923", StringComparison.Ordinal)
+                || string.Equals(button.Content as string, "\uE8BB", StringComparison.Ordinal))
+            {
+                button.Foreground = Brushes.Black;
+            }
+        }
     }
 
     private async void SafePessoasGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -71,6 +123,8 @@ public partial class ShellWindow
             if (PessoasGrid.SelectedItem is not PessoaSummary pessoa)
             {
                 SetPessoaDocumentoSelection(null);
+                _selectedPessoaDetails = null;
+                ClearActivePessoaTabSecondaryText();
                 await LoadPessoaDocumentosAsync(null);
                 SaveActiveTabState();
                 return;
@@ -90,8 +144,8 @@ public partial class ShellWindow
                 SetPessoaEditMode(false, isNew: false);
             }
 
-            // Store selected name on the active tab so the tab shows the correct secondary text
-            if (_activeTab is not null && pessoa is not null)
+            // Store selected name on the active tab so the tab shows the correct secondary text.
+            if (_activeTab is not null)
             {
                 _activeTab.SelectedPessoaName = pessoa.Nome;
                 RenderTabs();
@@ -170,4 +224,3 @@ public partial class ShellWindow
         }
     }
 }
-
