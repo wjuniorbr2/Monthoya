@@ -1,10 +1,12 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Integrations;
 using Monthoya.Core.Security;
 using Monthoya.Core.Services;
 using Monthoya.Data;
+using Monthoya.Data.Dashboard;
+using Monthoya.Data.Diagnostics;
 using Monthoya.Data.RentalManagement;
 using Monthoya.Data.Users;
 
@@ -73,6 +75,18 @@ public sealed class AuthAndUserTests
         Assert.True(RolePermissions.CanAccess(UserRole.Usuario, UserAccess.UserManagement, UserAccess.UserManagement));
         Assert.True(RolePermissions.CanAccess(UserRole.Administrador, UserAccess.None, UserAccess.UserManagement));
         Assert.True(RolePermissions.CanAccess(UserRole.Desenvolvedor, UserAccess.None, UserAccess.Diagnostics));
+    }
+
+    [Fact]
+    public void SupabaseSchemaAudit_DefinesConservativeStorageAndCleanupChecks()
+    {
+        Assert.Equal(
+            ["monthoya-documents", "monthoya-property-images"],
+            SupabaseSchemaAudit.ExpectedPrivateBuckets);
+        Assert.Contains(("pessoa_fisica", "Endereco"), SupabaseSchemaAudit.RemovedPessoaAddressColumns);
+        Assert.Contains(("pessoa_juridica", "EnderecoEmpresa"), SupabaseSchemaAudit.RemovedPessoaAddressColumns);
+        Assert.Contains(("pessoa_juridica", "ResponsavelEndereco"), SupabaseSchemaAudit.RemovedPessoaAddressColumns);
+        Assert.Equal("20260526085111_AddPessoaOcrAndAddressDetails", SupabaseSchemaAudit.HistoricalLiveOnlyMigrationId);
     }
 
     [Fact]
@@ -447,7 +461,7 @@ public sealed class AuthAndUserTests
         Assert.Equal("Centro", pessoaFisica.Bairro);
         Assert.Equal("Paranavaí", pessoaFisica.Cidade);
         Assert.Equal("PR", pessoaFisica.Estado);
-        Assert.Equal("87702-000", pessoaFisica.Cep);
+        Assert.Equal("87702000", pessoaFisica.Cep);
         Assert.Equal("Casada", pessoaFisica.EstadoCivil);
         Assert.Equal("Professora", pessoaFisica.Profissao);
         Assert.Single(documentos);
@@ -676,11 +690,11 @@ public sealed class AuthAndUserTests
         var pessoaEntity = await dbContext.Pessoas.SingleAsync();
 
         Assert.Equal("Nome Existente", pessoaEntity.NomeDisplay);
-        Assert.Equal("(44) 98888-0000", pessoaEntity.Telefone);
+        Assert.Equal("44988880000", pessoaEntity.Telefone);
         Assert.Equal("documento@monthoya.local", pessoaEntity.Email);
-        Assert.Equal("123.456.789-01", pessoaFisica.Cpf);
+        Assert.Equal("12345678901", pessoaFisica.Cpf);
         Assert.Equal("9876543", pessoaFisica.Rg);
-        Assert.Equal("87702-000", pessoaFisica.Cep);
+        Assert.Equal("87702000", pessoaFisica.Cep);
         Assert.Equal("Rua OCR, 123", pessoaFisica.Rua);
         Assert.Contains("Email", documento.OcrCamposAplicados);
         Assert.DoesNotContain("Telefone", documento.OcrCamposAplicados);
@@ -828,6 +842,73 @@ public sealed class AuthAndUserTests
     }
 
     [Fact]
+    public async Task DataServices_SerializeConcurrentReadsOnSameContext()
+    {
+        await using var dbContext = CreateDbContext();
+        var rentalService = new RentalManagementService(dbContext);
+        var dashboardService = new DashboardService(dbContext);
+
+        var proprietario = await rentalService.CreatePessoaAsync(
+            new CreatePessoaRequest(TipoPessoa.Fisica, "Proprietário Concorrente", null, null, null));
+        var locatario = await rentalService.CreatePessoaAsync(
+            new CreatePessoaRequest(TipoPessoa.Fisica, "Locatário Concorrente", null, null, null));
+        var imovel = await rentalService.CreateImovelAsync(
+            new CreateImovelRequest(
+                proprietario.Id,
+                "Rua Paraná",
+                "10",
+                "Centro",
+                "Paranavaí",
+                "PR",
+                1200m,
+                ImovelFinalidade.Locacao,
+                null));
+
+        dbContext.Locacoes.Add(new Locacao
+        {
+            ImovelId = imovel.Id,
+            ProprietarioId = proprietario.Id,
+            LocatarioId = locatario.Id,
+            ValorAluguel = 1200m,
+            Status = LocacaoStatus.Ativa,
+            DataInicio = new DateOnly(2026, 1, 1)
+        });
+        await dbContext.SaveChangesAsync();
+
+        var tasks = Enumerable.Range(0, 30)
+            .Select(async index => (index % 3) switch
+            {
+                0 => await ReadDashboardAsync(dashboardService),
+                1 => await ReadPessoasAsync(rentalService),
+                _ => await ReadLocacoesAsync(rentalService)
+            })
+            .ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        Assert.Equal(30, results.Length);
+        Assert.All(results, Assert.True);
+    }
+
+    private static async Task<bool> ReadDashboardAsync(DashboardService dashboardService)
+    {
+        await dashboardService.GetHomeSummaryAsync();
+        return true;
+    }
+
+    private static async Task<bool> ReadPessoasAsync(RentalManagementService rentalService)
+    {
+        await rentalService.GetPessoasAsync();
+        return true;
+    }
+
+    private static async Task<bool> ReadLocacoesAsync(RentalManagementService rentalService)
+    {
+        await rentalService.GetLocacoesAsync();
+        return true;
+    }
+
+    [Fact]
     public async Task PlaceholderProviders_ReportPendingConfiguration()
     {
         var boletoProvider = new LocalBoletoProvider();
@@ -894,3 +975,7 @@ public sealed class AuthAndUserTests
             Task.FromResult(new FileStorageSignedUrl($"https://storage.test/signed/{storagePath}", DateTimeOffset.UtcNow.AddMinutes(15)));
     }
 }
+
+
+
+

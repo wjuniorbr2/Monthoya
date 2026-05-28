@@ -12,12 +12,9 @@ public sealed class RentalManagementService(
     IDocumentOcrService? documentOcrService = null,
     IFileStorageService? fileStorageService = null) : IRentalManagementService
 {
-    private readonly SemaphoreSlim _dbContextGate = new(1, 1);
-    private readonly AsyncLocal<int> _dbContextGateDepth = new();
-
     public async Task<IReadOnlyList<PessoaSummary>> GetPessoasAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await GetPessoasCoreAsync(cancellationToken);
     }
 
@@ -74,7 +71,7 @@ public sealed class RentalManagementService(
 
     public async Task<PessoaDetails?> GetPessoaAsync(Guid pessoaId, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         var pessoa = await dbContext.Pessoas
             .AsNoTracking()
             .Include(x => x.PessoaFisica)
@@ -92,7 +89,7 @@ public sealed class RentalManagementService(
 
     public async Task<PessoaSummary> CreatePessoaAsync(CreatePessoaRequest request, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         if (string.IsNullOrWhiteSpace(request.NomeDisplay))
         {
             throw new InvalidOperationException("Informe o nome da pessoa.");
@@ -229,7 +226,7 @@ public sealed class RentalManagementService(
 
     public async Task<PessoaSummary> UpdatePessoaAsync(UpdatePessoaRequest request, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         if (request.Id == Guid.Empty)
         {
             throw new InvalidOperationException("Selecione a pessoa para editar.");
@@ -381,7 +378,7 @@ public sealed class RentalManagementService(
 
     public async Task SetPessoaActiveAsync(Guid pessoaId, bool isActive, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         var pessoa = await dbContext.Pessoas.SingleOrDefaultAsync(x => x.Id == pessoaId, cancellationToken)
             ?? throw new InvalidOperationException("Pessoa não encontrada.");
 
@@ -392,7 +389,7 @@ public sealed class RentalManagementService(
 
     public async Task<PessoaDocumentoSummary> CreatePessoaDocumentoAsync(CreatePessoaDocumentoRequest request, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         if (request.PessoaId == Guid.Empty)
         {
             throw new InvalidOperationException("Selecione a pessoa do documento.");
@@ -449,7 +446,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosAsync(Guid? pessoaId = null, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await GetPessoaDocumentosCoreAsync(pessoaId, cancellationToken);
     }
 
@@ -489,7 +486,7 @@ public sealed class RentalManagementService(
 
     public async Task<PessoaContratoAutofillContext?> GetPessoaContratoAutofillContextAsync(Guid pessoaId, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         var pessoa = (await GetPessoasCoreAsync(cancellationToken)).SingleOrDefault(x => x.Id == pessoaId);
         if (pessoa is null)
         {
@@ -508,7 +505,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<ImovelSummary>> GetImoveisAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await GetImoveisCoreAsync(cancellationToken);
     }
 
@@ -532,7 +529,7 @@ public sealed class RentalManagementService(
 
     public async Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         if (request.ProprietarioId == Guid.Empty)
         {
             throw new InvalidOperationException("Selecione um proprietário.");
@@ -578,7 +575,7 @@ public sealed class RentalManagementService(
 
     public async Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         if (request.ImovelId == Guid.Empty)
         {
             throw new InvalidOperationException("Selecione o imóvel da foto.");
@@ -614,7 +611,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await GetImovelImagensCoreAsync(imovelId, cancellationToken);
     }
 
@@ -638,7 +635,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         var locacoes = await dbContext.Locacoes
             .AsNoTracking()
             .Include(x => x.Imovel)
@@ -661,7 +658,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<IndiceReajusteSummary>> GetIndicesReajusteAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await dbContext.IndicesReajuste.AsNoTracking().OrderBy(x => x.Nome)
             .Select(x => new IndiceReajusteSummary(x.Id, x.Nome, x.Codigo, x.Tipo == ReajusteTipo.Oficial ? "Oficial" : "Custom/manual", x.Percentual, x.Ativo ? "Ativo" : "Inativo"))
             .ToListAsync(cancellationToken);
@@ -669,7 +666,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<FinanceiroSummary>> GetLancamentosFinanceirosAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await dbContext.LancamentosFinanceiros.AsNoTracking().OrderBy(x => x.DataVencimento)
             .Select(x => new FinanceiroSummary(x.Id, x.Tipo.ToString(), x.Categoria, x.Descricao, x.Valor, x.DataVencimento, x.Status.ToString()))
             .ToListAsync(cancellationToken);
@@ -677,7 +674,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<BoletoSummary>> GetBoletosAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await dbContext.Boletos.AsNoTracking().OrderBy(x => x.DataVencimento)
             .Select(x => new BoletoSummary(x.Id, x.Status.ToString(), x.Valor, x.DataVencimento, x.BancoProvider))
             .ToListAsync(cancellationToken);
@@ -685,7 +682,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<NotaFiscalSummary>> GetNotasFiscaisAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await dbContext.NotasFiscais.AsNoTracking().OrderByDescending(x => x.CreatedAtUtc)
             .Select(x => new NotaFiscalSummary(x.Id, x.Status.ToString(), x.ValorServico, x.Provider, x.Numero, x.CodigoVerificacao))
             .ToListAsync(cancellationToken);
@@ -693,7 +690,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<DocumentoModeloSummary>> GetDocumentoModelosAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await dbContext.DocumentosModelos.AsNoTracking().OrderBy(x => x.Tipo)
             .Select(x => new DocumentoModeloSummary(x.Id, x.Tipo, x.Nome, x.StatusRevisao.ToString(), x.Ativo ? "Ativo" : "Inativo"))
             .ToListAsync(cancellationToken);
@@ -701,7 +698,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<DimobDeclaracaoSummary>> GetDimobDeclaracoesAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await dbContext.DimobDeclaracoes.AsNoTracking().OrderByDescending(x => x.AnoCalendario)
             .Select(x => new DimobDeclaracaoSummary(x.Id, x.AnoCalendario, x.Status.ToString(), x.Observacoes))
             .ToListAsync(cancellationToken);
@@ -709,7 +706,7 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<ManutencaoSummary>> GetManutencoesAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await dbContext.ManutencoesImovel.AsNoTracking().OrderByDescending(x => x.DataSolicitacao)
             .Select(x => new ManutencaoSummary(x.Id, x.Descricao, x.Status.ToString(), x.DataSolicitacao, x.Valor))
             .ToListAsync(cancellationToken);
@@ -717,53 +714,10 @@ public sealed class RentalManagementService(
 
     public async Task<IReadOnlyList<VistoriaSummary>> GetVistoriasAsync(CancellationToken cancellationToken = default)
     {
-        await using var operation = await EnterDbContextOperationAsync(cancellationToken);
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         return await dbContext.Vistorias.AsNoTracking().OrderByDescending(x => x.DataVistoria)
             .Select(x => new VistoriaSummary(x.Id, x.Tipo.ToString(), x.DataVistoria, x.Responsavel, x.Status))
             .ToListAsync(cancellationToken);
-    }
-
-    private async ValueTask<DbContextOperationScope> EnterDbContextOperationAsync(CancellationToken cancellationToken)
-    {
-        if (_dbContextGateDepth.Value > 0)
-        {
-            _dbContextGateDepth.Value++;
-            return new DbContextOperationScope(this, releaseGate: false);
-        }
-
-        await _dbContextGate.WaitAsync(cancellationToken);
-        _dbContextGateDepth.Value = 1;
-        return new DbContextOperationScope(this, releaseGate: true);
-    }
-
-    private sealed class DbContextOperationScope : IAsyncDisposable
-    {
-        private readonly RentalManagementService _service;
-        private readonly bool _releaseGate;
-        private int _disposed;
-
-        public DbContextOperationScope(RentalManagementService service, bool releaseGate)
-        {
-            _service = service;
-            _releaseGate = releaseGate;
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            if (System.Threading.Interlocked.Exchange(ref _disposed, 1) == 1)
-            {
-                return ValueTask.CompletedTask;
-            }
-
-            _service._dbContextGateDepth.Value = Math.Max(0, _service._dbContextGateDepth.Value - 1);
-            if (_releaseGate)
-            {
-                _service._dbContextGateDepth.Value = 0;
-                _service._dbContextGate.Release();
-            }
-
-            return ValueTask.CompletedTask;
-        }
     }
 
     private async Task<string> StorePessoaDocumentoAsync(
@@ -1205,5 +1159,6 @@ public sealed class RentalManagementService(
         string? Cep,
         string? Endereco);
 }
+
 
 

@@ -1,16 +1,66 @@
 <Window x:Class="Monthoya.Desktop.Views.LoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Monthoya Consultoria Imobiliária"
         Width="940"
         Height="600"
         WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
         ResizeMode="NoResize">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="0"
+                            CornerRadius="10"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
     <Grid Background="#F5F8FF">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="420" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
+
+        <StackPanel Orientation="Horizontal"
+                    Grid.ColumnSpan="2"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Panel.ZIndex="200"
+                    shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <Button Width="40"
+                    Height="28"
+                    Click="TitleBarMinimizeButton_Click"
+                    Style="{StaticResource IconToolButton}"
+                    ToolTip="Minimizar"
+                    AutomationProperties.Name="Minimizar">
+                <TextBlock Text="-"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           LineHeight="18"
+                           TextAlignment="Center"
+                           Foreground="White" />
+            </Button>
+            <Button Width="40"
+                    Height="28"
+                    Click="TitleBarCloseButton_Click"
+                    Style="{StaticResource IconToolButtonDanger}"
+                    ToolTip="Fechar"
+                    AutomationProperties.Name="Fechar">
+                <TextBlock Text="X"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           TextAlignment="Center"
+                           Foreground="White" />
+            </Button>
+        </StackPanel>
+
+        <Border Background="Transparent"
+                Grid.ColumnSpan="2"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top"
+                Height="32"
+                Panel.ZIndex="199"
+                MouseLeftButtonDown="LoginTopDragArea_MouseLeftButtonDown" />
 
         <Border>
             <Border.Background>
@@ -49,7 +99,7 @@
                         <TextBlock Text="Rua Getúlio Vargas, 668 - Centro"
                                    Foreground="#D9E7FF"
                                    Margin="0,6,0,0" />
-                        <TextBlock Text="Paranavaí - Paraná — 87702-000"
+                        <TextBlock Text="Paranavaí - Paraná - 87702-000"
                                    Foreground="#D9E7FF"
                                    Margin="0,4,0,0" />
                     </StackPanel>

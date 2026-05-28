@@ -8,6 +8,7 @@ public sealed class DashboardService(MonthoyaDbContext dbContext) : IDashboardSe
 {
     public async Task<HomeDashboardSummary> GetHomeSummaryAsync(CancellationToken cancellationToken = default)
     {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         var totalProperties = await dbContext.Properties.CountAsync(cancellationToken);
         var availableRentals = await dbContext.Properties.CountAsync(
             x => x.AvailabilityStatus == PropertyAvailabilityStatus.DisponivelParaLocacao,

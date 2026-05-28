@@ -95,6 +95,63 @@ public partial class ShellWindow : Window
         UpdateMaximizeButtonIcon();
     }
 
+    // Allow dragging the window from the top stripe (where tabs live).
+    private void TopDragArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            e.Handled = true;
+            ToggleWindowMaximized();
+            return;
+        }
+
+        BeginWindowDrag(e);
+    }
+
+    private void BeginWindowDrag(MouseButtonEventArgs e)
+    {
+        if (e.ButtonState != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        if (WindowState == WindowState.Maximized)
+        {
+            RestoreWindowForDrag(e);
+        }
+
+        try
+        {
+            DragMove();
+        }
+        catch (InvalidOperationException)
+        {
+            // DragMove can throw if Windows has already ended the mouse operation.
+        }
+    }
+
+    private void RestoreWindowForDrag(MouseButtonEventArgs e)
+    {
+        var mouseInWindow = e.GetPosition(this);
+        var mouseOnScreen = PointToScreen(mouseInWindow);
+        var source = PresentationSource.FromVisual(this);
+        if (source?.CompositionTarget is not null)
+        {
+            mouseOnScreen = source.CompositionTarget.TransformFromDevice.Transform(mouseOnScreen);
+        }
+
+        var horizontalRatio = ActualWidth > 0 ? mouseInWindow.X / ActualWidth : 0.5;
+        var restoredWidth = RestoreBounds.Width > 0 ? RestoreBounds.Width : Width;
+        var restoredHeight = RestoreBounds.Height > 0 ? RestoreBounds.Height : Height;
+
+        WindowState = WindowState.Normal;
+        Width = restoredWidth;
+        Height = restoredHeight;
+        Left = mouseOnScreen.X - restoredWidth * horizontalRatio;
+        Top = Math.Max(0, mouseOnScreen.Y - 14);
+        UpdateMaximizeButtonIcon();
+    }
+
     public bool IsLogoutRequested { get; private set; }
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -112,7 +169,7 @@ public partial class ShellWindow : Window
 
         if (e.ButtonState == MouseButtonState.Pressed)
         {
-            DragMove();
+            BeginWindowDrag(e);
         }
     }
 
@@ -157,6 +214,8 @@ public partial class ShellWindow : Window
         var handle = new WindowInteropHelper(this).Handle;
         HwndSource.FromHwnd(handle)?.AddHook(WindowProc);
     }
+
+    // New pessoa action handled by ResetPessoaFormForPageOpen in the Pessoas layout partial.
 
     private IntPtr WindowProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
@@ -205,9 +264,15 @@ public partial class ShellWindow : Window
 
     private void UpdateMaximizeButtonIcon()
     {
-        if (TitleBarMaximizeButton is not null)
+        if (FindName("TitleBarMaximizeButton") is Button originalMax)
         {
-            TitleBarMaximizeButton.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+            originalMax.Content = new TextBlock
+            {
+                Text = "□",
+                FontSize = 15,
+                FontWeight = FontWeights.SemiBold,
+                TextAlignment = TextAlignment.Center
+            };
         }
     }
 

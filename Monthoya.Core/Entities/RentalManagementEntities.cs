@@ -54,6 +54,9 @@ public sealed class PessoaFisica
     public string? Estado { get; set; }
     public string? Cep { get; set; }
     public string? EstadoCivil { get; set; }
+    public bool? PossuiTrabalho { get; set; }
+    public bool? PossuiPet { get; set; }
+    public string? PetQual { get; set; }
     public string? Nacionalidade { get; set; }
     public DateOnly? DataNascimento { get; set; }
     public string? Telefone { get; set; }
@@ -64,15 +67,47 @@ public sealed class PessoaFisica
     public string? OndeTrabalha { get; set; }
     public string? EnderecoTrabalho { get; set; }
     public string? NomeEmpresaTrabalho { get; set; }
+    public string? CnpjEmpresaTrabalho { get; set; }
     public string? TelefoneEmpresaTrabalho { get; set; }
+    public string? EmailEmpresaTrabalho { get; set; }
+    public string? CargoTrabalho { get; set; }
+    public decimal? RendaTrabalho { get; set; }
+    public string? TempoEmprego { get; set; }
+    public string? TipoComprovanteRenda { get; set; }
+    public string? EmpresaRua { get; set; }
+    public string? EmpresaNumero { get; set; }
+    public string? EmpresaComplemento { get; set; }
+    public string? EmpresaBairro { get; set; }
+    public string? EmpresaCidade { get; set; }
+    public string? EmpresaEstado { get; set; }
+    public string? EmpresaCep { get; set; }
     public string? DadosBancarios { get; set; }
     public string? ConjugeNome { get; set; }
     public string? ConjugeRg { get; set; }
     public string? ConjugeCpf { get; set; }
+    public string? ConjugeEmail { get; set; }
     public DateOnly? ConjugeDataNascimento { get; set; }
     public string? ConjugeProfissao { get; set; }
     public string? ConjugeNacionalidade { get; set; }
     public string? ConjugeTelefone { get; set; }
+    public string? ConjugeDadosBancarios { get; set; }
+    public string? ConjugeObservacoes { get; set; }
+    public bool? ConjugePossuiTrabalho { get; set; }
+    public string? ConjugeNomeEmpresaTrabalho { get; set; }
+    public string? ConjugeCnpjEmpresaTrabalho { get; set; }
+    public string? ConjugeTelefoneEmpresaTrabalho { get; set; }
+    public string? ConjugeEmailEmpresaTrabalho { get; set; }
+    public string? ConjugeCargoTrabalho { get; set; }
+    public decimal? ConjugeRendaTrabalho { get; set; }
+    public string? ConjugeTempoEmprego { get; set; }
+    public string? ConjugeTipoComprovanteRenda { get; set; }
+    public string? ConjugeEmpresaRua { get; set; }
+    public string? ConjugeEmpresaNumero { get; set; }
+    public string? ConjugeEmpresaComplemento { get; set; }
+    public string? ConjugeEmpresaBairro { get; set; }
+    public string? ConjugeEmpresaCidade { get; set; }
+    public string? ConjugeEmpresaEstado { get; set; }
+    public string? ConjugeEmpresaCep { get; set; }
 }
 
 public sealed class PessoaJuridica
@@ -80,7 +115,13 @@ public sealed class PessoaJuridica
     public Guid PessoaId { get; set; }
     public Pessoa? Pessoa { get; set; }
     public string NomeEmpresa { get; set; } = string.Empty;
+    public string? NomeFantasia { get; set; }
+    public string? Atividade { get; set; }
+    public decimal? ReceitaMensal { get; set; }
     public string? Cnpj { get; set; }
+    public string? InscricaoEstadual { get; set; }
+    public string? InscricaoMunicipal { get; set; }
+    public DateOnly? DataAbertura { get; set; }
     public string? EmpresaRua { get; set; }
     public string? EmpresaNumero { get; set; }
     public string? EmpresaComplemento { get; set; }
@@ -89,6 +130,7 @@ public sealed class PessoaJuridica
     public string? EmpresaEstado { get; set; }
     public string? EmpresaCep { get; set; }
     public string? ResponsavelNome { get; set; }
+    public string? ResponsavelCargo { get; set; }
     public string? ResponsavelRua { get; set; }
     public string? ResponsavelNumero { get; set; }
     public string? ResponsavelComplemento { get; set; }
@@ -109,6 +151,7 @@ public sealed class PessoaJuridica
     public string? ResponsavelNomeEmpresaTrabalho { get; set; }
     public string? ResponsavelTelefoneEmpresaTrabalho { get; set; }
     public string? ResponsavelDadosBancarios { get; set; }
+    public string? ResponsavelObservacoes { get; set; }
 }
 
 public sealed class PessoaDocumento : BaseEntity

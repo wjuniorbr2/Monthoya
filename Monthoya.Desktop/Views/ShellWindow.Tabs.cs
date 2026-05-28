@@ -18,6 +18,10 @@ public partial class ShellWindow
     private void AddShellTab(ShellPage page, string title)
     {
         var tab = new ShellTab(Guid.NewGuid(), title, page);
+        if (page == ShellPage.Pessoas)
+        {
+            tab.SelectedPessoaName = "Criar Novo";
+        }
         _tabs.Add(tab);
         _activeTab = tab;
         RenderTabs();
@@ -32,8 +36,14 @@ public partial class ShellWindow
         }
         else
         {
+            var previousPage = _activeTab.Page;
             _activeTab.Page = page;
             _activeTab.Title = title;
+            // If switching this existing tab to Pessoas, ensure it starts with the PT-BR default label
+            if (page == ShellPage.Pessoas && previousPage != ShellPage.Pessoas && string.IsNullOrWhiteSpace(_activeTab.SelectedPessoaName))
+            {
+                _activeTab.SelectedPessoaName = "Criar Novo";
+            }
             RenderTabs();
         }
 
@@ -44,6 +54,12 @@ public partial class ShellWindow
     {
         SaveActiveTabState();
         _activeTab = tab;
+        // When selecting an existing Pessoas tab, if it has no stored name and the current loaded selection belongs to another tab,
+        // prefer the per-tab stored name; if none, initialize to PT-BR default "Criar Novo" so it doesn't show a leftover name.
+        if (tab.Page == ShellPage.Pessoas && string.IsNullOrWhiteSpace(tab.SelectedPessoaName))
+        {
+            tab.SelectedPessoaName = "Criar Novo";
+        }
         RenderTabs();
         await ShowPageAsync(tab.Page, true);
     }
@@ -362,7 +378,6 @@ public partial class ShellWindow
             var tb = new TextBlock { Text = fullName };
             // If it fits in the allowed width, return full name.
             // Otherwise, compress last names to initials from the end until it fits.
-            var maxWidth = 160.0;
             var formatted = fullName;
 
             var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);

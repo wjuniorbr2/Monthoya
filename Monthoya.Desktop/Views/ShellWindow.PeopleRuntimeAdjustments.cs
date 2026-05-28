@@ -130,7 +130,8 @@ public partial class ShellWindow
                 return;
             }
             SetPessoaDocumentoSelection(pessoa);
-            var details = await _rentalManagementService.GetPessoaAsync(pessoa.Id);
+            var pessoaId = pessoa.Id;
+            var details = await _rentalManagementService.GetPessoaAsync(pessoaId);
 
             if (selectionVersion != _pessoasSelectionVersion)
             {
@@ -147,11 +148,11 @@ public partial class ShellWindow
             // Store selected name on the active tab so the tab shows the correct secondary text.
             if (_activeTab is not null)
             {
-                _activeTab.SelectedPessoaName = pessoa.Nome;
+                _activeTab.SelectedPessoaName = pessoa.Nome ?? string.Empty;
                 RenderTabs();
             }
 
-            await LoadPessoaDocumentosAsync(pessoa.Id);
+            await LoadPessoaDocumentosAsync(pessoaId);
             SaveActiveTabState();
         }
         catch (Exception ex)

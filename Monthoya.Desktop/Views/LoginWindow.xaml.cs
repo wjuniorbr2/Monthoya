@@ -21,6 +21,38 @@ public partial class LoginWindow : Window
 
     public AuthenticatedUser? AuthenticatedUser { get; private set; }
 
+    private void LoginTopDragArea_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        BeginWindowDrag(e);
+    }
+
+    private void BeginWindowDrag(MouseButtonEventArgs e)
+    {
+        if (e.ButtonState != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        try
+        {
+            DragMove();
+        }
+        catch (InvalidOperationException)
+        {
+            // Windows may have already ended the mouse operation.
+        }
+    }
+
+    private void TitleBarMinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void TitleBarCloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
     private async void LoginButton_Click(object sender, RoutedEventArgs e)
     {
         ErrorText.Text = string.Empty;
@@ -35,4 +67,5 @@ public partial class LoginWindow : Window
         AuthenticatedUser = result.User;
         DialogResult = true;
     }
+
 }
