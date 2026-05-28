@@ -7,9 +7,9 @@
         <ResourceDictionary>
             <Color x:Key="MonthoyaInkColor">#10233F</Color>
             <Color x:Key="MonthoyaMutedColor">#617089</Color>
-            <Color x:Key="MonthoyaAccentColor">#0A5FE8</Color>
-            <Color x:Key="MonthoyaAccentDarkColor">#073B91</Color>
-            <Color x:Key="MonthoyaAccentLightColor">#EAF2FF</Color>
+            <Color x:Key="MonthoyaAccentColor">#005A9E</Color>
+            <Color x:Key="MonthoyaAccentDarkColor">#003A66</Color>
+            <Color x:Key="MonthoyaAccentLightColor">#E5F1FB</Color>
             <Color x:Key="MonthoyaSurfaceColor">#FFFFFF</Color>
             <Color x:Key="MonthoyaSoftColor">#F2F7FF</Color>
             <Color x:Key="MonthoyaLineColor">#D7E3F5</Color>
@@ -170,19 +170,20 @@
                                     BorderBrush="{TemplateBinding BorderBrush}"
                                     BorderThickness="{TemplateBinding BorderThickness}"
                                     CornerRadius="8"
-                                    Padding="{TemplateBinding Padding}"
-                                    TextElement.Foreground="{TemplateBinding Foreground}">
-                                <ContentPresenter HorizontalAlignment="Center"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
+                                                  HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
                                                   RecognizesAccessKey="True" />
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Root" Property="Background" Value="#084CC4" />
-                                    <Setter TargetName="Root" Property="BorderBrush" Value="#084CC4" />
+                                    <Setter TargetName="Root" Property="Background" Value="#004578" />
+                                    <Setter TargetName="Root" Property="BorderBrush" Value="#004578" />
                                 </Trigger>
                                 <Trigger Property="IsPressed" Value="True">
                                     <Setter TargetName="Root" Property="Background" Value="{StaticResource AccentDarkBrush}" />
+                                    <Setter TargetName="Root" Property="BorderBrush" Value="{StaticResource AccentDarkBrush}" />
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter TargetName="Root" Property="Opacity" Value="0.55" />
@@ -218,7 +219,7 @@
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter TargetName="Root" Property="Background" Value="{StaticResource AccentLightBrush}" />
-                                    <Setter TargetName="Root" Property="BorderBrush" Value="#B8CCF4" />
+                                    <Setter TargetName="Root" Property="BorderBrush" Value="#9FC5E8" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -250,7 +251,7 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Root" Property="Background" Value="#140A5FE8" />
+                                    <Setter TargetName="Root" Property="Background" Value="#14005A9E" />
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
