@@ -61,10 +61,15 @@ public sealed class AppStartup(
                 return;
             }
 
-            var shellWindow = ActivatorUtilities.CreateInstance<ShellWindow>(services, loginWindow.AuthenticatedUser);
+            // Create a scope that will live for the lifetime of the shell window.
+            var windowScope = services.CreateScope();
+            var shellWindow = ActivatorUtilities.CreateInstance<ShellWindow>(windowScope.ServiceProvider, loginWindow.AuthenticatedUser);
             Application.Current.MainWindow = shellWindow;
             Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             shellWindow.ShowDialog();
+
+            // Dispose the window scope after the shell window closes so scoped services (DbContext, etc.) are cleaned up.
+            windowScope.Dispose();
 
             if (shellWindow.IsLogoutRequested)
             {
