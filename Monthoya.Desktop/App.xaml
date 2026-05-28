@@ -352,6 +352,7 @@
                 <Setter Property="Foreground" Value="#3B4250" />
                 <Setter Property="BorderBrush" Value="#E3ECFB" />
                 <Setter Property="BorderThickness" Value="1,1,1,0" />
+                <Setter Property="Effect" Value="{StaticResource CardShadow}" />
             </Style>
 
             <Style x:Key="CardBorder" TargetType="Border">
