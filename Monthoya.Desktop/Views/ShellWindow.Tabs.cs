@@ -385,15 +385,24 @@ public partial class ShellWindow
         }
     }
 
-    private sealed class ShellTab(Guid id, string title, ShellPage page)
+    private sealed class ShellTab
     {
-        public Guid Id { get; } = id;
+        public ShellTab(Guid id, string title, ShellPage page)
+        {
+            Id = id;
+            Title = title;
+            Page = page;
+        }
 
-        public string Title { get; set; } = title;
+        public Guid Id { get; }
 
-        public ShellPage Page { get; set; } = page;
+        public string Title { get; set; }
 
-        public Dictionary<ShellPage, IShellPageState> PageStates { get; } = [];
+        public ShellPage Page { get; set; }
+        public Dictionary<ShellPage, IShellPageState> PageStates { get; } = new Dictionary<ShellPage, IShellPageState>();
+
+        // Store per-tab selected person name so each tab can show its own secondary text
+        public string SelectedPessoaName { get; set; } = string.Empty;
     }
 
     private sealed class NoShellPageState : IShellPageState
