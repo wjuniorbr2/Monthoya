@@ -51,6 +51,8 @@ public sealed class AppStartup(
             }
         }
 
+        EnsureRuntimeStyleAliases();
+
         while (true)
         {
             var loginWindow = services.GetRequiredService<LoginWindow>();
@@ -60,6 +62,8 @@ public sealed class AppStartup(
                 Application.Current.Shutdown();
                 return;
             }
+
+            EnsureRuntimeStyleAliases();
 
             // Create a scope that will live for the lifetime of the shell window.
             var windowScope = services.CreateScope();
@@ -79,6 +83,21 @@ public sealed class AppStartup(
 
             Application.Current.Shutdown();
             return;
+        }
+    }
+
+    private static void EnsureRuntimeStyleAliases()
+    {
+        var resources = Application.Current.Resources;
+
+        if (!resources.Contains("PrimaryButtonSmall") && resources["PrimaryButton"] is Style primaryButtonStyle)
+        {
+            resources["PrimaryButtonSmall"] = primaryButtonStyle;
+        }
+
+        if (!resources.Contains("IconToolButtonDanger") && resources["IconToolButton"] is Style iconToolButtonStyle)
+        {
+            resources["IconToolButtonDanger"] = iconToolButtonStyle;
         }
     }
 
