@@ -38,19 +38,19 @@
                            FontWeight="SemiBold"
                            LineHeight="18"
                            TextAlignment="Center"
-                           Foreground="White" />
+                           Foreground="Black" />
             </Button>
             <Button Width="40"
                     Height="28"
                     Click="TitleBarCloseButton_Click"
-                    Style="{StaticResource IconToolButtonDanger}"
+                    Style="{StaticResource IconToolButton}"
                     ToolTip="Fechar"
                     AutomationProperties.Name="Fechar">
                 <TextBlock Text="X"
                            FontSize="13"
                            FontWeight="SemiBold"
                            TextAlignment="Center"
-                           Foreground="White" />
+                           Foreground="Black" />
             </Button>
         </StackPanel>
 
