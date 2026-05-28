@@ -90,16 +90,41 @@ public partial class ShellWindow
 
     private void ApplyTitleBarCaptionButtonColors()
     {
+        ForceTitleBarCaptionButtonTextBlack(TitleBarMinimizeButtonTopRight);
+        ForceTitleBarCaptionButtonTextBlack(TitleBarMaximizeButton);
+
         foreach (var button in FindVisualChildrenForPeopleRuntimeAdjustment<Button>(this))
         {
-            if (button == TitleBarMaximizeButton
+            if (button == TitleBarMinimizeButtonTopRight
+                || button == TitleBarMaximizeButton
+                || string.Equals(button.ToolTip as string, "Fechar", StringComparison.Ordinal)
+                || string.Equals(button.ToolTip as string, "Minimizar", StringComparison.Ordinal)
+                || string.Equals(button.ToolTip as string, "Maximizar/Restaurar", StringComparison.Ordinal)
                 || string.Equals(button.Content as string, "\uE921", StringComparison.Ordinal)
                 || string.Equals(button.Content as string, "\uE922", StringComparison.Ordinal)
                 || string.Equals(button.Content as string, "\uE923", StringComparison.Ordinal)
                 || string.Equals(button.Content as string, "\uE8BB", StringComparison.Ordinal))
             {
                 button.Foreground = Brushes.Black;
+                foreach (var textBlock in FindVisualChildrenForPeopleRuntimeAdjustment<TextBlock>(button))
+                {
+                    textBlock.Foreground = Brushes.Black;
+                }
             }
+        }
+    }
+
+    private static void ForceTitleBarCaptionButtonTextBlack(Button? button)
+    {
+        if (button is null)
+        {
+            return;
+        }
+
+        button.Foreground = Brushes.Black;
+        foreach (var textBlock in FindVisualChildrenForPeopleRuntimeAdjustment<TextBlock>(button))
+        {
+            textBlock.Foreground = Brushes.Black;
         }
     }
 
