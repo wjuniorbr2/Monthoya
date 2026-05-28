@@ -343,12 +343,22 @@ public partial class ShellWindow
     {
         try
         {
-            if (tab.Page != ShellPage.Pessoas || _selectedPessoaDetails is null)
+            if (tab.Page != ShellPage.Pessoas)
             {
                 return string.Empty;
             }
 
-            var fullName = _selectedPessoaDetails.Summary.Nome;
+            // Prefer per-tab stored name. If empty, fall back to the currently loaded selected pessoa for the active tab.
+            var fullName = tab.SelectedPessoaName;
+            if (string.IsNullOrWhiteSpace(fullName) && tab == _activeTab && _selectedPessoaDetails is not null)
+            {
+                fullName = _selectedPessoaDetails.Summary.Nome;
+            }
+
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                return string.Empty;
+            }
             var tb = new TextBlock { Text = fullName };
             // If it fits in the allowed width, return full name.
             // Otherwise, compress last names to initials from the end until it fits.
