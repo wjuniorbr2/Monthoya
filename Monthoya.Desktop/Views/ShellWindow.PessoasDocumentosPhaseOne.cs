@@ -9,6 +9,8 @@ public partial class ShellWindow
 {
     private bool _pessoaDocumentosPhaseOnePatchApplied;
 
+    private static readonly bool PessoaDocumentosPhaseOneClassHandlerRegistered = RegisterPessoaDocumentosPhaseOneClassHandler();
+
     private static readonly IReadOnlyList<PessoaDocumentoDonoOption> PessoaDocumentoDonoFisicaPhaseOneOptions =
     [
         new("Pessoa", "pessoa"),
@@ -27,16 +29,20 @@ public partial class ShellWindow
         new("Outros", "outros")
     ];
 
-    static ShellWindow()
+    private static bool RegisterPessoaDocumentosPhaseOneClassHandler()
     {
         EventManager.RegisterClassHandler(
             typeof(ShellWindow),
             LoadedEvent,
             new RoutedEventHandler((sender, _) => ((ShellWindow)sender).ApplyPessoaDocumentosPhaseOnePatch()));
+
+        return true;
     }
 
     private void ApplyPessoaDocumentosPhaseOnePatch()
     {
+        _ = PessoaDocumentosPhaseOneClassHandlerRegistered;
+
         if (_pessoaDocumentosPhaseOnePatchApplied)
         {
             return;
