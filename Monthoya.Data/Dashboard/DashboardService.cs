@@ -32,7 +32,7 @@ public sealed class DashboardService(MonthoyaDbContext dbContext) : IDashboardSe
             .ThenBy(x => x.Numero)
             .Select(x => new PropertyMapItem(
                 x.Id,
-                x.Id.ToString("N")[..8].ToUpperInvariant(),
+                x.Id.ToString("N").Substring(0, 8).ToUpperInvariant(),
                 string.IsNullOrWhiteSpace(x.Numero) ? x.Rua : x.Rua + ", " + x.Numero,
                 x.Cidade,
                 x.Estado,
