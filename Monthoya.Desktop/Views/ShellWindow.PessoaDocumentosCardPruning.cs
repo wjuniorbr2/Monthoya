@@ -33,20 +33,29 @@ public partial class ShellWindow
         _pessoaDocumentosCardPruningApplied = true;
         PrunePessoaDocumentosCard();
 
-        PessoasGrid.SelectionChanged += (_, _) => Dispatcher.BeginInvoke(
-            PrunePessoaDocumentosCard,
-            DispatcherPriority.Background);
+        PessoasGrid.SelectionChanged += (_, _) => QueuePessoaDocumentosCardPruning();
+        PessoaTipoBox.SelectionChanged += (_, _) => QueuePessoaDocumentosCardPruning();
+        PessoaDocumentosGrid.Loaded += (_, _) => QueuePessoaDocumentosCardPruning();
+        PessoasPanel.IsVisibleChanged += (_, _) => QueuePessoaDocumentosCardPruning();
+        PessoasNavButton.Click += (_, _) => QueuePessoaDocumentosCardPruning();
 
-        PessoaTipoBox.SelectionChanged += (_, _) => Dispatcher.BeginInvoke(
-            PrunePessoaDocumentosCard,
-            DispatcherPriority.Background);
+        QueuePessoaDocumentosCardPruning();
+        _ = QueueDelayedPessoaDocumentosCardPruningAsync();
+    }
 
-        PessoaDocumentosGrid.Loaded += (_, _) => Dispatcher.BeginInvoke(
-            PrunePessoaDocumentosCard,
-            DispatcherPriority.Background);
-
+    private void QueuePessoaDocumentosCardPruning()
+    {
         Dispatcher.BeginInvoke(PrunePessoaDocumentosCard, DispatcherPriority.Background);
         Dispatcher.BeginInvoke(PrunePessoaDocumentosCard, DispatcherPriority.ApplicationIdle);
+    }
+
+    private async Task QueueDelayedPessoaDocumentosCardPruningAsync()
+    {
+        await Task.Delay(250);
+        await Dispatcher.InvokeAsync(PrunePessoaDocumentosCard, DispatcherPriority.ApplicationIdle);
+
+        await Task.Delay(750);
+        await Dispatcher.InvokeAsync(PrunePessoaDocumentosCard, DispatcherPriority.ApplicationIdle);
     }
 
     private void PrunePessoaDocumentosCard()
