@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -169,12 +170,12 @@ public partial class ShellWindow
             Nome: FindPessoaDocumentoLabeledValue(normalized, "nome") ?? FindPessoaDocumentoLabeledValue(normalized, "nome civil"),
             Empresa: FindPessoaDocumentoLabeledValue(normalized, "razão social") ?? FindPessoaDocumentoLabeledValue(normalized, "razao social") ?? FindPessoaDocumentoLabeledValue(normalized, "empresa"),
             NomeFantasia: FindPessoaDocumentoLabeledValue(normalized, "nome fantasia"),
-            Cpf: DigitsOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")),
-            Cnpj: DigitsOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b")),
-            Rg: DigitsOrNull(FindPessoaDocumentoLabeledValue(normalized, "rg") ?? FindPessoaDocumentoLabeledValue(normalized, "registro geral") ?? FindPessoaDocumentoLabeledValue(normalized, "identidade")),
+            Cpf: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")),
+            Cnpj: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b")),
+            Rg: DigitsOnlyOrNull(FindPessoaDocumentoLabeledValue(normalized, "rg") ?? FindPessoaDocumentoLabeledValue(normalized, "registro geral") ?? FindPessoaDocumentoLabeledValue(normalized, "identidade")),
             Email: FindPessoaDocumentoRegex(normalized, @"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", RegexOptions.IgnoreCase),
-            Telefone: DigitsOrNull(FindPessoaDocumentoRegex(normalized, @"(?:\(?\d{2}\)?\s?)?(?:9\s?)?\d{4}[-\s]?\d{4}")),
-            Cep: DigitsOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{5}-?\d{3}\b")),
+            Telefone: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"(?:\(?\d{2}\)?\s?)?(?:9\s?)?\d{4}[-\s]?\d{4}")),
+            Cep: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{5}-?\d{3}\b")),
             Endereco: FindPessoaDocumentoLabeledValue(normalized, "endereço") ?? FindPessoaDocumentoLabeledValue(normalized, "endereco"),
             Rua: FindPessoaDocumentoLabeledValue(normalized, "rua") ?? FindPessoaDocumentoLabeledValue(normalized, "logradouro"),
             Numero: FindPessoaDocumentoLabeledValue(normalized, "número") ?? FindPessoaDocumentoLabeledValue(normalized, "numero") ?? FindPessoaDocumentoLabeledValue(normalized, "nº"),
@@ -221,6 +222,17 @@ public partial class ShellWindow
     {
         var match = Regex.Match(text, pattern, options | RegexOptions.CultureInvariant);
         return match.Success ? match.Value.Trim() : null;
+    }
+
+    private static string? DigitsOnlyOrNull(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var digits = Regex.Replace(value, @"\D", string.Empty);
+        return string.IsNullOrWhiteSpace(digits) ? null : digits;
     }
 
     private static DateOnly? ParsePessoaDocumentoDateOnly(string? value)
