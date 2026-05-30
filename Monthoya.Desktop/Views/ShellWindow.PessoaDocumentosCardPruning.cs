@@ -41,21 +41,33 @@ public partial class ShellWindow
             PrunePessoaDocumentosCard,
             DispatcherPriority.Background);
 
+        PessoaDocumentosGrid.Loaded += (_, _) => Dispatcher.BeginInvoke(
+            PrunePessoaDocumentosCard,
+            DispatcherPriority.Background);
+
         Dispatcher.BeginInvoke(PrunePessoaDocumentosCard, DispatcherPriority.Background);
+        Dispatcher.BeginInvoke(PrunePessoaDocumentosCard, DispatcherPriority.ApplicationIdle);
     }
 
     private void PrunePessoaDocumentosCard()
     {
-        if (PessoaDocumentosTitleText is not null)
-        {
-            PessoaDocumentosTitleText.Text = "Documentos anexos";
-        }
+        PessoaDocumentosTitleText.Text = "Documentos anexos";
 
+        RenamePessoaDocumentosCardTextBlock("Documentos da pessoa selecionada", "Documentos anexos");
+        RenamePessoaDocumentosCardTextBlock("Nenhum documento cadastrado para esta pessoa", "Documentos anexos");
         RenamePessoaDocumentosCardTextBlock("Documentos anexos:", "Anexar mais documentos");
+
         RemovePessoaDocumentosCardTextBlockStartingWith("Selecione uma pessoa na lista para vincular documentos");
         RemovePessoaDocumentosCardTextBlockStartingWith("OCR local será tentado ao registrar");
         RemovePessoaDocumentosCardLabelBefore(PessoaDocumentoPessoaText, "Pessoa selecionada");
         RemovePessoaDocumentosCardControl(PessoaDocumentoPessoaText);
+
+        RemovePessoaDocumentosCardLabelBefore(PessoaDocumentoTipoBox, "Tipo de documento");
+        RemovePessoaDocumentosCardControl(PessoaDocumentoTipoBox);
+        if (PessoaDocumentoTipoBox.SelectedValue is null)
+        {
+            PessoaDocumentoTipoBox.SelectedIndex = 0;
+        }
     }
 
     private void RenamePessoaDocumentosCardTextBlock(string currentText, string newText)
