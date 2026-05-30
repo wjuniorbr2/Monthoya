@@ -163,7 +163,7 @@ public partial class ShellWindow
             DocumentoDe: PessoaDocumentoDonoBox.SelectedValue as string ?? "pessoa",
             Nome: PessoaDocumentoNomeBox.Text.Trim(),
             StoragePath: filePath,
-            ContentType: GuessContentType(filePath),
+            ContentType: GuessPessoaDocumentoContentType(filePath),
             DataValidade: ToDateOnly(PessoaDocumentoValidadeBox.SelectedDate),
             Observacoes: PessoaDocumentoObservacoesBox.Text?.Trim());
     }
@@ -254,6 +254,16 @@ public partial class ShellWindow
             "conjuge_responsavel" => "Cônjuge do responsável",
             "trabalho_conjuge_responsavel" => "Trabalho do cônjuge do responsável",
             _ => "Pessoa"
+        };
+
+    private static string GuessPessoaDocumentoContentType(string fileName) =>
+        Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".pdf" => "application/pdf",
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".txt" => "text/plain",
+            _ => "application/octet-stream"
         };
 
     private sealed record PessoaDocumentoDraft(
