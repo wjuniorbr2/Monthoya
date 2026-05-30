@@ -116,11 +116,11 @@
 
                             <TextBlock Text="Login" FontWeight="SemiBold" />
                             <TextBox x:Name="LoginNameBox" Margin="0,6,0,10" />
-                            <TextBlock Text="Apelido usado para entrar no sistema. Mínimo de 3 caracteres, sem espaços."
+                            <TextBlock
                                        Foreground="{StaticResource MutedBrush}"
-                                       FontSize="12"
+                                       FontSize="10"
                                        TextWrapping="Wrap"
-                                       Margin="0,-4,0,10" />
+                                       Margin="0,-4,0,10" ><Run Language="pt-br" Text="Nome"/><Run Text=" usado para entrar no sistema. Mínimo de 3 caracteres, sem espaços."/></TextBlock>
 
                             <TextBlock Text="E-mail" FontWeight="SemiBold" />
                             <TextBox x:Name="EmailBox" Margin="0,6,0,10" />
