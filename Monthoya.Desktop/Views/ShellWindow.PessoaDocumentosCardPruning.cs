@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -10,6 +11,7 @@ public partial class ShellWindow
 {
     private bool _pessoaDocumentosCardPruningApplied;
     private Button? _selecionarPessoaDocumentoArquivoButton;
+    private TextBlock? _pessoaDocumentoArquivoTiposText;
 
     private static readonly bool PessoaDocumentosCardPruningClassHandlerRegistered = RegisterPessoaDocumentosCardPruningClassHandler();
 
@@ -89,11 +91,6 @@ public partial class ShellWindow
         PessoaDocumentoArquivoBox.IsReadOnly = true;
         PessoaDocumentoArquivoBox.ToolTip = "Arquivo local selecionado. O sistema envia o arquivo para o armazenamento configurado ao adicionar o documento.";
 
-        if (_selecionarPessoaDocumentoArquivoButton is not null)
-        {
-            return;
-        }
-
         if (PessoaDocumentoArquivoBox.Parent is not Panel parent)
         {
             return;
@@ -105,16 +102,31 @@ public partial class ShellWindow
             return;
         }
 
-        _selecionarPessoaDocumentoArquivoButton = new Button
+        if (_selecionarPessoaDocumentoArquivoButton is null)
         {
-            Content = "Selecionar arquivo",
-            Style = TryFindResource("SecondaryButton") as Style,
-            HorizontalAlignment = HorizontalAlignment.Stretch,
-            Margin = new Thickness(0, 0, 0, 12),
-            ToolTip = "Escolha o PDF, imagem ou arquivo digitalizado no computador."
-        };
-        _selecionarPessoaDocumentoArquivoButton.Click += SelecionarPessoaDocumentoArquivoButton_Click;
-        parent.Children.Insert(index + 1, _selecionarPessoaDocumentoArquivoButton);
+            _selecionarPessoaDocumentoArquivoButton = new Button
+            {
+                Content = "Selecionar arquivo",
+                Style = TryFindResource("SecondaryButton") as Style,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Margin = new Thickness(0, 0, 0, 6),
+                ToolTip = "Escolha o PDF, imagem ou arquivo digitalizado no computador."
+            };
+            _selecionarPessoaDocumentoArquivoButton.Click += SelecionarPessoaDocumentoArquivoButton_Click;
+            parent.Children.Insert(index + 1, _selecionarPessoaDocumentoArquivoButton);
+        }
+
+        if (_pessoaDocumentoArquivoTiposText is null)
+        {
+            _pessoaDocumentoArquivoTiposText = new TextBlock
+            {
+                Text = "Arquivos aceitos: PDF, PNG, JPG, JPEG e TXT.",
+                Foreground = TryFindResource("MutedBrush") as Brush,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            parent.Children.Insert(parent.Children.IndexOf(_selecionarPessoaDocumentoArquivoButton) + 1, _pessoaDocumentoArquivoTiposText);
+        }
     }
 
     private void SelecionarPessoaDocumentoArquivoButton_Click(object sender, RoutedEventArgs e)
@@ -122,7 +134,7 @@ public partial class ShellWindow
         var dialog = new OpenFileDialog
         {
             Title = "Selecionar documento digitalizado",
-            Filter = "Documentos e imagens|*.pdf;*.png;*.jpg;*.jpeg;*.txt|PDF|*.pdf|Imagens|*.png;*.jpg;*.jpeg|Todos os arquivos|*.*",
+            Filter = "Documentos aceitos|*.pdf;*.png;*.jpg;*.jpeg;*.txt|PDF|*.pdf|Imagens|*.png;*.jpg;*.jpeg|Texto|*.txt|Todos os arquivos|*.*",
             CheckFileExists = true,
             Multiselect = false
         };
