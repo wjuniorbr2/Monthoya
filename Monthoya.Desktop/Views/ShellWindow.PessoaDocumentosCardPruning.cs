@@ -83,6 +83,8 @@ public partial class ShellWindow
             PessoaDocumentoTipoBox.SelectedIndex = 0;
         }
 
+        SavePessoaDocumentoButton.IsEnabled = true;
+        SavePessoaDocumentoButton.ToolTip = "Adiciona o arquivo selecionado aos documentos da pessoa salva/selecionada.";
         ConfigurePessoaDocumentoArquivoSelector();
     }
 
