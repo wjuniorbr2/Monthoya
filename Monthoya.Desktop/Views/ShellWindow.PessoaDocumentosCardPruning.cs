@@ -42,6 +42,7 @@ public partial class ShellWindow
         PessoaDocumentosGrid.Loaded += (_, _) => QueuePessoaDocumentosCardPruning();
         PessoasPanel.IsVisibleChanged += (_, _) => QueuePessoaDocumentosCardPruning();
         PessoasNavButton.Click += (_, _) => QueuePessoaDocumentosCardPruning();
+        SavePessoaDocumentoButton.Loaded += (_, _) => QueuePessoaDocumentosCardPruning();
 
         QueuePessoaDocumentosCardPruning();
         _ = QueueDelayedPessoaDocumentosCardPruningAsync();
@@ -55,11 +56,11 @@ public partial class ShellWindow
 
     private async Task QueueDelayedPessoaDocumentosCardPruningAsync()
     {
-        await Task.Delay(250);
-        await Dispatcher.InvokeAsync(PrunePessoaDocumentosCard, DispatcherPriority.ApplicationIdle);
-
-        await Task.Delay(750);
-        await Dispatcher.InvokeAsync(PrunePessoaDocumentosCard, DispatcherPriority.ApplicationIdle);
+        foreach (var delay in new[] { 250, 750, 1500, 3000 })
+        {
+            await Task.Delay(delay);
+            await Dispatcher.InvokeAsync(PrunePessoaDocumentosCard, DispatcherPriority.ApplicationIdle);
+        }
     }
 
     private void PrunePessoaDocumentosCard()
@@ -82,6 +83,9 @@ public partial class ShellWindow
         {
             PessoaDocumentoTipoBox.SelectedIndex = 0;
         }
+
+        RemovePessoaDocumentosGridColumn("OCR");
+        RemovePessoaDocumentosGridColumn("Caminho");
 
         SavePessoaDocumentoButton.IsEnabled = true;
         SavePessoaDocumentoButton.ToolTip = "Adiciona o arquivo selecionado aos documentos da pessoa salva/selecionada.";
@@ -151,6 +155,17 @@ public partial class ShellWindow
         if (string.IsNullOrWhiteSpace(PessoaDocumentoNomeBox.Text))
         {
             PessoaDocumentoNomeBox.Text = Path.GetFileNameWithoutExtension(dialog.FileName);
+        }
+    }
+
+    private void RemovePessoaDocumentosGridColumn(string header)
+    {
+        var column = PessoaDocumentosGrid.Columns
+            .FirstOrDefault(x => string.Equals(x.Header?.ToString(), header, StringComparison.OrdinalIgnoreCase));
+
+        if (column is not null)
+        {
+            PessoaDocumentosGrid.Columns.Remove(column);
         }
     }
 
