@@ -21,9 +21,13 @@ public static class DependencyInjection
     {
         var connectionString = configuration[$"{DatabaseOptions.SectionName}:{nameof(DatabaseOptions.ConnectionString)}"];
 
+        services.AddScoped<PessoaDocumentoOcrAutofillSaveChangesInterceptor>();
+
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
-            services.AddDbContext<MonthoyaDbContext>(options => options.UseNpgsql(connectionString));
+            services.AddDbContext<MonthoyaDbContext>((serviceProvider, options) => options
+                .UseNpgsql(connectionString)
+                .AddInterceptors(serviceProvider.GetRequiredService<PessoaDocumentoOcrAutofillSaveChangesInterceptor>()));
         }
 
         services.AddScoped<PasswordHasher<AppUser>>();
