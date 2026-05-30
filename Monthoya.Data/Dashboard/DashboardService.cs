@@ -9,30 +9,34 @@ public sealed class DashboardService(MonthoyaDbContext dbContext) : IDashboardSe
     public async Task<HomeDashboardSummary> GetHomeSummaryAsync(CancellationToken cancellationToken = default)
     {
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
-        var totalProperties = await dbContext.Properties.CountAsync(cancellationToken);
-        var availableRentals = await dbContext.Properties.CountAsync(
-            x => x.AvailabilityStatus == PropertyAvailabilityStatus.DisponivelParaLocacao,
-            cancellationToken);
-        var activeContracts = await dbContext.Contracts.CountAsync(
-            x => x.Status == ContractStatus.Active,
-            cancellationToken);
-        var pendingRentAmount = await dbContext.RentInstallments
-            .Where(x => x.Status == RentInstallmentStatus.Pending || x.Status == RentInstallmentStatus.Overdue)
-            .SumAsync(x => x.Amount, cancellationToken);
 
-        var mapItems = await dbContext.Properties
+        var totalProperties = await dbContext.Imoveis.CountAsync(cancellationToken);
+        var availableRentals = await dbContext.Imoveis.CountAsync(
+            x => x.Status == ImovelStatus.Disponivel &&
+                 (x.Finalidade == ImovelFinalidade.Locacao || x.Finalidade == ImovelFinalidade.Ambos),
+            cancellationToken);
+        var activeContracts = await dbContext.Locacoes.CountAsync(
+            x => x.Status == LocacaoStatus.Ativa,
+            cancellationToken);
+        var pendingRentAmount = await dbContext.LancamentosFinanceiros
+            .Where(x => x.Status == FinanceiroStatus.Pendente || x.Status == FinanceiroStatus.Atrasado)
+            .SumAsync(x => x.Valor, cancellationToken);
+
+        var mapItems = await dbContext.Imoveis
             .Where(x =>
-                x.AvailabilityStatus == PropertyAvailabilityStatus.DisponivelParaLocacao &&
+                x.Status == ImovelStatus.Disponivel &&
+                (x.Finalidade == ImovelFinalidade.Locacao || x.Finalidade == ImovelFinalidade.Ambos) &&
                 x.Latitude.HasValue &&
                 x.Longitude.HasValue)
-            .OrderBy(x => x.Code)
+            .OrderBy(x => x.Rua)
+            .ThenBy(x => x.Numero)
             .Select(x => new PropertyMapItem(
                 x.Id,
-                x.Code,
-                x.AddressLine,
-                x.City,
-                x.State,
-                x.RentalPrice,
+                x.Id.ToString("N")[..8].ToUpperInvariant(),
+                string.IsNullOrWhiteSpace(x.Numero) ? x.Rua : x.Rua + ", " + x.Numero,
+                x.Cidade,
+                x.Estado,
+                x.ValorAluguel,
                 x.Latitude!.Value,
                 x.Longitude!.Value))
             .ToListAsync(cancellationToken);
