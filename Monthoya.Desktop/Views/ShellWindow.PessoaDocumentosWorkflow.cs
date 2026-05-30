@@ -64,6 +64,10 @@ public partial class ShellWindow
                 return;
             }
 
+            var extractedText = await ExtractPessoaDocumentoTextForFormAsync(draft.StoragePath, draft.ContentType);
+            draft = draft with { OcrText = extractedText };
+            ApplyPessoaDocumentoOcrTextToForm(draft.DocumentoDe, extractedText);
+
             if (_selectedPessoaId.HasValue)
             {
                 await SavePessoaDocumentoDraftAsync(_selectedPessoaId.Value, draft);
@@ -165,7 +169,8 @@ public partial class ShellWindow
             StoragePath: filePath,
             ContentType: GuessPessoaDocumentoContentType(filePath),
             DataValidade: ToDateOnly(PessoaDocumentoValidadeBox.SelectedDate),
-            Observacoes: PessoaDocumentoObservacoesBox.Text?.Trim());
+            Observacoes: PessoaDocumentoObservacoesBox.Text?.Trim(),
+            OcrText: null);
     }
 
     private async Task SavePendingPessoaDocumentosAsync(Guid pessoaId)
@@ -216,11 +221,11 @@ public partial class ShellWindow
                 Path.GetFileName(draft.StoragePath),
                 draft.DataValidade,
                 "Pendente",
-                "Pendente",
+                string.IsNullOrWhiteSpace(draft.OcrText) ? "Pendente" : "Processado",
+                draft.OcrText,
                 null,
                 null,
-                null,
-                "Será enviado ao salvar a pessoa"))
+                string.IsNullOrWhiteSpace(draft.OcrText) ? null : "Aplicado aos campos em branco"))
             .ToList();
     }
 
@@ -273,5 +278,6 @@ public partial class ShellWindow
         string StoragePath,
         string? ContentType,
         DateOnly? DataValidade,
-        string? Observacoes);
+        string? Observacoes,
+        string? OcrText);
 }
