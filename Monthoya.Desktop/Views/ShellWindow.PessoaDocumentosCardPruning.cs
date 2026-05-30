@@ -75,12 +75,12 @@ public partial class ShellWindow
         {
             if ((block.Text ?? string.Empty).StartsWith(textStart, StringComparison.OrdinalIgnoreCase))
             {
-                RemovePessoaDocumentosCardControl(block);
+                RemovePessoaDocumentosCardElement(block);
             }
         }
     }
 
-    private static void RemovePessoaDocumentosCardLabelBefore(Control control, string expectedLabel)
+    private static void RemovePessoaDocumentosCardLabelBefore(FrameworkElement control, string expectedLabel)
     {
         if (control.Parent is not Panel parent)
         {
@@ -101,11 +101,16 @@ public partial class ShellWindow
         parent.Children.Remove(label);
     }
 
-    private static void RemovePessoaDocumentosCardControl(UIElement control)
+    private static void RemovePessoaDocumentosCardControl(FrameworkElement control)
     {
-        if (control.Parent is Panel parent)
+        RemovePessoaDocumentosCardElement(control);
+    }
+
+    private static void RemovePessoaDocumentosCardElement(FrameworkElement element)
+    {
+        if (element.Parent is Panel parent)
         {
-            parent.Children.Remove(control);
+            parent.Children.Remove(element);
         }
     }
 
