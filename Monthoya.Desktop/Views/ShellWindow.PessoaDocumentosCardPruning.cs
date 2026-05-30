@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -8,6 +9,7 @@ namespace Monthoya.Desktop.Views;
 public partial class ShellWindow
 {
     private bool _pessoaDocumentosCardPruningApplied;
+    private Button? _selecionarPessoaDocumentoArquivoButton;
 
     private static readonly bool PessoaDocumentosCardPruningClassHandlerRegistered = RegisterPessoaDocumentosCardPruningClassHandler();
 
@@ -65,6 +67,7 @@ public partial class ShellWindow
         RenamePessoaDocumentosCardTextBlock("Documentos da pessoa selecionada", "Documentos anexos");
         RenamePessoaDocumentosCardTextBlock("Nenhum documento cadastrado para esta pessoa", "Documentos anexos");
         RenamePessoaDocumentosCardTextBlock("Documentos anexos:", "Anexar mais documentos");
+        RenamePessoaDocumentosCardTextBlock("Caminho no Supabase Storage ou arquivo local", "Arquivo digitalizado");
 
         RemovePessoaDocumentosCardTextBlockStartingWith("Selecione uma pessoa na lista para vincular documentos");
         RemovePessoaDocumentosCardTextBlockStartingWith("OCR local será tentado ao registrar");
@@ -76,6 +79,64 @@ public partial class ShellWindow
         if (PessoaDocumentoTipoBox.SelectedValue is null)
         {
             PessoaDocumentoTipoBox.SelectedIndex = 0;
+        }
+
+        ConfigurePessoaDocumentoArquivoSelector();
+    }
+
+    private void ConfigurePessoaDocumentoArquivoSelector()
+    {
+        PessoaDocumentoArquivoBox.IsReadOnly = true;
+        PessoaDocumentoArquivoBox.ToolTip = "Arquivo local selecionado. O sistema envia o arquivo para o armazenamento configurado ao adicionar o documento.";
+
+        if (_selecionarPessoaDocumentoArquivoButton is not null)
+        {
+            return;
+        }
+
+        if (PessoaDocumentoArquivoBox.Parent is not Panel parent)
+        {
+            return;
+        }
+
+        var index = parent.Children.IndexOf(PessoaDocumentoArquivoBox);
+        if (index < 0)
+        {
+            return;
+        }
+
+        _selecionarPessoaDocumentoArquivoButton = new Button
+        {
+            Content = "Selecionar arquivo",
+            Style = TryFindResource("SecondaryButton") as Style,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            Margin = new Thickness(0, 0, 0, 12),
+            ToolTip = "Escolha o PDF, imagem ou arquivo digitalizado no computador."
+        };
+        _selecionarPessoaDocumentoArquivoButton.Click += SelecionarPessoaDocumentoArquivoButton_Click;
+        parent.Children.Insert(index + 1, _selecionarPessoaDocumentoArquivoButton);
+    }
+
+    private void SelecionarPessoaDocumentoArquivoButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Selecionar documento digitalizado",
+            Filter = "Documentos e imagens|*.pdf;*.png;*.jpg;*.jpeg;*.txt|PDF|*.pdf|Imagens|*.png;*.jpg;*.jpeg|Todos os arquivos|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        PessoaDocumentoArquivoBox.Text = dialog.FileName;
+
+        if (string.IsNullOrWhiteSpace(PessoaDocumentoNomeBox.Text))
+        {
+            PessoaDocumentoNomeBox.Text = Path.GetFileNameWithoutExtension(dialog.FileName);
         }
     }
 
