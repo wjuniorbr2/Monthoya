@@ -114,11 +114,24 @@ public partial class ShellWindow
 
         if (PessoaDocumentosGrid.SelectedItem is not PessoaDocumentoSummary document)
         {
-            _pessoaDocumentoOcrDebugBox.Text = "Selecione um documento para ver o texto bruto do OCR.";
             return;
         }
 
         _pessoaDocumentoOcrDebugBox.Text = BuildPessoaDocumentoOcrDebugText(document);
+    }
+
+    private void ShowPessoaDocumentoOcrDebugText(string documentName, string documentoDe, string? rawText)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            CreatePessoaDocumentoOcrDebugPanel();
+            if (_pessoaDocumentoOcrDebugBox is null)
+            {
+                return;
+            }
+
+            _pessoaDocumentoOcrDebugBox.Text = BuildPessoaDocumentoOcrDebugText(documentName, documentoDe, rawText);
+        }, DispatcherPriority.ApplicationIdle);
     }
 
     private static string BuildPessoaDocumentoOcrDebugText(PessoaDocumentoSummary document)
@@ -133,15 +146,29 @@ public partial class ShellWindow
             builder.AppendLine($"Erro: {document.OcrErroMensagem}");
         }
 
-        var parsed = PessoaDocumentoOcrParser.ExtractIdentityFields(document.OcrTextoExtraido);
+        AppendPessoaDocumentoParsedDebug(builder, document.OcrTextoExtraido);
+        return builder.ToString().Trim();
+    }
+
+    private static string BuildPessoaDocumentoOcrDebugText(string documentName, string documentoDe, string? rawText)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine($"Documento: {documentName}");
+        builder.AppendLine($"De: {documentoDe}");
+        builder.AppendLine("OCR status: Processado agora");
+        AppendPessoaDocumentoParsedDebug(builder, rawText);
+        return builder.ToString().Trim();
+    }
+
+    private static void AppendPessoaDocumentoParsedDebug(StringBuilder builder, string? rawText)
+    {
+        var parsed = PessoaDocumentoOcrParser.ExtractIdentityFields(rawText);
         builder.AppendLine();
         builder.AppendLine("Fallback atual do parser:");
         builder.AppendLine($"CPF: {parsed.Cpf ?? "-"}");
         builder.AppendLine($"Data de nascimento: {(parsed.DataNascimento.HasValue ? parsed.DataNascimento.Value.ToString("dd/MM/yyyy") : "-")}");
         builder.AppendLine();
         builder.AppendLine("Texto bruto OCR:");
-        builder.AppendLine(string.IsNullOrWhiteSpace(document.OcrTextoExtraido) ? "-" : document.OcrTextoExtraido.Trim());
-
-        return builder.ToString().Trim();
+        builder.AppendLine(string.IsNullOrWhiteSpace(rawText) ? "-" : rawText.Trim());
     }
 }
