@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -56,7 +57,7 @@ public partial class ShellWindow
     {
         Dispatcher.BeginInvoke(() =>
         {
-            if (_pessoaDocumentoProcessingVisualActive)
+            if (_pessoaDocumentoProcessingVisualActive || !CanShowPessoaDocumentoProcessingVisual())
             {
                 return;
             }
@@ -72,6 +73,12 @@ public partial class ShellWindow
                 ClearPessoaDocumentoProcessingVisual();
             }, DispatcherPriority.ApplicationIdle);
         }, DispatcherPriority.Background);
+    }
+
+    private bool CanShowPessoaDocumentoProcessingVisual()
+    {
+        var filePath = PessoaDocumentoArquivoBox.Text?.Trim();
+        return !string.IsNullOrWhiteSpace(filePath) && File.Exists(filePath);
     }
 
     private void ClearPessoaDocumentoProcessingVisual()
