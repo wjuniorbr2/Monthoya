@@ -60,10 +60,15 @@ internal static class PessoaDocumentoOcrParser
             }
         }
 
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
         return candidates
             .OrderByDescending(candidate => candidate.Score)
             .ThenBy(candidate => candidate.Date)
-            .FirstOrDefault()
+            .First()
             .Date;
     }
 
