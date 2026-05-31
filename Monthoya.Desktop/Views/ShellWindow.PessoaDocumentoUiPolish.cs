@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 
 namespace Monthoya.Desktop.Views;
@@ -155,6 +156,11 @@ public partial class ShellWindow
             {
                 yield return descendant;
             }
+        }
+
+        if (parent is not Visual and not Visual3D)
+        {
+            yield break;
         }
 
         for (var childIndex = 0; childIndex < VisualTreeHelper.GetChildrenCount(parent); childIndex++)
