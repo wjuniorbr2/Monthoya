@@ -73,6 +73,7 @@ public partial class ShellWindow
 
             var extractedText = await ExtractPessoaDocumentoTextForFormAsync(draft.StoragePath, draft.ContentType);
             draft = draft with { OcrText = extractedText };
+            ShowPessoaDocumentoOcrDebugText(draft.Nome, draft.DocumentoDe, extractedText);
             var ocrWarning = string.IsNullOrWhiteSpace(extractedText) && IsPessoaDocumentoPdf(draft.StoragePath, draft.ContentType)
                 ? "Documento PDF anexado, mas o OCR local ainda não lê PDF digitalizado. Converta para imagem ou configure um motor OCR com suporte a PDF."
                 : null;
