@@ -67,7 +67,7 @@ public sealed class LocalDocumentOcrService(
             var startInfo = new ProcessStartInfo
             {
                 FileName = tesseractCommand,
-                Arguments = $"\"{tempFile}\" stdout -l {language}",
+                Arguments = $"\"{tempFile}\" stdout -l {language} --psm 1",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
