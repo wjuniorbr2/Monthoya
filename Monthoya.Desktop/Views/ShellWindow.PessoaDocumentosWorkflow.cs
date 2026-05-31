@@ -165,15 +165,9 @@ public partial class ShellWindow
     private PessoaDocumentoDraft? BuildPessoaDocumentoDraft()
     {
         var filePath = PessoaDocumentoArquivoBox.Text?.Trim();
-        if (string.IsNullOrWhiteSpace(PessoaDocumentoNomeBox.Text))
-        {
-            PessoaDocumentoErrorText.Text = "Informe a descrição do documento.";
-            return null;
-        }
-
         if (string.IsNullOrWhiteSpace(filePath))
         {
-            PessoaDocumentoErrorText.Text = "Selecione o arquivo digitalizado.";
+            PessoaDocumentoErrorText.Text = "Selecione um documento primeiro.";
             return null;
         }
 
@@ -183,10 +177,21 @@ public partial class ShellWindow
             return null;
         }
 
+        var documentName = PessoaDocumentoNomeBox.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(documentName))
+        {
+            documentName = Path.GetFileNameWithoutExtension(filePath);
+        }
+
+        if (string.IsNullOrWhiteSpace(documentName))
+        {
+            documentName = "Documento";
+        }
+
         return new PessoaDocumentoDraft(
             Tipo: PessoaDocumentoTipoBox.SelectedValue as string ?? "outros",
             DocumentoDe: PessoaDocumentoDonoBox.SelectedValue as string ?? "pessoa",
-            Nome: PessoaDocumentoNomeBox.Text.Trim(),
+            Nome: documentName,
             StoragePath: filePath,
             ContentType: GuessPessoaDocumentoContentType(filePath),
             DataValidade: ToDateOnly(PessoaDocumentoValidadeBox.SelectedDate),
