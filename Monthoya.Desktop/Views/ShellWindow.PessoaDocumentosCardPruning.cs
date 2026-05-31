@@ -115,7 +115,7 @@ public partial class ShellWindow
                 Style = TryFindResource("SecondaryButton") as Style,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Margin = new Thickness(0, 0, 0, 6),
-                ToolTip = "Escolha o PDF, imagem ou arquivo digitalizado no computador."
+                ToolTip = "Escolha uma imagem ou arquivo de texto no computador."
             };
             _selecionarPessoaDocumentoArquivoButton.Click += SelecionarPessoaDocumentoArquivoButton_Click;
             parent.Children.Insert(index + 1, _selecionarPessoaDocumentoArquivoButton);
@@ -125,7 +125,7 @@ public partial class ShellWindow
         {
             _pessoaDocumentoArquivoTiposText = new TextBlock
             {
-                Text = "Arquivos aceitos: PDF, PNG, JPG, JPEG e TXT.",
+                Text = "Arquivos aceitos: PNG, JPG, JPEG e TXT.",
                 Foreground = TryFindResource("MutedBrush") as Brush,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 0, 0, 12)
@@ -145,7 +145,7 @@ public partial class ShellWindow
         var dialog = new OpenFileDialog
         {
             Title = "Selecionar documento digitalizado",
-            Filter = "Documentos aceitos|*.pdf;*.png;*.jpg;*.jpeg;*.txt|PDF|*.pdf|Imagens|*.png;*.jpg;*.jpeg|Texto|*.txt|Todos os arquivos|*.*",
+            Filter = "Documentos aceitos|*.png;*.jpg;*.jpeg;*.txt|Imagens|*.png;*.jpg;*.jpeg|Texto|*.txt|Todos os arquivos|*.*",
             CheckFileExists = true,
             Multiselect = false
         };
