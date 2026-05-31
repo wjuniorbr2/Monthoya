@@ -4,6 +4,8 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace Monthoya.Desktop.Views;
 
@@ -24,26 +26,53 @@ public partial class ShellWindow
                 return null;
             }
 
-            var startInfo = new ProcessStartInfo
+            var outputs = new List<string>();
+            var originalText = await RunPessoaDocumentoTesseractAsync(filePath);
+            if (!string.IsNullOrWhiteSpace(originalText))
             {
-                FileName = "tesseract",
-                Arguments = $"\"{filePath}\" stdout -l por+eng",
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(startInfo);
-            if (process is null)
-            {
-                return null;
+                outputs.Add(originalText);
             }
 
-            var outputTask = process.StandardOutput.ReadToEndAsync();
-            await process.WaitForExitAsync();
-            var output = await outputTask;
-            return process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output) ? output.Trim() : null;
+            foreach (var cropPath in CreatePessoaDocumentoRightSideImages(filePath))
+            {
+                try
+                {
+                    var cropText = await RunPessoaDocumentoTesseractAsync(cropPath);
+                    if (!string.IsNullOrWhiteSpace(cropText))
+                    {
+                        outputs.Add(cropText);
+                    }
+                }
+                finally
+                {
+                    TryDeletePessoaDocumentoTempFile(cropPath);
+                }
+            }
+
+            foreach (var angle in new[] { 90, 180, 270 })
+            {
+                var rotatedPath = CreatePessoaDocumentoRotatedImage(filePath, angle);
+                if (rotatedPath is null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var rotatedText = await RunPessoaDocumentoTesseractAsync(rotatedPath);
+                    if (!string.IsNullOrWhiteSpace(rotatedText))
+                    {
+                        outputs.Add(rotatedText);
+                    }
+                }
+                finally
+                {
+                    TryDeletePessoaDocumentoTempFile(rotatedPath);
+                }
+            }
+
+            var combined = string.Join("\n", outputs.Distinct(StringComparer.OrdinalIgnoreCase));
+            return string.IsNullOrWhiteSpace(combined) ? null : combined.Trim();
         }
         catch
         {
@@ -51,7 +80,7 @@ public partial class ShellWindow
         }
     }
 
-    private void ApplyPessoaDocumentoOcrTextToForm(string documentoDe, string? text)
+    private void ApplyPessoaDocumentoOcrTextToForm(string documentoTipo, string documentoDe, string? text)
     {
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -68,6 +97,11 @@ public partial class ShellWindow
             switch (documentoDe)
             {
                 case "empresa_trabalho":
+                    if (_pessoaWorkComboBox is not null)
+                    {
+                        _pessoaWorkComboBox.SelectedItem = "Possui trabalho";
+                    }
+
                     FillIfBlank(PessoaNomeEmpresaTrabalhoBox, values.Empresa ?? values.Nome);
                     FillIfBlank(PessoaTelefoneEmpresaTrabalhoBox, values.Telefone);
                     FillIfBlank(_pessoaCnpjEmpresaTrabalhoBox, values.Cnpj);
@@ -84,13 +118,16 @@ public partial class ShellWindow
                     FillIfBlank(PessoaConjugeNomeBox, values.Nome);
                     FillIfBlank(PessoaConjugeCpfBox, values.Cpf);
                     FillIfBlank(PessoaConjugeRgBox, values.Rg);
-                    FillIfBlank(PessoaConjugeTelefoneBox, values.Telefone);
-                    FillIfBlank(_pessoaConjugeEmailBox, values.Email);
                     FillIfBlank(PessoaConjugeProfissaoBox, values.Profissao);
                     FillIfBlank(PessoaConjugeNacionalidadeBox, values.Nacionalidade);
                     FillDateIfBlank(PessoaConjugeDataNascimentoBox, values.DataNascimento);
                     break;
                 case "trabalho_conjuge":
+                    if (_pessoaConjugeWorkComboBox is not null)
+                    {
+                        _pessoaConjugeWorkComboBox.SelectedItem = "Possui trabalho";
+                    }
+
                     FillIfBlank(_pessoaConjugeNomeEmpresaTrabalhoBox, values.Empresa ?? values.Nome);
                     FillIfBlank(_pessoaConjugeCnpjEmpresaTrabalhoBox, values.Cnpj);
                     FillIfBlank(_pessoaConjugeTelefoneEmpresaTrabalhoBox, values.Telefone);
@@ -103,49 +140,35 @@ public partial class ShellWindow
                     FillIfBlank(_pessoaConjugeEmpresaCidadeBox, values.Cidade);
                     FillIfBlank(_pessoaConjugeEmpresaEstadoBox, values.Estado);
                     break;
-                default:
+                case "pessoa":
                     FillIfBlank(PessoaNomeBox, values.Nome);
                     FillIfBlank(PessoaDocumentoBox, values.Cpf);
                     FillIfBlank(PessoaRgBox, values.Rg);
-                    FillIfBlank(PessoaTelefoneBox, values.Telefone);
-                    FillIfBlank(PessoaEmailBox, values.Email);
-                    FillIfBlank(PessoaCepBox, values.Cep);
-                    FillIfBlank(PessoaRuaBox, values.Rua ?? values.Endereco);
-                    FillIfBlank(PessoaNumeroBox, values.Numero);
-                    FillIfBlank(PessoaBairroBox, values.Bairro);
-                    FillIfBlank(PessoaCidadeBox, values.Cidade);
-                    FillIfBlank(PessoaEstadoBox, values.Estado);
                     FillIfBlank(PessoaEstadoCivilBox, values.EstadoCivil);
                     FillIfBlank(PessoaNacionalidadeBox, values.Nacionalidade);
                     FillIfBlank(PessoaProfissaoBox, values.Profissao);
                     FillDateIfBlank(PessoaDataNascimentoBox, values.DataNascimento);
+                    if (IsResidencePessoaDocumento(documentoTipo))
+                    {
+                        FillIfBlank(PessoaCepBox, values.Cep);
+                        FillIfBlank(PessoaRuaBox, values.Rua ?? values.Endereco);
+                        FillIfBlank(PessoaNumeroBox, values.Numero);
+                        FillIfBlank(PessoaBairroBox, values.Bairro);
+                        FillIfBlank(PessoaCidadeBox, values.Cidade);
+                        FillIfBlank(PessoaEstadoBox, values.Estado);
+                    }
+                    break;
+                default:
                     break;
             }
 
+            UpdatePessoaConditionalSections();
             return;
         }
 
         switch (documentoDe)
         {
-            case "responsavel":
-                FillIfBlank(PessoaResponsavelNomeBox, values.Nome);
-                FillIfBlank(PessoaResponsavelCpfBox, values.Cpf);
-                FillIfBlank(PessoaResponsavelRgBox, values.Rg);
-                FillIfBlank(PessoaResponsavelTelefoneBox, values.Telefone);
-                FillIfBlank(PessoaResponsavelEmailBox, values.Email);
-                FillIfBlank(_pessoaResponsavelCargoBox, values.Cargo);
-                FillIfBlank(PessoaResponsavelProfissaoBox, values.Profissao);
-                FillIfBlank(PessoaResponsavelNacionalidadeBox, values.Nacionalidade);
-                FillIfBlank(PessoaResponsavelEstadoCivilBox, values.EstadoCivil);
-                FillDateIfBlank(PessoaResponsavelDataNascimentoBox, values.DataNascimento);
-                FillIfBlank(PessoaResponsavelCepBox, values.Cep);
-                FillIfBlank(PessoaResponsavelRuaBox, values.Rua ?? values.Endereco);
-                FillIfBlank(PessoaResponsavelNumeroBox, values.Numero);
-                FillIfBlank(PessoaResponsavelBairroBox, values.Bairro);
-                FillIfBlank(PessoaResponsavelCidadeBox, values.Cidade);
-                FillIfBlank(PessoaResponsavelEstadoBox, values.Estado);
-                break;
-            default:
+            case "empresa":
                 FillIfBlank(PessoaNomeBox, values.Empresa ?? values.Nome);
                 FillIfBlank(PessoaDocumentoBox, values.Cnpj);
                 FillIfBlank(_pessoaNomeFantasiaBox, values.NomeFantasia);
@@ -156,23 +179,45 @@ public partial class ShellWindow
                 FillIfBlank(PessoaEmpresaCidadeBox, values.Cidade);
                 FillIfBlank(PessoaEmpresaEstadoBox, values.Estado);
                 break;
+            case "responsavel":
+                FillIfBlank(PessoaResponsavelNomeBox, values.Nome);
+                FillIfBlank(PessoaResponsavelCpfBox, values.Cpf);
+                FillIfBlank(PessoaResponsavelRgBox, values.Rg);
+                FillIfBlank(PessoaResponsavelEmailBox, values.Email);
+                FillIfBlank(_pessoaResponsavelCargoBox, values.Cargo);
+                FillIfBlank(PessoaResponsavelProfissaoBox, values.Profissao);
+                FillIfBlank(PessoaResponsavelNacionalidadeBox, values.Nacionalidade);
+                FillIfBlank(PessoaResponsavelEstadoCivilBox, values.EstadoCivil);
+                FillDateIfBlank(PessoaResponsavelDataNascimentoBox, values.DataNascimento);
+                if (IsResidencePessoaDocumento(documentoTipo))
+                {
+                    FillIfBlank(PessoaResponsavelCepBox, values.Cep);
+                    FillIfBlank(PessoaResponsavelRuaBox, values.Rua ?? values.Endereco);
+                    FillIfBlank(PessoaResponsavelNumeroBox, values.Numero);
+                    FillIfBlank(PessoaResponsavelBairroBox, values.Bairro);
+                    FillIfBlank(PessoaResponsavelCidadeBox, values.Cidade);
+                    FillIfBlank(PessoaResponsavelEstadoBox, values.Estado);
+                }
+                break;
+            default:
+                break;
         }
     }
 
     private static PessoaDocumentoOcrValues ExtractPessoaDocumentoOcrValues(string text)
     {
         var normalized = text.Replace("\r", "\n", StringComparison.Ordinal);
-        var birthDateText = FindPessoaDocumentoLabeledValue(normalized, "data de nascimento")
-            ?? FindPessoaDocumentoLabeledValue(normalized, "nascimento")
-            ?? FindPessoaDocumentoRegex(normalized, @"\b\d{2}/\d{2}/\d{4}\b");
+        var birthDateText = FindPessoaDocumentoBirthDateText(normalized);
+        var cpf = FindPessoaDocumentoCpfFallback(normalized);
+        var cnpj = DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b"));
 
         return new PessoaDocumentoOcrValues(
-            Nome: FindPessoaDocumentoLabeledValue(normalized, "nome") ?? FindPessoaDocumentoLabeledValue(normalized, "nome civil"),
+            Nome: FindPessoaDocumentoLabeledValue(normalized, "nome") ?? FindPessoaDocumentoLabeledValue(normalized, "nome civil") ?? FindPessoaDocumentoNameFallbackStrict(normalized) ?? FindPessoaDocumentoNameFallback(normalized),
             Empresa: FindPessoaDocumentoLabeledValue(normalized, "razão social") ?? FindPessoaDocumentoLabeledValue(normalized, "razao social") ?? FindPessoaDocumentoLabeledValue(normalized, "empresa"),
             NomeFantasia: FindPessoaDocumentoLabeledValue(normalized, "nome fantasia"),
-            Cpf: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")),
-            Cnpj: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b")),
-            Rg: DigitsOnlyOrNull(FindPessoaDocumentoLabeledValue(normalized, "rg") ?? FindPessoaDocumentoLabeledValue(normalized, "registro geral") ?? FindPessoaDocumentoLabeledValue(normalized, "identidade")),
+            Cpf: cpf,
+            Cnpj: cnpj,
+            Rg: DigitsOnlyOrNull(FindPessoaDocumentoLabeledValue(normalized, "rg") ?? FindPessoaDocumentoLabeledValue(normalized, "registro geral") ?? FindPessoaDocumentoLabeledValue(normalized, "identidade")) ?? FindPessoaDocumentoRgFallback(normalized, cpf, cnpj),
             Email: FindPessoaDocumentoRegex(normalized, @"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", RegexOptions.IgnoreCase),
             Telefone: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"(?:\(?\d{2}\)?\s?)?(?:9\s?)?\d{4}[-\s]?\d{4}")),
             Cep: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{5}-?\d{3}\b")),
@@ -186,8 +231,12 @@ public partial class ShellWindow
             EstadoCivil: FindPessoaDocumentoLabeledValue(normalized, "estado civil"),
             Profissao: FindPessoaDocumentoLabeledValue(normalized, "profissão") ?? FindPessoaDocumentoLabeledValue(normalized, "profissao"),
             Cargo: FindPessoaDocumentoLabeledValue(normalized, "cargo") ?? FindPessoaDocumentoLabeledValue(normalized, "função") ?? FindPessoaDocumentoLabeledValue(normalized, "funcao"),
-            DataNascimento: ParsePessoaDocumentoDateOnly(birthDateText));
+            DataNascimento: ParsePessoaDocumentoBirthDateOnly(birthDateText));
     }
+
+    private static bool IsResidencePessoaDocumento(string documentoTipo) =>
+        documentoTipo.Equals("residencia", StringComparison.OrdinalIgnoreCase)
+        || documentoTipo.Equals("endereco_residencia", StringComparison.OrdinalIgnoreCase);
 
     private static void FillIfBlank(TextBox? textBox, string? value)
     {
@@ -224,6 +273,139 @@ public partial class ShellWindow
         return match.Success ? match.Value.Trim() : null;
     }
 
+    private static string? FindPessoaDocumentoCpfFallback(string text)
+    {
+        var labeled = Regex.Match(
+            text,
+            @"(?is)\bcpf\b\D{0,35}(?<value>\d[\d\.\-\s]{8,25}\d)",
+            RegexOptions.CultureInvariant);
+        var candidate = labeled.Success
+            ? labeled.Groups["value"].Value
+            : FindPessoaDocumentoRegex(text, @"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b");
+
+        var digits = DigitsOnlyOrNull(candidate);
+        return digits?.Length == 11 ? digits : null;
+    }
+
+    private static string? FindPessoaDocumentoBirthDateFallback(string text)
+    {
+        var matches = Regex.Matches(text, @"\b\d{1,2}[/-]\d{1,2}[/-]\d{4}\b", RegexOptions.CultureInvariant)
+            .Select(match => match.Value)
+            .ToList();
+
+        foreach (var candidate in matches)
+        {
+            var parsed = ParsePessoaDocumentoDateOnly(candidate);
+            if (parsed.HasValue && parsed.Value.Year <= DateTime.Today.Year - 15)
+            {
+                return candidate;
+            }
+        }
+
+        var splitDate = Regex.Match(text, @"(?m)^\s*(?<day>\d{1,2})\s*$\s*^\s*(?<monthYear>\d{1,2}[/-]\d{4})\s*$", RegexOptions.CultureInvariant);
+        if (splitDate.Success)
+        {
+            return $"{splitDate.Groups["day"].Value}/{splitDate.Groups["monthYear"].Value}";
+        }
+
+        return null;
+    }
+
+    private static string? FindPessoaDocumentoBirthDateText(string text)
+    {
+        var lines = text
+            .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .ToList();
+
+        for (var index = 0; index < lines.Count; index++)
+        {
+            var line = lines[index];
+            if (!line.Contains("nasc", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var context = string.Join(" ", lines.Skip(index).Take(3));
+            var date = FindPessoaDocumentoDateInText(context);
+            if (date is not null)
+            {
+                return date;
+            }
+        }
+
+        return FindPessoaDocumentoBirthDateFallback(text);
+    }
+
+    private static string? FindPessoaDocumentoDateInText(string text)
+    {
+        var match = Regex.Match(text, @"\b\d{1,2}[/-]\d{1,2}[/-]\d{4}\b", RegexOptions.CultureInvariant);
+        return match.Success ? match.Value : null;
+    }
+
+    private static string? FindPessoaDocumentoNameFallbackStrict(string text)
+    {
+        var ignoredWords = new[]
+        {
+            "BRASIL", "VALIDA", "TERRITORIO", "NACIONAL", "REPUBLICA",
+            "FEDERATIVA", "IDENTIDADE", "CARTEIRA", "DATA", "NASCIMENTO",
+            "NATURALIDADE", "FILIACAO", "ORGAO", "EXPEDIDOR", "VIA", "CPF"
+        };
+
+        return text
+            .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => Regex.Replace(line, @"[^\p{L}\s]", " ").Trim())
+            .Select(line => Regex.Replace(line, @"\s+", " ").Trim())
+            .Where(line => line.Length is >= 8 and <= 60)
+            .Where(line => line.Count(char.IsLetter) >= 8)
+            .Where(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2)
+            .Where(line => !Regex.IsMatch(line, @"[a-z]{2,}", RegexOptions.CultureInvariant))
+            .Where(line => !Regex.IsMatch(line, @"\b\p{L}\b", RegexOptions.CultureInvariant))
+            .Where(line => !line.Contains("WOW", StringComparison.OrdinalIgnoreCase))
+            .Where(line => !ignoredWords.Any(word => line.Contains(word, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length)
+            .ThenByDescending(line => line.Length)
+            .FirstOrDefault();
+    }
+
+    private static string? FindPessoaDocumentoNameFallback(string text)
+    {
+        var ignoredWords = new[]
+        {
+            "BRASIL", "VALIDA", "TERRITORIO", "NACIONAL", "REPUBLICA",
+            "FEDERATIVA", "IDENTIDADE", "CARTEIRA", "DATA", "NASCIMENTO",
+            "NATURALIDADE", "FILIACAO", "ORGAO", "EXPEDIDOR", "VIA", "CPF"
+        };
+
+        return text
+            .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => Regex.Replace(line, @"[^A-Za-zÀ-ÿ\s]", " ").Trim())
+            .Where(line => line.Count(char.IsLetter) >= 8)
+            .Where(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2)
+            .Where(line => !ignoredWords.Any(word => line.Contains(word, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(line => line.Length)
+            .FirstOrDefault();
+    }
+
+    private static string? FindPessoaDocumentoRgFallback(string text, string? cpf, string? cnpj)
+    {
+        var matches = Regex.Matches(text, @"\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dXx]\b|\b\d{7,10}-?[\dXx]?\b");
+        foreach (Match match in matches)
+        {
+            var digits = DigitsOnlyOrNull(match.Value);
+            if (string.IsNullOrWhiteSpace(digits)
+                || digits.Length is < 7 or > 10
+                || string.Equals(digits, cpf, StringComparison.Ordinal)
+                || string.Equals(digits, cnpj, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            return digits;
+        }
+
+        return null;
+    }
+
     private static string? DigitsOnlyOrNull(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -248,6 +430,20 @@ public partial class ShellWindow
             : null;
     }
 
+    private static DateOnly? ParsePessoaDocumentoBirthDateOnly(string? value)
+    {
+        var date = ParsePessoaDocumentoDateOnly(value);
+        if (!date.HasValue)
+        {
+            return null;
+        }
+
+        var currentYear = DateTime.Today.Year;
+        return date.Value.Year is >= 1900 && date.Value.Year <= currentYear - 10
+            ? date
+            : null;
+    }
+
     private static bool IsPessoaDocumentoPlainText(string storagePath, string? contentType) =>
         contentType?.StartsWith("text/", StringComparison.OrdinalIgnoreCase) == true
         || Path.GetExtension(storagePath).Equals(".txt", StringComparison.OrdinalIgnoreCase);
@@ -260,6 +456,125 @@ public partial class ShellWindow
         || Path.GetExtension(storagePath).Equals(".tif", StringComparison.OrdinalIgnoreCase)
         || Path.GetExtension(storagePath).Equals(".tiff", StringComparison.OrdinalIgnoreCase)
         || Path.GetExtension(storagePath).Equals(".bmp", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsPessoaDocumentoPdf(string storagePath, string? contentType) =>
+        contentType?.Equals("application/pdf", StringComparison.OrdinalIgnoreCase) == true
+        || Path.GetExtension(storagePath).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+
+    private static async Task<string?> RunPessoaDocumentoTesseractAsync(string filePath)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "tesseract",
+            Arguments = $"\"{filePath}\" stdout -l por+eng",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(startInfo);
+        if (process is null)
+        {
+            return null;
+        }
+
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        var output = await outputTask;
+        return process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output) ? output.Trim() : null;
+    }
+
+    private static string? CreatePessoaDocumentoRotatedImage(string filePath, double angle)
+    {
+        try
+        {
+            using var imageStream = File.OpenRead(filePath);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = imageStream;
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            var rotated = new TransformedBitmap(bitmap, new RotateTransform(angle));
+            rotated.Freeze();
+
+            var tempPath = Path.Combine(Path.GetTempPath(), $"monthoya-ocr-{Guid.NewGuid():N}.png");
+            using var stream = File.Create(tempPath);
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(rotated));
+            encoder.Save(stream);
+            return tempPath;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static IReadOnlyList<string> CreatePessoaDocumentoRightSideImages(string filePath)
+    {
+        var tempFiles = new List<string>();
+        try
+        {
+            using var imageStream = File.OpenRead(filePath);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.StreamSource = imageStream;
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            var cropRect = new Int32Rect(
+                Math.Max(0, (int)(bitmap.PixelWidth * 0.49)),
+                Math.Max(0, (int)(bitmap.PixelHeight * 0.04)),
+                Math.Max(1, (int)(bitmap.PixelWidth * 0.49)),
+                Math.Max(1, (int)(bitmap.PixelHeight * 0.92)));
+            var cropped = new CroppedBitmap(bitmap, cropRect);
+            cropped.Freeze();
+
+            foreach (var angle in new[] { 0, 90, 270 })
+            {
+                BitmapSource source = cropped;
+                if (angle != 0)
+                {
+                    var rotated = new TransformedBitmap(cropped, new RotateTransform(angle));
+                    rotated.Freeze();
+                    source = rotated;
+                }
+
+                var tempPath = Path.Combine(Path.GetTempPath(), $"monthoya-ocr-crop-{Guid.NewGuid():N}.png");
+                using var stream = File.Create(tempPath);
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(source));
+                encoder.Save(stream);
+                tempFiles.Add(tempPath);
+            }
+        }
+        catch
+        {
+            foreach (var tempFile in tempFiles)
+            {
+                TryDeletePessoaDocumentoTempFile(tempFile);
+            }
+
+            return [];
+        }
+
+        return tempFiles;
+    }
+
+    private static void TryDeletePessoaDocumentoTempFile(string filePath)
+    {
+        try
+        {
+            File.Delete(filePath);
+        }
+        catch
+        {
+        }
+    }
 
     private static string? NormalizeState(string? value)
     {

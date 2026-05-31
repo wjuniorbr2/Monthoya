@@ -21,6 +21,8 @@ public partial class ShellWindow
     private TextBox? _pessoaRendaTrabalhoBox;
     private TextBox? _pessoaTempoEmpregoBox;
     private TextBox? _pessoaTipoComprovanteRendaBox;
+    private TextBox? _pessoaOutrasInformacoesBox;
+    private TextBox? _pessoaTrabalhoOutrasInformacoesBox;
     private TextBox? _pessoaTrabalhoRuaBox;
     private TextBox? _pessoaTrabalhoNumeroBox;
     private TextBox? _pessoaTrabalhoComplementoBox;
@@ -31,6 +33,7 @@ public partial class ShellWindow
     private TextBox? _pessoaConjugeEmailBox;
     private TextBox? _pessoaConjugeDadosBancariosBox;
     private TextBox? _pessoaConjugeObservacoesBox;
+    private TextBox? _pessoaConjugeOutrasInformacoesBox;
     private ComboBox? _pessoaConjugeWorkComboBox;
     private TextBox? _pessoaConjugeNomeEmpresaTrabalhoBox;
     private TextBox? _pessoaConjugeCnpjEmpresaTrabalhoBox;
@@ -40,6 +43,7 @@ public partial class ShellWindow
     private TextBox? _pessoaConjugeRendaTrabalhoBox;
     private TextBox? _pessoaConjugeTempoEmpregoBox;
     private TextBox? _pessoaConjugeTipoComprovanteRendaBox;
+    private TextBox? _pessoaConjugeTrabalhoOutrasInformacoesBox;
     private TextBox? _pessoaConjugeEmpresaRuaBox;
     private TextBox? _pessoaConjugeEmpresaNumeroBox;
     private TextBox? _pessoaConjugeEmpresaComplementoBox;
@@ -198,8 +202,13 @@ public partial class ShellWindow
         PessoasGrid.SelectedItem = null;
         _selectedPessoaId = null;
         _selectedPessoaDetails = null;
+        _pendingPessoaDocumentos.Clear();
         SetPessoaDocumentoSelection(null);
+        ClearPessoaDocumentoInputs();
         ClearPessoaForm();
+        _pessoaDocumentos = [];
+        PessoaDocumentosGrid.ItemsSource = _pessoaDocumentos;
+        PessoaDocumentosTitleText.Text = "Documentos anexos";
         PessoaTipoBox.SelectedIndex = -1;
         if (_pessoaEstadoCivilComboBox is not null)
         {
@@ -280,10 +289,10 @@ public partial class ShellWindow
 
         documentsGrid.RowDefinitions.Clear();
         documentsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(210) });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(180) });
         documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        PessoaDocumentosGrid.MaxHeight = 210;
+        PessoaDocumentosGrid.MaxHeight = 180;
         PessoaDocumentosGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         Grid.SetRow(PessoaDocumentosGrid, 1);
 
@@ -409,6 +418,8 @@ public partial class ShellWindow
         _pessoaRendaTrabalhoBox ??= NewTextBox(120);
         _pessoaTempoEmpregoBox ??= NewTextBox(140);
         _pessoaTipoComprovanteRendaBox ??= NewTextBox(210);
+        _pessoaOutrasInformacoesBox ??= NewMultilineBox(360, 64);
+        _pessoaTrabalhoOutrasInformacoesBox ??= NewMultilineBox(360, 64);
         _pessoaTrabalhoRuaBox ??= NewTextBox(300);
         _pessoaTrabalhoNumeroBox ??= NewTextBox(90);
         _pessoaTrabalhoComplementoBox ??= NewTextBox(220);
@@ -420,6 +431,7 @@ public partial class ShellWindow
         _pessoaConjugeEmailBox ??= NewTextBox(260);
         _pessoaConjugeDadosBancariosBox ??= NewMultilineBox(64);
         _pessoaConjugeObservacoesBox ??= NewMultilineBox(64);
+        _pessoaConjugeOutrasInformacoesBox ??= NewMultilineBox(360, 64);
         _pessoaConjugeWorkComboBox ??= new ComboBox
         {
             Width = 150,
@@ -435,6 +447,7 @@ public partial class ShellWindow
         _pessoaConjugeRendaTrabalhoBox ??= NewTextBox(120);
         _pessoaConjugeTempoEmpregoBox ??= NewTextBox(140);
         _pessoaConjugeTipoComprovanteRendaBox ??= NewTextBox(210);
+        _pessoaConjugeTrabalhoOutrasInformacoesBox ??= NewMultilineBox(360, 64);
         _pessoaConjugeEmpresaRuaBox ??= NewTextBox(300);
         _pessoaConjugeEmpresaNumeroBox ??= NewTextBox(90);
         _pessoaConjugeEmpresaComplementoBox ??= NewTextBox(220);
@@ -460,7 +473,10 @@ public partial class ShellWindow
         MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, personalRow, "Profissão", PessoaProfissaoBox, 170);
         MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, personalRow, "Nacionalidade", PessoaNacionalidadeBox, 150);
         MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, personalRow, "Dados bancários", PessoaDadosBancariosBox, 360);
+        personalRow.Children.Add(FieldStack("Outras informações", _pessoaOutrasInformacoesBox!, 360));
         PessoaFisicaFieldsPanel.Children.Insert(0, personalRow);
+        RemoveTextBlock(PessoaFisicaFieldsPanel, "CPF");
+        RemoveTextBlock(PessoaFisicaFieldsPanel, "CPF/CNPJ");
 
         RenameSection(PessoaFisicaFieldsPanel, "Endereço:", "ENDEREÇO DE RESIDÊNCIA:");
         ReplaceSectionHeaderWithCep(PessoaFisicaFieldsPanel, "ENDEREÇO DE RESIDÊNCIA:", PessoaCepBox);
@@ -475,7 +491,8 @@ public partial class ShellWindow
             ("Cargo", _pessoaCargoTrabalhoBox!, 160),
             ("Renda", _pessoaRendaTrabalhoBox!, 120),
             ("Tempo no emprego", _pessoaTempoEmpregoBox!, 140),
-            ("Tipo de comprovante de renda", _pessoaTipoComprovanteRendaBox!, 210)));
+            ("Tipo de comprovante de renda", _pessoaTipoComprovanteRendaBox!, 210),
+            ("Outras informações", _pessoaTrabalhoOutrasInformacoesBox!, 360)));
         _pessoaFisicaWorkSection.Children.Add(AddressHeader("ENDEREÇO DA EMPRESA:", _pessoaTrabalhoCepBox!));
         _pessoaFisicaWorkSection.Children.Add(WrapFields(
             ("Rua", _pessoaTrabalhoRuaBox!, 300),
@@ -500,7 +517,7 @@ public partial class ShellWindow
             ("Profissão", PessoaConjugeProfissaoBox, 170),
             ("Nacionalidade", PessoaConjugeNacionalidadeBox, 150),
             ("Dados bancários", _pessoaConjugeDadosBancariosBox!, 360),
-            ("Outras informações", _pessoaConjugeObservacoesBox!, 360)));
+            ("Outras informações", _pessoaConjugeOutrasInformacoesBox!, 360)));
         PessoaFisicaFieldsPanel.Children.Add(_pessoaConjugeSection);
         RemoveLegacyPessoaConjugeLabels();
 
@@ -514,7 +531,8 @@ public partial class ShellWindow
             ("Cargo", _pessoaConjugeCargoTrabalhoBox!, 160),
             ("Renda", _pessoaConjugeRendaTrabalhoBox!, 120),
             ("Tempo no emprego", _pessoaConjugeTempoEmpregoBox!, 140),
-            ("Tipo de comprovante de renda", _pessoaConjugeTipoComprovanteRendaBox!, 210)));
+            ("Tipo de comprovante de renda", _pessoaConjugeTipoComprovanteRendaBox!, 210),
+            ("Outras informações", _pessoaConjugeTrabalhoOutrasInformacoesBox!, 360)));
         _pessoaConjugeWorkSection.Children.Add(AddressHeader("ENDEREÇO DA EMPRESA:", _pessoaConjugeEmpresaCepBox!));
         _pessoaConjugeWorkSection.Children.Add(WrapFields(
             ("Rua", _pessoaConjugeEmpresaRuaBox!, 300),
@@ -678,6 +696,13 @@ public partial class ShellWindow
         HorizontalAlignment = HorizontalAlignment.Left,
         Margin = new Thickness(0, 6, 0, 0)
     };
+
+    private static TextBox NewMultilineBox(double width, double height)
+    {
+        var textBox = NewMultilineBox(height);
+        textBox.Width = width;
+        return textBox;
+    }
 
     private static DatePicker NewDatePicker() => new()
     {

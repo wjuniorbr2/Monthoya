@@ -86,6 +86,9 @@ public sealed class AuthAndUserTests
         Assert.Contains(("pessoa_fisica", "Endereco"), SupabaseSchemaAudit.RemovedPessoaAddressColumns);
         Assert.Contains(("pessoa_juridica", "EnderecoEmpresa"), SupabaseSchemaAudit.RemovedPessoaAddressColumns);
         Assert.Contains(("pessoa_juridica", "ResponsavelEndereco"), SupabaseSchemaAudit.RemovedPessoaAddressColumns);
+        Assert.Contains("imovel_imagens", SupabaseSchemaAudit.ExpectedRlsProtectedTables);
+        Assert.Contains("pessoa_documentos", SupabaseSchemaAudit.ExpectedRlsProtectedTables);
+        Assert.Contains("users", SupabaseSchemaAudit.ExpectedRlsProtectedTables);
         Assert.Equal("20260526085111_AddPessoaOcrAndAddressDetails", SupabaseSchemaAudit.HistoricalLiveOnlyMigrationId);
     }
 
@@ -679,7 +682,7 @@ public sealed class AuthAndUserTests
 
         var documento = await rentalService.CreatePessoaDocumentoAsync(new CreatePessoaDocumentoRequest(
             pessoa.Id,
-            "rg",
+            "residencia",
             "Documento OCR",
             "documentos/ocr.txt",
             "text/plain",

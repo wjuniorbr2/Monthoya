@@ -88,6 +88,11 @@ public partial class ShellWindow
         SaveActiveTabState();
     }
 
+    private void InvalidatePessoaSelectionLoads()
+    {
+        Interlocked.Increment(ref _pessoasSelectionVersion);
+    }
+
     private void ApplyTitleBarCaptionButtonColors()
     {
         ForceTitleBarCaptionButtonTextBlack(TitleBarMinimizeButtonTopRight);

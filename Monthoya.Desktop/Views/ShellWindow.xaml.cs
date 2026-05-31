@@ -735,8 +735,9 @@ public partial class ShellWindow : Window
     private static readonly IReadOnlyList<PessoaDocumentoDonoOption> PessoaDocumentoDonoFisicaOptions =
     [
         new("Pessoa", "pessoa"),
+        new("Trabalho da pessoa", "empresa_trabalho"),
         new("Cônjuge", "conjuge"),
-        new("Empresa onde trabalha", "empresa_trabalho"),
+        new("Trabalho do cônjuge", "trabalho_conjuge"),
         new("Outros", "outros")
     ];
 
@@ -744,7 +745,9 @@ public partial class ShellWindow : Window
     [
         new("Empresa", "empresa"),
         new("Responsável", "responsavel"),
-        new("Cônjuge", "conjuge")
+        new("Cônjuge do responsável", "conjuge_responsavel"),
+        new("Trabalho do cônjuge do responsável", "trabalho_conjuge_responsavel"),
+        new("Outros", "outros")
     ];
 
     private static readonly IReadOnlyList<PessoaStatusFilterOption> PessoaStatusFilterOptions =

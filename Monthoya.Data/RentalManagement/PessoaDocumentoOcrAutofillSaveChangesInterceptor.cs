@@ -28,6 +28,7 @@ public sealed class PessoaDocumentoOcrAutofillSaveChangesInterceptor : SaveChang
             .Entries<PessoaDocumento>()
             .Where(entry => entry.State is EntityState.Added or EntityState.Modified)
             .Where(entry => !string.IsNullOrWhiteSpace(entry.Entity.OcrTextoExtraido))
+            .Where(entry => !entry.Entity.SkipOcrAutofill)
             .ToList();
 
         foreach (var entry in documentEntries)
@@ -45,7 +46,7 @@ public sealed class PessoaDocumentoOcrAutofillSaveChangesInterceptor : SaveChang
 
             var values = ExtractPessoaOcrValues(documento.OcrTextoExtraido);
             var filledFields = new List<string>();
-            ApplyByDocumentoDe(pessoa, documento.DocumentoDe, values, filledFields);
+            ApplyByDocumentoDe(pessoa, documento.Tipo, documento.DocumentoDe, values, filledFields);
 
             if (filledFields.Count > 0)
             {
@@ -57,7 +58,7 @@ public sealed class PessoaDocumentoOcrAutofillSaveChangesInterceptor : SaveChang
         }
     }
 
-    private static void ApplyByDocumentoDe(Pessoa pessoa, string? documentoDe, PessoaOcrValues values, ICollection<string> filledFields)
+    private static void ApplyByDocumentoDe(Pessoa pessoa, string? documentoTipo, string? documentoDe, PessoaOcrValues values, ICollection<string> filledFields)
     {
         var target = (documentoDe ?? "pessoa").Trim().ToLowerInvariant();
 
@@ -74,8 +75,10 @@ public sealed class PessoaDocumentoOcrAutofillSaveChangesInterceptor : SaveChang
                 case "trabalho_conjuge":
                     ApplyPessoaFisicaConjugeTrabalho(pessoa.PessoaFisica, values, filledFields);
                     return;
+                case "pessoa":
+                    ApplyPessoaFisicaPessoal(pessoa, pessoa.PessoaFisica, values, IsResidencePessoaDocumento(documentoTipo), filledFields);
+                    return;
                 default:
-                    ApplyPessoaFisicaPessoal(pessoa, pessoa.PessoaFisica, values, filledFields);
                     return;
             }
         }
@@ -95,17 +98,14 @@ public sealed class PessoaDocumentoOcrAutofillSaveChangesInterceptor : SaveChang
                 case "trabalho_conjuge_responsavel":
                     return;
                 default:
-                    ApplyPessoaJuridicaEmpresa(pessoa, pessoa.PessoaJuridica, values, filledFields);
                     return;
             }
         }
     }
 
-    private static void ApplyPessoaFisicaPessoal(Pessoa pessoa, PessoaFisica fisica, PessoaOcrValues values, ICollection<string> fields)
+    private static void ApplyPessoaFisicaPessoal(Pessoa pessoa, PessoaFisica fisica, PessoaOcrValues values, bool isResidenceDocument, ICollection<string> fields)
     {
-        FillIfBlank(() => pessoa.Telefone, value => pessoa.Telefone = value, values.Telefone, "Telefone", fields);
         FillIfBlank(() => pessoa.Email, value => pessoa.Email = value, values.Email, "E-mail", fields);
-        FillIfBlank(() => fisica.Telefone, value => fisica.Telefone = value, values.Telefone, "Telefone", fields);
         FillIfBlank(() => fisica.Email, value => fisica.Email = value, values.Email, "E-mail", fields);
         FillIfBlank(() => fisica.Nome, value =>
         {
@@ -121,8 +121,11 @@ public sealed class PessoaDocumentoOcrAutofillSaveChangesInterceptor : SaveChang
         FillIfBlank(() => fisica.EstadoCivil, value => fisica.EstadoCivil = value, values.EstadoCivil, "Estado civil", fields);
         FillIfBlank(() => fisica.Profissao, value => fisica.Profissao = value, values.Profissao, "Profissão", fields);
         FillDateIfBlank(() => fisica.DataNascimento, value => fisica.DataNascimento = value, values.DataNascimento, "Data de nascimento", fields);
-        FillIfBlank(() => fisica.Cep, value => fisica.Cep = value, DigitsOrNull(values.Cep), "CEP", fields);
-        FillAddressIfBlank(fisica, values, fields);
+        if (isResidenceDocument)
+        {
+            FillIfBlank(() => fisica.Cep, value => fisica.Cep = value, DigitsOrNull(values.Cep), "CEP", fields);
+            FillAddressIfBlank(fisica, values, fields);
+        }
     }
 
     private static void ApplyPessoaFisicaTrabalho(PessoaFisica fisica, PessoaOcrValues values, ICollection<string> fields)
@@ -219,8 +222,8 @@ public sealed class PessoaDocumentoOcrAutofillSaveChangesInterceptor : SaveChang
             Cnpj: FindRegex(normalized, @"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b"),
             Rg: FindLabeledValue(normalized, "rg") ?? FindLabeledValue(normalized, "identidade"),
             Email: FindRegex(normalized, @"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", RegexOptions.IgnoreCase),
-            Telefone: FindRegex(normalized, @"(?:\(?\d{2}\)?\s?)?(?:9\s?)?\d{4}[-\s]?\d{4}"),
-            Cep: FindRegex(normalized, @"\b\d{5}-?\d{3}\b"),
+            Telefone: null,
+            Cep: FindLabeledValue(normalized, "cep"),
             Endereco: FindLabeledValue(normalized, "endereço") ?? FindLabeledValue(normalized, "endereco"),
             Rua: FindLabeledValue(normalized, "rua") ?? FindLabeledValue(normalized, "logradouro"),
             Numero: FindLabeledValue(normalized, "número") ?? FindLabeledValue(normalized, "numero") ?? FindLabeledValue(normalized, "nº"),
@@ -371,6 +374,10 @@ public sealed class PessoaDocumentoOcrAutofillSaveChangesInterceptor : SaveChang
 
         return decimal.TryParse(cleaned, NumberStyles.Number, CultureInfo.InvariantCulture, out amount) ? amount : null;
     }
+
+    private static bool IsResidencePessoaDocumento(string? documentoTipo) =>
+        string.Equals(documentoTipo, "residencia", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(documentoTipo, "endereco_residencia", StringComparison.OrdinalIgnoreCase);
 
     private sealed record PessoaOcrValues(
         string? Nome,

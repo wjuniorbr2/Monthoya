@@ -61,6 +61,8 @@ public sealed record CreatePessoaRequest(
     decimal? RendaTrabalho = null,
     string? TempoEmprego = null,
     string? TipoComprovanteRenda = null,
+    string? OutrasInformacoes = null,
+    string? TrabalhoOutrasInformacoes = null,
     string? EmpresaRua = null,
     string? EmpresaNumero = null,
     string? EmpresaComplemento = null,
@@ -79,6 +81,7 @@ public sealed record CreatePessoaRequest(
     string? ConjugeTelefone = null,
     string? ConjugeDadosBancarios = null,
     string? ConjugeObservacoes = null,
+    string? ConjugeOutrasInformacoes = null,
     bool? ConjugePossuiTrabalho = null,
     string? ConjugeNomeEmpresaTrabalho = null,
     string? ConjugeCnpjEmpresaTrabalho = null,
@@ -88,6 +91,7 @@ public sealed record CreatePessoaRequest(
     decimal? ConjugeRendaTrabalho = null,
     string? ConjugeTempoEmprego = null,
     string? ConjugeTipoComprovanteRenda = null,
+    string? ConjugeTrabalhoOutrasInformacoes = null,
     string? ConjugeEmpresaRua = null,
     string? ConjugeEmpresaNumero = null,
     string? ConjugeEmpresaComplemento = null,
@@ -134,7 +138,8 @@ public sealed record CreatePessoaDocumentoRequest(
     string? ContentType,
     DateOnly? DataValidade,
     string? Observacoes,
-    string? DocumentoDe = null);
+    string? DocumentoDe = null,
+    bool ApplyOcrToPessoa = true);
 
 public sealed record UpdatePessoaRequest(Guid Id, CreatePessoaRequest Pessoa);
 

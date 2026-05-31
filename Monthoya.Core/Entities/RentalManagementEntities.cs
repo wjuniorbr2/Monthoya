@@ -74,6 +74,8 @@ public sealed class PessoaFisica
     public decimal? RendaTrabalho { get; set; }
     public string? TempoEmprego { get; set; }
     public string? TipoComprovanteRenda { get; set; }
+    public string? OutrasInformacoes { get; set; }
+    public string? TrabalhoOutrasInformacoes { get; set; }
     public string? EmpresaRua { get; set; }
     public string? EmpresaNumero { get; set; }
     public string? EmpresaComplemento { get; set; }
@@ -92,6 +94,7 @@ public sealed class PessoaFisica
     public string? ConjugeTelefone { get; set; }
     public string? ConjugeDadosBancarios { get; set; }
     public string? ConjugeObservacoes { get; set; }
+    public string? ConjugeOutrasInformacoes { get; set; }
     public bool? ConjugePossuiTrabalho { get; set; }
     public string? ConjugeNomeEmpresaTrabalho { get; set; }
     public string? ConjugeCnpjEmpresaTrabalho { get; set; }
@@ -101,6 +104,7 @@ public sealed class PessoaFisica
     public decimal? ConjugeRendaTrabalho { get; set; }
     public string? ConjugeTempoEmprego { get; set; }
     public string? ConjugeTipoComprovanteRenda { get; set; }
+    public string? ConjugeTrabalhoOutrasInformacoes { get; set; }
     public string? ConjugeEmpresaRua { get; set; }
     public string? ConjugeEmpresaNumero { get; set; }
     public string? ConjugeEmpresaComplemento { get; set; }
@@ -171,6 +175,7 @@ public sealed class PessoaDocumento : BaseEntity
     public DateTimeOffset? OcrProcessadoEmUtc { get; set; }
     public string? OcrErroMensagem { get; set; }
     public string? OcrCamposAplicados { get; set; }
+    public bool SkipOcrAutofill { get; set; }
 }
 
 public sealed class Imovel : BaseEntity

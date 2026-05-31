@@ -137,6 +137,8 @@ public sealed class RentalManagementService(
                 RendaTrabalho = request.RendaTrabalho,
                 TempoEmprego = TrimOrNull(request.TempoEmprego),
                 TipoComprovanteRenda = TrimOrNull(request.TipoComprovanteRenda),
+                OutrasInformacoes = TrimOrNull(request.OutrasInformacoes),
+                TrabalhoOutrasInformacoes = TrimOrNull(request.TrabalhoOutrasInformacoes),
                 EmpresaRua = TrimOrNull(request.EmpresaRua),
                 EmpresaNumero = TrimOrNull(request.EmpresaNumero),
                 EmpresaComplemento = TrimOrNull(request.EmpresaComplemento),
@@ -155,6 +157,7 @@ public sealed class RentalManagementService(
                 ConjugeTelefone = DigitsOrNull(request.ConjugeTelefone),
                 ConjugeDadosBancarios = TrimOrNull(request.ConjugeDadosBancarios),
                 ConjugeObservacoes = TrimOrNull(request.ConjugeObservacoes),
+                ConjugeOutrasInformacoes = TrimOrNull(request.ConjugeOutrasInformacoes),
                 ConjugePossuiTrabalho = request.ConjugePossuiTrabalho,
                 ConjugeNomeEmpresaTrabalho = TrimOrNull(request.ConjugeNomeEmpresaTrabalho),
                 ConjugeCnpjEmpresaTrabalho = DigitsOrNull(request.ConjugeCnpjEmpresaTrabalho),
@@ -164,6 +167,7 @@ public sealed class RentalManagementService(
                 ConjugeRendaTrabalho = request.ConjugeRendaTrabalho,
                 ConjugeTempoEmprego = TrimOrNull(request.ConjugeTempoEmprego),
                 ConjugeTipoComprovanteRenda = TrimOrNull(request.ConjugeTipoComprovanteRenda),
+                ConjugeTrabalhoOutrasInformacoes = TrimOrNull(request.ConjugeTrabalhoOutrasInformacoes),
                 ConjugeEmpresaRua = TrimOrNull(request.ConjugeEmpresaRua),
                 ConjugeEmpresaNumero = TrimOrNull(request.ConjugeEmpresaNumero),
                 ConjugeEmpresaComplemento = TrimOrNull(request.ConjugeEmpresaComplemento),
@@ -288,6 +292,8 @@ public sealed class RentalManagementService(
             pessoa.PessoaFisica.RendaTrabalho = request.Pessoa.RendaTrabalho;
             pessoa.PessoaFisica.TempoEmprego = TrimOrNull(request.Pessoa.TempoEmprego);
             pessoa.PessoaFisica.TipoComprovanteRenda = TrimOrNull(request.Pessoa.TipoComprovanteRenda);
+            pessoa.PessoaFisica.OutrasInformacoes = TrimOrNull(request.Pessoa.OutrasInformacoes);
+            pessoa.PessoaFisica.TrabalhoOutrasInformacoes = TrimOrNull(request.Pessoa.TrabalhoOutrasInformacoes);
             pessoa.PessoaFisica.EmpresaRua = TrimOrNull(request.Pessoa.EmpresaRua);
             pessoa.PessoaFisica.EmpresaNumero = TrimOrNull(request.Pessoa.EmpresaNumero);
             pessoa.PessoaFisica.EmpresaComplemento = TrimOrNull(request.Pessoa.EmpresaComplemento);
@@ -306,6 +312,7 @@ public sealed class RentalManagementService(
             pessoa.PessoaFisica.ConjugeTelefone = DigitsOrNull(request.Pessoa.ConjugeTelefone);
             pessoa.PessoaFisica.ConjugeDadosBancarios = TrimOrNull(request.Pessoa.ConjugeDadosBancarios);
             pessoa.PessoaFisica.ConjugeObservacoes = TrimOrNull(request.Pessoa.ConjugeObservacoes);
+            pessoa.PessoaFisica.ConjugeOutrasInformacoes = TrimOrNull(request.Pessoa.ConjugeOutrasInformacoes);
             pessoa.PessoaFisica.ConjugePossuiTrabalho = request.Pessoa.ConjugePossuiTrabalho;
             pessoa.PessoaFisica.ConjugeNomeEmpresaTrabalho = TrimOrNull(request.Pessoa.ConjugeNomeEmpresaTrabalho);
             pessoa.PessoaFisica.ConjugeCnpjEmpresaTrabalho = DigitsOrNull(request.Pessoa.ConjugeCnpjEmpresaTrabalho);
@@ -315,6 +322,7 @@ public sealed class RentalManagementService(
             pessoa.PessoaFisica.ConjugeRendaTrabalho = request.Pessoa.ConjugeRendaTrabalho;
             pessoa.PessoaFisica.ConjugeTempoEmprego = TrimOrNull(request.Pessoa.ConjugeTempoEmprego);
             pessoa.PessoaFisica.ConjugeTipoComprovanteRenda = TrimOrNull(request.Pessoa.ConjugeTipoComprovanteRenda);
+            pessoa.PessoaFisica.ConjugeTrabalhoOutrasInformacoes = TrimOrNull(request.Pessoa.ConjugeTrabalhoOutrasInformacoes);
             pessoa.PessoaFisica.ConjugeEmpresaRua = TrimOrNull(request.Pessoa.ConjugeEmpresaRua);
             pessoa.PessoaFisica.ConjugeEmpresaNumero = TrimOrNull(request.Pessoa.ConjugeEmpresaNumero);
             pessoa.PessoaFisica.ConjugeEmpresaComplemento = TrimOrNull(request.Pessoa.ConjugeEmpresaComplemento);
@@ -419,7 +427,8 @@ public sealed class RentalManagementService(
             Nome = request.Nome.Trim(),
             ContentType = TrimOrNull(request.ContentType),
             DataValidade = request.DataValidade,
-            Observacoes = TrimOrNull(request.Observacoes)
+            Observacoes = TrimOrNull(request.Observacoes),
+            SkipOcrAutofill = !request.ApplyOcrToPessoa
         };
         documento.StoragePath = await StorePessoaDocumentoAsync(documento.Id, request.PessoaId, request.StoragePath.Trim(), documento.ContentType, cancellationToken);
 
@@ -431,9 +440,9 @@ public sealed class RentalManagementService(
             documento.OcrStatus = ocrResult.Succeeded ? DocumentoOcrStatus.Processado : DocumentoOcrStatus.Erro;
             documento.OcrErroMensagem = TrimOrNull(ocrResult.ErrorMessage);
 
-            if (ocrResult.Succeeded && !string.IsNullOrWhiteSpace(ocrResult.ExtractedText))
+            if (request.ApplyOcrToPessoa && ocrResult.Succeeded && !string.IsNullOrWhiteSpace(ocrResult.ExtractedText))
             {
-                var filledFields = await ApplyPessoaOcrFieldsAsync(request.PessoaId, ocrResult.ExtractedText, cancellationToken);
+                var filledFields = await ApplyPessoaOcrFieldsAsync(request.PessoaId, documento.Tipo, documento.DocumentoDe, ocrResult.ExtractedText, cancellationToken);
                 documento.OcrCamposAplicados = filledFields.Count == 0 ? null : string.Join(", ", filledFields);
             }
         }
@@ -768,7 +777,7 @@ public sealed class RentalManagementService(
         return $"{stored.Bucket}/{stored.ObjectPath}";
     }
 
-    private async Task<IReadOnlyList<string>> ApplyPessoaOcrFieldsAsync(Guid pessoaId, string ocrText, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<string>> ApplyPessoaOcrFieldsAsync(Guid pessoaId, string documentoTipo, string documentoDe, string ocrText, CancellationToken cancellationToken)
     {
         var pessoa = await dbContext.Pessoas
             .Include(x => x.PessoaFisica)
@@ -782,16 +791,73 @@ public sealed class RentalManagementService(
 
         var values = ExtractPessoaOcrValues(ocrText);
         var filledFields = new List<string>();
+        var target = documentoDe.Trim().ToLowerInvariant();
 
-        FillIfBlank(() => pessoa.Telefone, value => pessoa.Telefone = value, values.Telefone, "Telefone", filledFields);
+        if (pessoa.TipoPessoa == TipoPessoa.Fisica && pessoa.PessoaFisica is not null)
+        {
+            var fisica = pessoa.PessoaFisica;
+            switch (target)
+            {
+                case "empresa_trabalho":
+                    fisica.PossuiTrabalho ??= true;
+                    FillIfBlank(() => fisica.NomeEmpresaTrabalho, value => fisica.NomeEmpresaTrabalho = value, values.Nome, "Nome da empresa", filledFields);
+                    FillIfBlank(() => fisica.CnpjEmpresaTrabalho, value => fisica.CnpjEmpresaTrabalho = value, DigitsOrNull(values.Cnpj), "CNPJ da empresa", filledFields);
+                    FillIfBlank(() => fisica.TelefoneEmpresaTrabalho, value => fisica.TelefoneEmpresaTrabalho = value, DigitsOrNull(values.Telefone), "Telefone da empresa", filledFields);
+                    FillIfBlank(() => fisica.EmailEmpresaTrabalho, value => fisica.EmailEmpresaTrabalho = value, values.Email, "Email da empresa", filledFields);
+                    FillIfBlank(() => fisica.EmpresaCep, value => fisica.EmpresaCep = value, DigitsOrNull(values.Cep), "CEP da empresa", filledFields);
+                    FillIfBlank(() => fisica.EmpresaRua, value => fisica.EmpresaRua = value, values.Endereco, "Rua da empresa", filledFields);
+                    await SavePessoaOcrChangesAsync(pessoa, filledFields, cancellationToken);
+                    return filledFields;
+                case "conjuge":
+                    FillIfBlank(() => fisica.ConjugeNome, value => fisica.ConjugeNome = value, values.Nome, "Nome do cônjuge", filledFields);
+                    FillIfBlank(() => fisica.ConjugeCpf, value => fisica.ConjugeCpf = value, DigitsOrNull(values.Cpf), "CPF do cônjuge", filledFields);
+                    FillIfBlank(() => fisica.ConjugeRg, value => fisica.ConjugeRg = value, DigitsOrNull(values.Rg), "RG do cônjuge", filledFields);
+                    await SavePessoaOcrChangesAsync(pessoa, filledFields, cancellationToken);
+                    return filledFields;
+                case "trabalho_conjuge":
+                    fisica.ConjugePossuiTrabalho ??= true;
+                    FillIfBlank(() => fisica.ConjugeNomeEmpresaTrabalho, value => fisica.ConjugeNomeEmpresaTrabalho = value, values.Nome, "Empresa do cônjuge", filledFields);
+                    FillIfBlank(() => fisica.ConjugeCnpjEmpresaTrabalho, value => fisica.ConjugeCnpjEmpresaTrabalho = value, DigitsOrNull(values.Cnpj), "CNPJ da empresa do cônjuge", filledFields);
+                    FillIfBlank(() => fisica.ConjugeTelefoneEmpresaTrabalho, value => fisica.ConjugeTelefoneEmpresaTrabalho = value, DigitsOrNull(values.Telefone), "Telefone da empresa do cônjuge", filledFields);
+                    FillIfBlank(() => fisica.ConjugeEmailEmpresaTrabalho, value => fisica.ConjugeEmailEmpresaTrabalho = value, values.Email, "Email da empresa do cônjuge", filledFields);
+                    FillIfBlank(() => fisica.ConjugeEmpresaCep, value => fisica.ConjugeEmpresaCep = value, DigitsOrNull(values.Cep), "CEP da empresa do cônjuge", filledFields);
+                    FillIfBlank(() => fisica.ConjugeEmpresaRua, value => fisica.ConjugeEmpresaRua = value, values.Endereco, "Rua da empresa do cônjuge", filledFields);
+                    await SavePessoaOcrChangesAsync(pessoa, filledFields, cancellationToken);
+                    return filledFields;
+                case "outros":
+                    return [];
+            }
+        }
+
+        if (pessoa.TipoPessoa == TipoPessoa.Juridica && pessoa.PessoaJuridica is not null)
+        {
+            var juridica = pessoa.PessoaJuridica;
+            switch (target)
+            {
+                case "responsavel":
+                    FillIfBlank(() => juridica.ResponsavelNome, value => juridica.ResponsavelNome = value, values.Nome, "Nome do responsável", filledFields);
+                    FillIfBlank(() => juridica.ResponsavelCpf, value => juridica.ResponsavelCpf = value, DigitsOrNull(values.Cpf), "CPF do responsável", filledFields);
+                    FillIfBlank(() => juridica.ResponsavelRg, value => juridica.ResponsavelRg = value, DigitsOrNull(values.Rg), "RG do responsável", filledFields);
+                    await SavePessoaOcrChangesAsync(pessoa, filledFields, cancellationToken);
+                    return filledFields;
+                case "conjuge_responsavel":
+                case "trabalho_conjuge_responsavel":
+                case "outros":
+                    return [];
+            }
+        }
+
         FillIfBlank(() => pessoa.Email, value => pessoa.Email = value, values.Email, "Email", filledFields);
 
         if (pessoa.TipoPessoa == TipoPessoa.Fisica && pessoa.PessoaFisica is not null)
         {
             FillIfBlank(() => pessoa.PessoaFisica.Cpf, value => pessoa.PessoaFisica.Cpf = value, DigitsOrNull(values.Cpf), "CPF", filledFields);
             FillIfBlank(() => pessoa.PessoaFisica.Rg, value => pessoa.PessoaFisica.Rg = value, DigitsOrNull(values.Rg), "RG", filledFields);
-            FillIfBlank(() => pessoa.PessoaFisica.Cep, value => pessoa.PessoaFisica.Cep = value, DigitsOrNull(values.Cep), "CEP", filledFields);
-            FillIfBlank(() => pessoa.PessoaFisica.Rua, value => pessoa.PessoaFisica.Rua = value, values.Endereco, "Rua", filledFields);
+            if (IsResidencePessoaDocumento(documentoTipo))
+            {
+                FillIfBlank(() => pessoa.PessoaFisica.Cep, value => pessoa.PessoaFisica.Cep = value, DigitsOrNull(values.Cep), "CEP", filledFields);
+                FillIfBlank(() => pessoa.PessoaFisica.Rua, value => pessoa.PessoaFisica.Rua = value, values.Endereco, "Rua", filledFields);
+            }
             FillIfBlank(() => pessoa.PessoaFisica.Nome, value =>
             {
                 pessoa.PessoaFisica.Nome = value;
@@ -826,14 +892,32 @@ public sealed class RentalManagementService(
         return filledFields;
     }
 
+    private async Task SavePessoaOcrChangesAsync(Pessoa pessoa, IReadOnlyCollection<string> filledFields, CancellationToken cancellationToken)
+    {
+        if (filledFields.Count == 0)
+        {
+            return;
+        }
+
+        pessoa.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    private static bool IsResidencePessoaDocumento(string documentoTipo) =>
+        documentoTipo.Equals("residencia", StringComparison.OrdinalIgnoreCase)
+        || documentoTipo.Equals("endereco_residencia", StringComparison.OrdinalIgnoreCase);
+
     private static PessoaOcrValues ExtractPessoaOcrValues(string text)
     {
         var normalized = text.Replace("\r", "\n", StringComparison.Ordinal);
+        var cpf = FindRegex(normalized, @"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b");
+        var cnpj = FindRegex(normalized, @"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b");
+
         return new PessoaOcrValues(
-            FindLabeledValue(normalized, "nome") ?? FindLabeledValue(normalized, "razão social") ?? FindLabeledValue(normalized, "razao social"),
-            FindRegex(normalized, @"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b"),
-            FindRegex(normalized, @"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b"),
-            FindLabeledValue(normalized, "rg"),
+            FindLabeledValue(normalized, "nome") ?? FindLabeledValue(normalized, "razão social") ?? FindLabeledValue(normalized, "razao social") ?? FindOcrNameFallback(normalized),
+            cpf,
+            cnpj,
+            FindLabeledValue(normalized, "rg") ?? FindOcrRgFallback(normalized, cpf, cnpj),
             FindRegex(normalized, @"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", RegexOptions.IgnoreCase),
             FindRegex(normalized, @"(?:\(?\d{2}\)?\s?)?(?:9\s?)?\d{4}[-\s]?\d{4}"),
             FindRegex(normalized, @"\b\d{5}-?\d{3}\b"),
@@ -865,6 +949,45 @@ public sealed class RentalManagementService(
     {
         var match = Regex.Match(text, pattern, options | RegexOptions.CultureInvariant);
         return match.Success ? match.Value.Trim() : null;
+    }
+
+    private static string? FindOcrNameFallback(string text)
+    {
+        var ignoredWords = new[]
+        {
+            "BRASIL", "VALIDA", "TERRITORIO", "NACIONAL", "REPUBLICA",
+            "FEDERATIVA", "IDENTIDADE", "CARTEIRA", "DATA", "NASCIMENTO",
+            "NATURALIDADE", "FILIACAO", "ORGAO", "EXPEDIDOR", "VIA", "CPF"
+        };
+
+        return text
+            .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => Regex.Replace(line, @"[^A-Za-zÀ-ÿ\s]", " ").Trim())
+            .Where(line => line.Count(char.IsLetter) >= 8)
+            .Where(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 2)
+            .Where(line => !ignoredWords.Any(word => line.Contains(word, StringComparison.OrdinalIgnoreCase)))
+            .OrderByDescending(line => line.Length)
+            .FirstOrDefault();
+    }
+
+    private static string? FindOcrRgFallback(string text, string? cpf, string? cnpj)
+    {
+        var matches = Regex.Matches(text, @"\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dXx]\b|\b\d{7,10}-?[\dXx]?\b");
+        foreach (Match match in matches)
+        {
+            var digits = DigitsOrNull(match.Value);
+            if (string.IsNullOrWhiteSpace(digits)
+                || digits.Length is < 7 or > 10
+                || string.Equals(digits, DigitsOrNull(cpf), StringComparison.Ordinal)
+                || string.Equals(digits, DigitsOrNull(cnpj), StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            return digits;
+        }
+
+        return null;
     }
 
     private static string GetPessoaRolesLabel(bool isProprietario, bool isLocatario, bool isFiador)
@@ -913,6 +1036,8 @@ public sealed class RentalManagementService(
                 RendaTrabalho: fisica.RendaTrabalho,
                 TempoEmprego: fisica.TempoEmprego,
                 TipoComprovanteRenda: fisica.TipoComprovanteRenda,
+                OutrasInformacoes: fisica.OutrasInformacoes,
+                TrabalhoOutrasInformacoes: fisica.TrabalhoOutrasInformacoes,
                 EmpresaRua: fisica.EmpresaRua,
                 EmpresaNumero: fisica.EmpresaNumero,
                 EmpresaComplemento: fisica.EmpresaComplemento,
@@ -931,6 +1056,7 @@ public sealed class RentalManagementService(
                 ConjugeTelefone: FormatPhoneForDisplay(fisica.ConjugeTelefone),
                 ConjugeDadosBancarios: fisica.ConjugeDadosBancarios,
                 ConjugeObservacoes: fisica.ConjugeObservacoes,
+                ConjugeOutrasInformacoes: fisica.ConjugeOutrasInformacoes ?? fisica.ConjugeObservacoes,
                 ConjugePossuiTrabalho: fisica.ConjugePossuiTrabalho,
                 ConjugeNomeEmpresaTrabalho: fisica.ConjugeNomeEmpresaTrabalho,
                 ConjugeCnpjEmpresaTrabalho: FormatCnpj(fisica.ConjugeCnpjEmpresaTrabalho),
@@ -940,6 +1066,7 @@ public sealed class RentalManagementService(
                 ConjugeRendaTrabalho: fisica.ConjugeRendaTrabalho,
                 ConjugeTempoEmprego: fisica.ConjugeTempoEmprego,
                 ConjugeTipoComprovanteRenda: fisica.ConjugeTipoComprovanteRenda,
+                ConjugeTrabalhoOutrasInformacoes: fisica.ConjugeTrabalhoOutrasInformacoes,
                 ConjugeEmpresaRua: fisica.ConjugeEmpresaRua,
                 ConjugeEmpresaNumero: fisica.ConjugeEmpresaNumero,
                 ConjugeEmpresaComplemento: fisica.ConjugeEmpresaComplemento,

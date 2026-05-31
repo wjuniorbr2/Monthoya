@@ -42,13 +42,14 @@ public partial class ShellWindow
         PessoasGrid.SelectionChanged += (_, _) =>
         {
             _pendingPessoaDocumentos.Clear();
+            ClearPessoaDocumentoInputs();
             QueueRefreshPessoaDocumentosForActiveForm();
         };
 
         PessoaNomeBox.TextChanged += (_, _) => QueueRefreshPessoaDocumentosForActiveForm();
         PessoaTipoBox.SelectionChanged += (_, _) => QueueRefreshPessoaDocumentosForActiveForm();
 
-        SavePessoaDocumentoButton.IsEnabled = true;
+        UpdatePessoaDocumentoEditorAvailability();
         QueueRefreshPessoaDocumentosForActiveForm();
     }
 
@@ -58,6 +59,12 @@ public partial class ShellWindow
 
         try
         {
+            if (!_isPessoaEditing)
+            {
+                PessoaDocumentoErrorText.Text = "Clique em Editar para adicionar documentos.";
+                return;
+            }
+
             var draft = BuildPessoaDocumentoDraft();
             if (draft is null)
             {
@@ -66,13 +73,26 @@ public partial class ShellWindow
 
             var extractedText = await ExtractPessoaDocumentoTextForFormAsync(draft.StoragePath, draft.ContentType);
             draft = draft with { OcrText = extractedText };
-            ApplyPessoaDocumentoOcrTextToForm(draft.DocumentoDe, extractedText);
+            var ocrWarning = string.IsNullOrWhiteSpace(extractedText) && IsPessoaDocumentoPdf(draft.StoragePath, draft.ContentType)
+                ? "Documento PDF anexado, mas o OCR local ainda não lê PDF digitalizado. Converta para imagem ou configure um motor OCR com suporte a PDF."
+                : null;
+            if (_isPessoaEditing)
+            {
+                ApplyPessoaDocumentoOcrTextToForm(draft.Tipo, draft.DocumentoDe, extractedText);
+            }
 
             if (_selectedPessoaId.HasValue)
             {
-                await SavePessoaDocumentoDraftAsync(_selectedPessoaId.Value, draft);
+                await SavePessoaDocumentoDraftAsync(_selectedPessoaId.Value, draft, applyOcrToPessoa: _isPessoaEditing);
+                if (_isPessoaEditing && !string.IsNullOrWhiteSpace(extractedText))
+                {
+                    await _rentalManagementService.UpdatePessoaAsync(new UpdatePessoaRequest(_selectedPessoaId.Value, BuildPessoaRequest()));
+                }
+
                 ClearPessoaDocumentoInputs();
+                await RefreshSelectedPessoaAfterDocumentoOcrAsync(_selectedPessoaId.Value);
                 await LoadPessoaDocumentosAsync(_selectedPessoaId);
+                PessoaDocumentoErrorText.Text = ocrWarning ?? string.Empty;
                 QueuePessoaDocumentosCardPruning();
                 return;
             }
@@ -80,6 +100,7 @@ public partial class ShellWindow
             _pendingPessoaDocumentos.Add(draft);
             ClearPessoaDocumentoInputs();
             RefreshPendingPessoaDocumentosGrid();
+            PessoaDocumentoErrorText.Text = ocrWarning ?? string.Empty;
             QueuePessoaDocumentosCardPruning();
         }
         catch (Exception ex)
@@ -182,13 +203,13 @@ public partial class ShellWindow
 
         foreach (var draft in _pendingPessoaDocumentos.ToList())
         {
-            await SavePessoaDocumentoDraftAsync(pessoaId, draft);
+            await SavePessoaDocumentoDraftAsync(pessoaId, draft, applyOcrToPessoa: true);
         }
 
         _pendingPessoaDocumentos.Clear();
     }
 
-    private Task<PessoaDocumentoSummary> SavePessoaDocumentoDraftAsync(Guid pessoaId, PessoaDocumentoDraft draft) =>
+    private Task<PessoaDocumentoSummary> SavePessoaDocumentoDraftAsync(Guid pessoaId, PessoaDocumentoDraft draft, bool applyOcrToPessoa) =>
         _rentalManagementService.CreatePessoaDocumentoAsync(new CreatePessoaDocumentoRequest(
             pessoaId,
             string.IsNullOrWhiteSpace(draft.Tipo) ? "outros" : draft.Tipo,
@@ -197,7 +218,18 @@ public partial class ShellWindow
             draft.ContentType,
             draft.DataValidade,
             draft.Observacoes,
-            draft.DocumentoDe));
+            draft.DocumentoDe,
+            applyOcrToPessoa));
+
+    private async Task RefreshSelectedPessoaAfterDocumentoOcrAsync(Guid pessoaId)
+    {
+        _selectedPessoaDetails = await _rentalManagementService.GetPessoaAsync(pessoaId);
+        if (_selectedPessoaDetails is not null)
+        {
+            PopulatePessoaForm(_selectedPessoaDetails);
+            SetPessoaEditMode(false, isNew: false);
+        }
+    }
 
     private void ClearPessoaDocumentoInputs()
     {
@@ -233,7 +265,7 @@ public partial class ShellWindow
     {
         Dispatcher.BeginInvoke(() =>
         {
-            SavePessoaDocumentoButton.IsEnabled = true;
+            UpdatePessoaDocumentoEditorAvailability();
             if (!_selectedPessoaId.HasValue && _pendingPessoaDocumentos.Count > 0)
             {
                 RefreshPendingPessoaDocumentosGrid();
@@ -258,6 +290,7 @@ public partial class ShellWindow
             "responsavel" => "Responsável",
             "conjuge_responsavel" => "Cônjuge do responsável",
             "trabalho_conjuge_responsavel" => "Trabalho do cônjuge do responsável",
+            "outros" => "Outros",
             _ => "Pessoa"
         };
 

@@ -120,25 +120,23 @@ public partial class ShellWindow
         {
             _pessoaDocumentos = [];
             PessoaDocumentosGrid.ItemsSource = _pessoaDocumentos;
-            PessoaDocumentosTitleText.Text = "Documentos da pessoa selecionada";
+            PessoaDocumentosTitleText.Text = "Documentos anexos";
             return;
         }
 
         _pessoaDocumentos = await _rentalManagementService.GetPessoaDocumentosAsync(pessoaId.Value);
         PessoaDocumentosGrid.ItemsSource = _pessoaDocumentos;
-        PessoaDocumentosTitleText.Text = _pessoaDocumentos.Count == 0
-            ? "Nenhum documento cadastrado para esta pessoa"
-            : "Documentos da pessoa selecionada";
+        PessoaDocumentosTitleText.Text = "Documentos anexos";
     }
 
     private void SetPessoaDocumentoSelection(PessoaSummary? pessoa)
     {
         _selectedPessoaId = pessoa?.Id;
         PessoaDocumentoPessoaText.Text = pessoa is null ? "Nenhuma pessoa selecionada" : pessoa.Nome;
-        SavePessoaDocumentoButton.IsEnabled = pessoa is not null;
         PessoaProprietarioBox.IsChecked = pessoa?.IsProprietario == true;
         PessoaLocatarioBox.IsChecked = pessoa?.IsLocatario == true;
         PessoaFiadorBox.IsChecked = pessoa?.IsFiador == true;
+        UpdatePessoaDocumentoEditorAvailability();
     }
 
     private CreatePessoaRequest BuildPessoaRequest()
@@ -177,6 +175,8 @@ public partial class ShellWindow
             RendaTrabalho: ParseNullableDecimal(_pessoaRendaTrabalhoBox?.Text),
             TempoEmprego: _pessoaTempoEmpregoBox?.Text,
             TipoComprovanteRenda: _pessoaTipoComprovanteRendaBox?.Text,
+            OutrasInformacoes: _pessoaOutrasInformacoesBox?.Text,
+            TrabalhoOutrasInformacoes: _pessoaTrabalhoOutrasInformacoesBox?.Text,
             EmpresaRua: _pessoaTrabalhoRuaBox?.Text,
             EmpresaNumero: _pessoaTrabalhoNumeroBox?.Text,
             EmpresaComplemento: _pessoaTrabalhoComplementoBox?.Text,
@@ -194,7 +194,8 @@ public partial class ShellWindow
             ConjugeNacionalidade: PessoaConjugeNacionalidadeBox.Text,
             ConjugeTelefone: PessoaConjugeTelefoneBox.Text,
             ConjugeDadosBancarios: _pessoaConjugeDadosBancariosBox?.Text,
-            ConjugeObservacoes: _pessoaConjugeObservacoesBox?.Text,
+            ConjugeObservacoes: null,
+            ConjugeOutrasInformacoes: _pessoaConjugeOutrasInformacoesBox?.Text,
             ConjugePossuiTrabalho: GetPessoaConjugePossuiTrabalho(),
             ConjugeNomeEmpresaTrabalho: _pessoaConjugeNomeEmpresaTrabalhoBox?.Text,
             ConjugeCnpjEmpresaTrabalho: _pessoaConjugeCnpjEmpresaTrabalhoBox?.Text,
@@ -204,6 +205,7 @@ public partial class ShellWindow
             ConjugeRendaTrabalho: ParseNullableDecimal(_pessoaConjugeRendaTrabalhoBox?.Text),
             ConjugeTempoEmprego: _pessoaConjugeTempoEmpregoBox?.Text,
             ConjugeTipoComprovanteRenda: _pessoaConjugeTipoComprovanteRendaBox?.Text,
+            ConjugeTrabalhoOutrasInformacoes: _pessoaConjugeTrabalhoOutrasInformacoesBox?.Text,
             ConjugeEmpresaRua: _pessoaConjugeEmpresaRuaBox?.Text,
             ConjugeEmpresaNumero: _pessoaConjugeEmpresaNumeroBox?.Text,
             ConjugeEmpresaComplemento: _pessoaConjugeEmpresaComplementoBox?.Text,
@@ -462,6 +464,8 @@ public partial class ShellWindow
             _pessoaRendaTrabalhoBox,
             _pessoaTempoEmpregoBox,
             _pessoaTipoComprovanteRendaBox,
+            _pessoaOutrasInformacoesBox,
+            _pessoaTrabalhoOutrasInformacoesBox,
             _pessoaTrabalhoRuaBox,
             _pessoaTrabalhoNumeroBox,
             _pessoaTrabalhoComplementoBox,
@@ -485,6 +489,7 @@ public partial class ShellWindow
             _pessoaConjugeEmailBox,
             _pessoaConjugeDadosBancariosBox,
             _pessoaConjugeObservacoesBox,
+            _pessoaConjugeOutrasInformacoesBox,
             _pessoaConjugeNomeEmpresaTrabalhoBox,
             _pessoaConjugeCnpjEmpresaTrabalhoBox,
             _pessoaConjugeTelefoneEmpresaTrabalhoBox,
@@ -493,6 +498,7 @@ public partial class ShellWindow
             _pessoaConjugeRendaTrabalhoBox,
             _pessoaConjugeTempoEmpregoBox,
             _pessoaConjugeTipoComprovanteRendaBox,
+            _pessoaConjugeTrabalhoOutrasInformacoesBox,
             _pessoaConjugeEmpresaRuaBox,
             _pessoaConjugeEmpresaNumeroBox,
             _pessoaConjugeEmpresaComplementoBox,
@@ -605,6 +611,8 @@ public partial class ShellWindow
         SetText(_pessoaRendaTrabalhoBox, FormatNullableDecimal(dados.RendaTrabalho));
         SetText(_pessoaTempoEmpregoBox, dados.TempoEmprego);
         SetText(_pessoaTipoComprovanteRendaBox, dados.TipoComprovanteRenda);
+        SetText(_pessoaOutrasInformacoesBox, dados.OutrasInformacoes);
+        SetText(_pessoaTrabalhoOutrasInformacoesBox, dados.TrabalhoOutrasInformacoes);
         SetText(_pessoaTrabalhoRuaBox, dados.EmpresaRua);
         SetText(_pessoaTrabalhoNumeroBox, dados.EmpresaNumero);
         SetText(_pessoaTrabalhoComplementoBox, dados.EmpresaComplemento);
@@ -623,6 +631,7 @@ public partial class ShellWindow
         PessoaConjugeTelefoneBox.Text = dados.ConjugeTelefone ?? string.Empty;
         SetText(_pessoaConjugeDadosBancariosBox, dados.ConjugeDadosBancarios);
         SetText(_pessoaConjugeObservacoesBox, dados.ConjugeObservacoes);
+        SetText(_pessoaConjugeOutrasInformacoesBox, dados.ConjugeOutrasInformacoes ?? dados.ConjugeObservacoes);
         if (_pessoaConjugeWorkComboBox is not null)
         {
             _pessoaConjugeWorkComboBox.SelectedItem = dados.ConjugePossuiTrabalho switch
@@ -640,6 +649,7 @@ public partial class ShellWindow
         SetText(_pessoaConjugeRendaTrabalhoBox, FormatNullableDecimal(dados.ConjugeRendaTrabalho));
         SetText(_pessoaConjugeTempoEmpregoBox, dados.ConjugeTempoEmprego);
         SetText(_pessoaConjugeTipoComprovanteRendaBox, dados.ConjugeTipoComprovanteRenda);
+        SetText(_pessoaConjugeTrabalhoOutrasInformacoesBox, dados.ConjugeTrabalhoOutrasInformacoes);
         SetText(_pessoaConjugeEmpresaRuaBox, dados.ConjugeEmpresaRua);
         SetText(_pessoaConjugeEmpresaNumeroBox, dados.ConjugeEmpresaNumero);
         SetText(_pessoaConjugeEmpresaComplementoBox, dados.ConjugeEmpresaComplemento);
@@ -742,6 +752,32 @@ public partial class ShellWindow
         {
             _pessoaConjugeWorkComboBox.IsEnabled = isEditing;
         }
+
+        UpdatePessoaDocumentoEditorAvailability();
+    }
+
+    private void UpdatePessoaDocumentoEditorAvailability()
+    {
+        var canEditDocuments = _isPessoaEditing;
+        SavePessoaDocumentoButton.IsEnabled = canEditDocuments;
+        SavePessoaDocumentoButton.ToolTip = canEditDocuments
+            ? "Adiciona o arquivo selecionado aos documentos da pessoa."
+            : "Clique em Editar para adicionar documentos.";
+
+        PessoaDocumentoDonoBox.IsEnabled = canEditDocuments;
+        PessoaDocumentoTipoBox.IsEnabled = canEditDocuments;
+        PessoaDocumentoNomeBox.IsReadOnly = !canEditDocuments;
+        PessoaDocumentoArquivoBox.IsReadOnly = true;
+        PessoaDocumentoValidadeBox.IsEnabled = canEditDocuments;
+        PessoaDocumentoObservacoesBox.IsReadOnly = !canEditDocuments;
+
+        if (_selecionarPessoaDocumentoArquivoButton is not null)
+        {
+            _selecionarPessoaDocumentoArquivoButton.IsEnabled = canEditDocuments;
+            _selecionarPessoaDocumentoArquivoButton.ToolTip = canEditDocuments
+                ? "Escolha o PDF, imagem ou arquivo digitalizado no computador."
+                : "Clique em Editar para selecionar arquivos.";
+        }
     }
 
     private IEnumerable<DatePicker> GetPessoaDatePickers()
@@ -828,6 +864,8 @@ public partial class ShellWindow
             _pessoaRendaTrabalhoBox,
             _pessoaTempoEmpregoBox,
             _pessoaTipoComprovanteRendaBox,
+            _pessoaOutrasInformacoesBox,
+            _pessoaTrabalhoOutrasInformacoesBox,
             _pessoaTrabalhoRuaBox,
             _pessoaTrabalhoNumeroBox,
             _pessoaTrabalhoComplementoBox,
@@ -838,6 +876,7 @@ public partial class ShellWindow
             _pessoaConjugeEmailBox,
             _pessoaConjugeDadosBancariosBox,
             _pessoaConjugeObservacoesBox,
+            _pessoaConjugeOutrasInformacoesBox,
             _pessoaConjugeNomeEmpresaTrabalhoBox,
             _pessoaConjugeCnpjEmpresaTrabalhoBox,
             _pessoaConjugeTelefoneEmpresaTrabalhoBox,
@@ -846,6 +885,7 @@ public partial class ShellWindow
             _pessoaConjugeRendaTrabalhoBox,
             _pessoaConjugeTempoEmpregoBox,
             _pessoaConjugeTipoComprovanteRendaBox,
+            _pessoaConjugeTrabalhoOutrasInformacoesBox,
             _pessoaConjugeEmpresaRuaBox,
             _pessoaConjugeEmpresaNumeroBox,
             _pessoaConjugeEmpresaComplementoBox,
@@ -871,11 +911,17 @@ public partial class ShellWindow
 
     private void NewPessoaButton_Click(object sender, RoutedEventArgs e)
     {
+        InvalidatePessoaSelectionLoads();
         PessoasGrid.SelectedItem = null;
         _selectedPessoaId = null;
         _selectedPessoaDetails = null;
+        _pendingPessoaDocumentos.Clear();
         SetPessoaDocumentoSelection(null);
+        ClearPessoaDocumentoInputs();
         ClearPessoaForm();
+        _pessoaDocumentos = [];
+        PessoaDocumentosGrid.ItemsSource = _pessoaDocumentos;
+        PessoaDocumentosTitleText.Text = "Documentos anexos";
         SetPessoaEditMode(true, isNew: true);
         SaveActiveTabState();
     }
@@ -951,6 +997,7 @@ public partial class ShellWindow
 
     private async Task RestorePessoasPageStateAsync(PessoasPageState state)
     {
+        InvalidatePessoaSelectionLoads();
         PessoasSearchBox.Text = state.SearchText;
         PessoaStatusFilterBox.SelectedValue = state.StatusFilter;
         ApplyPessoasFilter();
@@ -964,9 +1011,11 @@ public partial class ShellWindow
         {
             _selectedPessoaId = null;
             _selectedPessoaDetails = null;
+            _pendingPessoaDocumentos.Clear();
             SetPessoaDocumentoSelection(null);
             await LoadPessoaDocumentosAsync(null);
             ClearPessoaForm();
+            ClearPessoaDocumentoInputs();
             PessoaTipoBox.SelectedValue = TipoPessoa.Fisica;
             SetPessoaEditMode(true, isNew: true);
         }
@@ -990,6 +1039,7 @@ public partial class ShellWindow
         PessoaDocumentoValidadeBox.SelectedDate = ToDateTime(state.DocumentoValidade);
         PessoaDocumentoObservacoesBox.Text = state.DocumentoObservacoes;
         UpdatePeopleTopRowSpacingAndRolesVisibility();
+        UpdatePessoaDocumentoEditorAvailability();
     }
 
     private sealed record PessoasPageState(

@@ -68,7 +68,7 @@ public partial class ShellWindow
         PessoaDocumentosTitleText.Text = "Documentos anexos";
 
         RenamePessoaDocumentosCardTextBlock("Documentos da pessoa selecionada", "Documentos anexos");
-        RenamePessoaDocumentosCardTextBlock("Nenhum documento cadastrado para esta pessoa", "Documentos anexos");
+        RemovePessoaDocumentosCardTextBlockStartingWith("Nenhum documento cadastrado para esta pessoa");
         RenamePessoaDocumentosCardTextBlock("Documentos anexos:", "Anexar mais documentos");
         RenamePessoaDocumentosCardTextBlock("Caminho no Supabase Storage ou arquivo local", "Arquivo digitalizado");
 
@@ -87,9 +87,8 @@ public partial class ShellWindow
         RemovePessoaDocumentosGridColumn("OCR");
         RemovePessoaDocumentosGridColumn("Caminho");
 
-        SavePessoaDocumentoButton.IsEnabled = true;
-        SavePessoaDocumentoButton.ToolTip = "Adiciona o arquivo selecionado aos documentos da pessoa salva/selecionada.";
         ConfigurePessoaDocumentoArquivoSelector();
+        UpdatePessoaDocumentoEditorAvailability();
     }
 
     private void ConfigurePessoaDocumentoArquivoSelector()
@@ -137,6 +136,12 @@ public partial class ShellWindow
 
     private void SelecionarPessoaDocumentoArquivoButton_Click(object sender, RoutedEventArgs e)
     {
+        if (!_isPessoaEditing)
+        {
+            PessoaDocumentoErrorText.Text = "Clique em Editar para selecionar arquivos.";
+            return;
+        }
+
         var dialog = new OpenFileDialog
         {
             Title = "Selecionar documento digitalizado",

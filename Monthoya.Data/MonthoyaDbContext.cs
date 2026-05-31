@@ -81,6 +81,7 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.OcrTextoExtraido);
             entity.Property(x => x.OcrErroMensagem).HasMaxLength(2000);
             entity.Property(x => x.OcrCamposAplicados).HasMaxLength(1000);
+            entity.Ignore(x => x.SkipOcrAutofill);
             entity.HasOne(x => x.Pessoa).WithMany(x => x.Documentos).HasForeignKey(x => x.PessoaId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(x => new { x.PessoaId, x.Tipo });
         });
@@ -105,6 +106,8 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.RendaTrabalho).HasPrecision(18, 2);
             entity.Property(x => x.TempoEmprego).HasMaxLength(80);
             entity.Property(x => x.TipoComprovanteRenda).HasMaxLength(120);
+            entity.Property(x => x.OutrasInformacoes).HasMaxLength(4000);
+            entity.Property(x => x.TrabalhoOutrasInformacoes).HasMaxLength(4000);
             entity.Property(x => x.EmpresaRua).HasMaxLength(220);
             entity.Property(x => x.EmpresaNumero).HasMaxLength(40);
             entity.Property(x => x.EmpresaComplemento).HasMaxLength(120);
@@ -115,6 +118,7 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.ConjugeEmail).HasMaxLength(320);
             entity.Property(x => x.ConjugeDadosBancarios).HasMaxLength(2000);
             entity.Property(x => x.ConjugeObservacoes).HasMaxLength(4000);
+            entity.Property(x => x.ConjugeOutrasInformacoes).HasMaxLength(4000);
             entity.Property(x => x.ConjugeNomeEmpresaTrabalho).HasMaxLength(220);
             entity.Property(x => x.ConjugeCnpjEmpresaTrabalho).HasMaxLength(20);
             entity.Property(x => x.ConjugeTelefoneEmpresaTrabalho).HasMaxLength(50);
@@ -123,6 +127,7 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.ConjugeRendaTrabalho).HasPrecision(18, 2);
             entity.Property(x => x.ConjugeTempoEmprego).HasMaxLength(80);
             entity.Property(x => x.ConjugeTipoComprovanteRenda).HasMaxLength(120);
+            entity.Property(x => x.ConjugeTrabalhoOutrasInformacoes).HasMaxLength(4000);
             entity.Property(x => x.ConjugeEmpresaRua).HasMaxLength(220);
             entity.Property(x => x.ConjugeEmpresaNumero).HasMaxLength(40);
             entity.Property(x => x.ConjugeEmpresaComplemento).HasMaxLength(120);
