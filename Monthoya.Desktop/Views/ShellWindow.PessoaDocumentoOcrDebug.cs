@@ -52,9 +52,21 @@ public partial class ShellWindow
             return;
         }
 
-        if (documentsGrid.RowDefinitions.Count < 3)
+        var editor = documentsGrid.Children
+            .OfType<ScrollViewer>()
+            .FirstOrDefault(viewer => viewer.Tag as string == "PessoaDocumentEditor");
+
+        documentsGrid.RowDefinitions.Clear();
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(160) });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        Grid.SetRow(PessoaDocumentosTitleText, 0);
+        Grid.SetRow(PessoaDocumentosGrid, 1);
+        if (editor is not null)
         {
-            documentsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(editor, 2);
         }
 
         var debugPanel = new Border
@@ -62,7 +74,7 @@ public partial class ShellWindow
             BorderThickness = new Thickness(1),
             BorderBrush = TryFindResource("LineBrush") as Brush,
             Background = TryFindResource("SoftBrush") as Brush,
-            Padding = new Thickness(10),
+            Padding = new Thickness(8),
             Margin = new Thickness(8, 8, 8, 8)
         };
 
@@ -82,14 +94,14 @@ public partial class ShellWindow
             HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
             FontFamily = new FontFamily("Consolas"),
             FontSize = 11,
-            Height = 120,
+            Height = 90,
             Text = "Selecione um documento para ver o texto bruto do OCR."
         };
 
         stack.Children.Add(_pessoaDocumentoOcrDebugTitle);
         stack.Children.Add(_pessoaDocumentoOcrDebugBox);
         debugPanel.Child = stack;
-        Grid.SetRow(debugPanel, 2);
+        Grid.SetRow(debugPanel, 3);
         documentsGrid.Children.Add(debugPanel);
     }
 
