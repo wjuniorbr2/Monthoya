@@ -114,18 +114,19 @@ public partial class ShellWindow
     {
         Dispatcher.BeginInvoke(RemovePessoaLegacyCpfLabels, DispatcherPriority.ApplicationIdle);
         Dispatcher.BeginInvoke(RemovePessoaLegacyCpfLabels, DispatcherPriority.ContextIdle);
+        Dispatcher.BeginInvoke(RemovePessoaLegacyCpfLabels, DispatcherPriority.SystemIdle);
     }
 
     private void RemovePessoaLegacyCpfLabels()
     {
-        foreach (var block in FindPessoaUiPolishVisualChildren<TextBlock>(PessoaFisicaFieldsPanel).ToList())
+        foreach (var block in FindPessoaUiPolishChildren<TextBlock>(PessoaFisicaFieldsPanel).ToList())
         {
             if (!string.Equals(block.Text?.Trim(), "CPF", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }
 
-            if (IsLabelForControl(block, PessoaDocumentoBox))
+            if (ReferenceEquals(block.Parent, PessoaDocumentoBox.Parent))
             {
                 continue;
             }
@@ -134,30 +135,37 @@ public partial class ShellWindow
             {
                 parent.Children.Remove(block);
             }
-        }
-    }
-
-    private static bool IsLabelForControl(TextBlock label, Control control)
-    {
-        if (label.Parent is not Panel parent)
-        {
-            return false;
-        }
-
-        return ReferenceEquals(parent, control.Parent) || parent.Children.Contains(control);
-    }
-
-    private static IEnumerable<T> FindPessoaUiPolishVisualChildren<T>(DependencyObject parent) where T : DependencyObject
-    {
-        for (var childIndex = 0; childIndex < VisualTreeHelper.GetChildrenCount(parent); childIndex++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, childIndex);
-            if (child is T typedChild)
+            else
             {
-                yield return typedChild;
+                block.Visibility = Visibility.Collapsed;
+            }
+        }
+    }
+
+    private static IEnumerable<T> FindPessoaUiPolishChildren<T>(DependencyObject parent) where T : DependencyObject
+    {
+        foreach (var logicalChild in LogicalTreeHelper.GetChildren(parent).OfType<DependencyObject>())
+        {
+            if (logicalChild is T typedLogicalChild)
+            {
+                yield return typedLogicalChild;
             }
 
-            foreach (var descendant in FindPessoaUiPolishVisualChildren<T>(child))
+            foreach (var descendant in FindPessoaUiPolishChildren<T>(logicalChild))
+            {
+                yield return descendant;
+            }
+        }
+
+        for (var childIndex = 0; childIndex < VisualTreeHelper.GetChildrenCount(parent); childIndex++)
+        {
+            var visualChild = VisualTreeHelper.GetChild(parent, childIndex);
+            if (visualChild is T typedVisualChild)
+            {
+                yield return typedVisualChild;
+            }
+
+            foreach (var descendant in FindPessoaUiPolishChildren<T>(visualChild))
             {
                 yield return descendant;
             }
