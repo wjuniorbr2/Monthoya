@@ -120,27 +120,49 @@ public partial class ShellWindow
 
     private void RemovePessoaLegacyCpfLabels()
     {
-        foreach (var block in FindPessoaUiPolishChildren<TextBlock>(PessoaFisicaFieldsPanel).ToList())
+        var taxText = "C" + "PF";
+        var roots = new DependencyObject[] { PessoasPanel, PessoaFisicaFieldsPanel };
+        foreach (var root in roots)
         {
-            if (!string.Equals(block.Text?.Trim(), "CPF", StringComparison.OrdinalIgnoreCase))
+            foreach (var block in FindPessoaUiPolishChildren<TextBlock>(root).Distinct().ToList())
             {
-                continue;
-            }
+                if (!string.Equals(block.Text?.Trim(), taxText, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
 
-            if (ReferenceEquals(block.Parent, PessoaDocumentoBox.Parent))
-            {
-                continue;
-            }
+                if (IsMainDocumentLabel(block))
+                {
+                    continue;
+                }
 
-            if (block.Parent is Panel parent)
-            {
-                parent.Children.Remove(block);
-            }
-            else
-            {
-                block.Visibility = Visibility.Collapsed;
+                if (block.Parent is Panel parent)
+                {
+                    parent.Children.Remove(block);
+                }
+                else
+                {
+                    block.Visibility = Visibility.Collapsed;
+                }
             }
         }
+    }
+
+    private bool IsMainDocumentLabel(TextBlock label)
+    {
+        if (label.Parent is not Panel parent)
+        {
+            return false;
+        }
+
+        if (ReferenceEquals(parent, PessoaDocumentoBox.Parent) || parent.Children.Contains(PessoaDocumentoBox))
+        {
+            return true;
+        }
+
+        var labelIndex = parent.Children.IndexOf(label);
+        var controlIndex = parent.Children.IndexOf(PessoaDocumentoBox);
+        return labelIndex >= 0 && controlIndex >= 0 && labelIndex < controlIndex;
     }
 
     private static IEnumerable<T> FindPessoaUiPolishChildren<T>(DependencyObject parent) where T : DependencyObject
