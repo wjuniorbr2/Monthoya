@@ -28,7 +28,7 @@ internal static class PessoaDocumentoOcrParser
 
     private static string? ExtractCpf(string text)
     {
-        foreach (Match match in Regex.Matches(text, @"\b\d{3}[\.\s]?\d{3}[\.\s]?\d{3}[\-\s]?\d{2}\b", RegexOptions.CultureInvariant))
+        foreach (Match match in Regex.Matches(text, @"\b(?:\d{3}[\.\s]?\d{3}[\.\s]?\d{3}|\d{9})[\-\s]?\d{2}\b", RegexOptions.CultureInvariant))
         {
             var digits = OnlyDigits(match.Value);
             if (digits?.Length == 11)
