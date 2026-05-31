@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -35,12 +34,18 @@ public partial class ShellWindow
 
         _pessoaDocumentoUiPolishApplied = true;
 
-        SavePessoaDocumentoButton.PreviewMouseLeftButtonDown += (_, _) => QueuePessoaDocumentoProcessingVisual();
-        SavePessoaDocumentoButton.Click += (_, _) => QueuePessoaDocumentoProcessingVisualClear();
+        SavePessoaDocumentoButton.Click += (_, _) => QueuePessoaDocumentoProcessingVisual();
+        PessoaDocumentoArquivoBox.TextChanged += (_, _) =>
+        {
+            ClearPessoaDocumentoProcessingVisual();
+            QueueRemovePessoaLegacyCpfLabels();
+        };
+        PessoaDocumentoNomeBox.TextChanged += (_, _) => ClearPessoaDocumentoProcessingVisual();
         PessoaDocumentosGrid.TargetUpdated += (_, _) => ClearPessoaDocumentoProcessingVisual();
         PessoaDocumentosGrid.Items.CurrentChanged += (_, _) => ClearPessoaDocumentoProcessingVisual();
-        PessoaDocumentoArquivoBox.TextChanged += (_, _) => QueueRemovePessoaLegacyCpfLabels();
+        PessoaDocumentoArquivoBox.Loaded += (_, _) => QueueRemovePessoaLegacyCpfLabels();
         PessoaDataNascimentoBox.Loaded += (_, _) => QueueRemovePessoaLegacyCpfLabels();
+        PessoaFisicaFieldsPanel.Loaded += (_, _) => QueueRemovePessoaLegacyCpfLabels();
         PessoasPanel.IsVisibleChanged += (_, _) => QueueRemovePessoaLegacyCpfLabels();
 
         QueueRemovePessoaLegacyCpfLabels();
@@ -50,7 +55,7 @@ public partial class ShellWindow
     {
         Dispatcher.BeginInvoke(() =>
         {
-            if (!SavePessoaDocumentoButton.IsEnabled || _pessoaDocumentoProcessingVisualActive)
+            if (_pessoaDocumentoProcessingVisualActive)
             {
                 return;
             }
@@ -59,16 +64,13 @@ public partial class ShellWindow
             _pessoaDocumentoAddButtonOriginalContent ??= SavePessoaDocumentoButton.Content;
             SavePessoaDocumentoButton.Content = BuildPessoaDocumentoProcessingContent();
             SavePessoaDocumentoButton.IsEnabled = false;
-        }, DispatcherPriority.Background);
-    }
 
-    private void QueuePessoaDocumentoProcessingVisualClear()
-    {
-        _ = Dispatcher.BeginInvoke(async () =>
-        {
-            await Task.Delay(650);
-            ClearPessoaDocumentoProcessingVisual();
-        }, DispatcherPriority.ApplicationIdle);
+            _ = Dispatcher.BeginInvoke(async () =>
+            {
+                await Task.Delay(30000);
+                ClearPessoaDocumentoProcessingVisual();
+            }, DispatcherPriority.ApplicationIdle);
+        }, DispatcherPriority.Background);
     }
 
     private void ClearPessoaDocumentoProcessingVisual()
@@ -111,6 +113,7 @@ public partial class ShellWindow
     private void QueueRemovePessoaLegacyCpfLabels()
     {
         Dispatcher.BeginInvoke(RemovePessoaLegacyCpfLabels, DispatcherPriority.ApplicationIdle);
+        Dispatcher.BeginInvoke(RemovePessoaLegacyCpfLabels, DispatcherPriority.ContextIdle);
     }
 
     private void RemovePessoaLegacyCpfLabels()
@@ -136,14 +139,12 @@ public partial class ShellWindow
 
     private static bool IsLabelForControl(TextBlock label, Control control)
     {
-        if (label.Parent is not Panel parent || control.Parent is not FrameworkElement controlParent)
+        if (label.Parent is not Panel parent)
         {
             return false;
         }
 
-        return ReferenceEquals(parent, controlParent)
-            || parent.Children.Contains(control)
-            || ReferenceEquals(parent, controlParent.Parent);
+        return ReferenceEquals(parent, control.Parent) || parent.Children.Contains(control);
     }
 
     private static IEnumerable<T> FindPessoaUiPolishVisualChildren<T>(DependencyObject parent) where T : DependencyObject
