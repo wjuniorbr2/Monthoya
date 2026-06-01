@@ -3,10 +3,11 @@ using System.Text.Json;
 
 namespace Monthoya.Desktop.Services;
 
-internal sealed record LocalAiSettings(string? GeminiApiKey = null, string GeminiModel = "gemini-2.0-flash");
+internal sealed record LocalAiSettings(string? GeminiApiKey = null, string GeminiModel = LocalAiSettingsStore.DefaultGeminiModel);
 
 internal static class LocalAiSettingsStore
 {
+    internal const string DefaultGeminiModel = "gemini-2.5-flash";
     private const string EnvironmentKeyName = "MONTHOYA_GEMINI_API_KEY";
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -25,7 +26,7 @@ internal static class LocalAiSettingsStore
         var environmentKey = Environment.GetEnvironmentVariable(EnvironmentKeyName);
         if (!string.IsNullOrWhiteSpace(environmentKey))
         {
-            return new LocalAiSettings(environmentKey.Trim());
+            return new LocalAiSettings(environmentKey.Trim(), DefaultGeminiModel);
         }
 
         try
@@ -38,7 +39,7 @@ internal static class LocalAiSettingsStore
             var json = File.ReadAllText(SettingsPath);
             var settings = JsonSerializer.Deserialize<LocalAiSettings>(json, JsonOptions) ?? new LocalAiSettings();
             return string.IsNullOrWhiteSpace(settings.GeminiModel)
-                ? settings with { GeminiModel = "gemini-2.0-flash" }
+                ? settings with { GeminiModel = DefaultGeminiModel }
                 : settings;
         }
         catch
@@ -53,7 +54,7 @@ internal static class LocalAiSettingsStore
         var normalized = settings with
         {
             GeminiApiKey = string.IsNullOrWhiteSpace(settings.GeminiApiKey) ? null : settings.GeminiApiKey.Trim(),
-            GeminiModel = string.IsNullOrWhiteSpace(settings.GeminiModel) ? "gemini-2.0-flash" : settings.GeminiModel.Trim()
+            GeminiModel = string.IsNullOrWhiteSpace(settings.GeminiModel) ? DefaultGeminiModel : settings.GeminiModel.Trim()
         };
         File.WriteAllText(SettingsPath, JsonSerializer.Serialize(normalized, JsonOptions));
     }
