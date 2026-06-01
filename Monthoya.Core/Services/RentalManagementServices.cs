@@ -11,6 +11,7 @@ public interface IRentalManagementService
     Task SetPessoaActiveAsync(Guid pessoaId, bool isActive, CancellationToken cancellationToken = default);
     Task<PessoaDocumentoSummary> CreatePessoaDocumentoAsync(CreatePessoaDocumentoRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosAsync(Guid? pessoaId = null, CancellationToken cancellationToken = default);
+    Task DeletePessoaDocumentoAsync(Guid pessoaDocumentoId, CancellationToken cancellationToken = default);
     Task<PessoaContratoAutofillContext?> GetPessoaContratoAutofillContextAsync(Guid pessoaId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ImovelSummary>> GetImoveisAsync(CancellationToken cancellationToken = default);
     Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default);
@@ -228,11 +229,9 @@ public sealed record BoletoProviderResult(bool Succeeded, string Message, string
 
 public interface INfseProvider
 {
-    Task<NfseProviderResult> EmitirNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
-    Task<NfseProviderResult> CancelarNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
-    Task<NfseProviderResult> ConsultarNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
-    Task<NfseProviderResult> BaixarPdfNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
-    Task<NfseProviderResult> BaixarXmlNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
+    Task<NfseProviderResult> IssueNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
+    Task<NfseProviderResult> CancelNotaFiscalAsync(NotaFiscal notaFiscal, string motivo, CancellationToken cancellationToken = default);
+    Task<NfseProviderResult> DownloadNotaFiscalPdfAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
 }
 
-public sealed record NfseProviderResult(bool Succeeded, string Message, string? ExternalId = null, string? PdfUrl = null, string? XmlUrl = null);
+public sealed record NfseProviderResult(bool Succeeded, string Message, string? Numero = null, string? CodigoVerificacao = null, string? PdfUrl = null);
