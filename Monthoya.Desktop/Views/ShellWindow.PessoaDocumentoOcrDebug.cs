@@ -165,6 +165,7 @@ public partial class ShellWindow
         var parsed = PessoaDocumentoOcrParser.ExtractIdentityFields(rawText);
         builder.AppendLine();
         builder.AppendLine("Fallback atual do parser:");
+        builder.AppendLine($"Nome: {parsed.Nome ?? "-"}");
         builder.AppendLine($"CPF: {parsed.Cpf ?? "-"}");
         builder.AppendLine($"Data de nascimento: {(parsed.DataNascimento.HasValue ? parsed.DataNascimento.Value.ToString("dd/MM/yyyy") : "-")}");
         builder.AppendLine();
