@@ -13,30 +13,33 @@ public partial class ShellWindow
 
     private void EnsurePessoaDocumentosBatchUseDataButton()
     {
-        if (SavePessoaDocumentoButton.Parent is not Panel parent)
-        {
-            return;
-        }
-
         if (_usarPessoaDocumentosInformacoesButton is null)
         {
             _usarPessoaDocumentosInformacoesButton = new Button
             {
-                Content = "Usar informações dos documentos",
-                Style = TryFindResource("PrimaryButton") as Style,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Margin = new Thickness(0, 0, 0, 8),
-                ToolTip = "Lê os documentos anexados e tenta preencher apenas campos em branco."
+                Content = "Usar informações",
+                Style = TryFindResource("PrimaryButtonSmall") as Style ?? TryFindResource("PrimaryButton") as Style,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0, 6, 12, 6),
+                MinWidth = 145,
+                ToolTip = "Lê todos os documentos anexados e tenta preencher apenas campos em branco."
             };
             _usarPessoaDocumentosInformacoesButton.Click += UsarPessoaDocumentosInformacoesButton_Click;
         }
 
-        if (!parent.Children.Contains(_usarPessoaDocumentosInformacoesButton))
+        if (PessoaDocumentosTitleText.Parent is Grid titleGrid && !titleGrid.Children.Contains(_usarPessoaDocumentosInformacoesButton))
         {
-            var addButtonIndex = parent.Children.IndexOf(SavePessoaDocumentoButton);
-            parent.Children.Insert(Math.Max(0, addButtonIndex), _usarPessoaDocumentosInformacoesButton);
+            if (_usarPessoaDocumentosInformacoesButton.Parent is Panel oldParent)
+            {
+                oldParent.Children.Remove(_usarPessoaDocumentosInformacoesButton);
+            }
+
+            titleGrid.Children.Add(_usarPessoaDocumentosInformacoesButton);
+            Grid.SetRow(_usarPessoaDocumentosInformacoesButton, Grid.GetRow(PessoaDocumentosTitleText));
         }
 
+        _usarPessoaDocumentosInformacoesButton.Visibility = Visibility.Visible;
         _usarPessoaDocumentosInformacoesButton.IsEnabled = _isPessoaEditing;
     }
 
@@ -125,7 +128,7 @@ public partial class ShellWindow
         }
 
         await SavePessoaAfterBatchDocumentDataAsync();
-        PessoaDocumentoErrorText.Text = errors.Count == 0 ? "Informações dos documentos aplicadas para revisão." : $"Informações aplicadas com avisos: {string.Join(" | ", errors)}";
+        PessoaDocumentoErrorText.Text = errors.Count == 0 ? string.Empty : $"Informações aplicadas com avisos: {string.Join(" | ", errors)}";
     }
 
     private async Task UsePessoaDocumentosBatchLocalAsync(IReadOnlyList<PessoaDocumentoSummary> documents)
@@ -156,7 +159,7 @@ public partial class ShellWindow
         }
 
         await SavePessoaAfterBatchDocumentDataAsync();
-        PessoaDocumentoErrorText.Text = processed > 0 ? "Informações dos documentos aplicadas para revisão com OCR local experimental." : "Nenhuma informação foi encontrada nos documentos.";
+        PessoaDocumentoErrorText.Text = processed > 0 ? string.Empty : "Nenhuma informação foi encontrada nos documentos.";
     }
 
     private static string BuildBatchConfirmationText(IReadOnlyList<(PessoaDocumentoSummary Document, GeminiDocumentData Data)> results, IReadOnlyList<string> errors)
@@ -220,7 +223,7 @@ public partial class ShellWindow
         if (_usarPessoaDocumentosInformacoesButton is not null)
         {
             _usarPessoaDocumentosInformacoesButton.IsEnabled = !isBusy && _isPessoaEditing;
-            _usarPessoaDocumentosInformacoesButton.Content = isBusy ? "Lendo documentos..." : "Usar informações dos documentos";
+            _usarPessoaDocumentosInformacoesButton.Content = isBusy ? "Lendo..." : "Usar informações";
         }
 
         SavePessoaDocumentoButton.IsEnabled = !isBusy && _isPessoaEditing;
