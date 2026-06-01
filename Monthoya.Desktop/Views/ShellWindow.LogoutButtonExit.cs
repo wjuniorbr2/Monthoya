@@ -45,7 +45,7 @@ public partial class ShellWindow
         var result = MessageBox.Show(
             this,
             "Deseja fechar o Monthoya?",
-            "Sair do Monthoya",
+            "Fechar Monthoya",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
 
@@ -92,22 +92,5 @@ public partial class ShellWindow
         }
 
         return false;
-    }
-
-    private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
-    {
-        for (var index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, index);
-            if (child is T typedChild)
-            {
-                yield return typedChild;
-            }
-
-            foreach (var descendant in FindVisualChildren<T>(child))
-            {
-                yield return descendant;
-            }
-        }
     }
 }
