@@ -13,6 +13,9 @@ internal sealed record GeminiDocumentData(
     string? Cpf,
     string? Rg,
     DateOnly? BirthDate,
+    string? Nationality,
+    string? Email,
+    string? Phone,
     string? Cep,
     string? Street,
     string? Number,
@@ -22,6 +25,9 @@ internal sealed record GeminiDocumentData(
     string? State,
     string? CompanyName,
     string? Cnpj,
+    string? JobTitle,
+    string? Income,
+    string? EmploymentDuration,
     string? RawJson);
 
 internal static class GeminiDocumentDataReader
@@ -58,7 +64,7 @@ internal static class GeminiDocumentDataReader
 
         var bytes = await File.ReadAllBytesAsync(filePath, cancellationToken);
         var base64 = Convert.ToBase64String(bytes);
-        var model = string.IsNullOrWhiteSpace(settings.GeminiModel) ? "gemini-2.0-flash" : settings.GeminiModel.Trim();
+        var model = string.IsNullOrWhiteSpace(settings.GeminiModel) ? "gemini-2.5-flash" : settings.GeminiModel.Trim();
         var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{Uri.EscapeDataString(model)}:generateContent?key={Uri.EscapeDataString(settings.GeminiApiKey.Trim())}";
 
         var request = new GeminiGenerateContentRequest(
@@ -85,9 +91,32 @@ internal static class GeminiDocumentDataReader
             throw new InvalidOperationException("Gemini não retornou dados do documento.");
         }
 
-        json = ExtractJsonObject(json);
-        var parsed = JsonSerializer.Deserialize<GeminiDocumentJson>(json, JsonOptions)
+        return ParseStoredJson(json)
             ?? throw new InvalidOperationException("Não foi possível interpretar o retorno do Gemini.");
+    }
+
+    internal static GeminiDocumentData? ParseStoredJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        json = ExtractJsonObject(json);
+        GeminiDocumentJson? parsed;
+        try
+        {
+            parsed = JsonSerializer.Deserialize<GeminiDocumentJson>(json, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        if (parsed is null)
+        {
+            return null;
+        }
 
         return new GeminiDocumentData(
             DocumentType: NullIfBlank(parsed.DocumentType),
@@ -95,6 +124,9 @@ internal static class GeminiDocumentDataReader
             Cpf: OnlyDigits(parsed.Person?.Cpf),
             Rg: OnlyDigits(parsed.Person?.Rg),
             BirthDate: ParseDate(parsed.Person?.BirthDate),
+            Nationality: NullIfBlank(parsed.Person?.Nationality),
+            Email: NullIfBlank(parsed.Person?.Email),
+            Phone: OnlyDigits(parsed.Person?.Phone),
             Cep: OnlyDigits(parsed.Address?.Cep),
             Street: NullIfBlank(parsed.Address?.Street),
             Number: NullIfBlank(parsed.Address?.Number),
@@ -104,6 +136,9 @@ internal static class GeminiDocumentDataReader
             State: NormalizeState(parsed.Address?.State),
             CompanyName: NullIfBlank(parsed.Company?.Name),
             Cnpj: OnlyDigits(parsed.Company?.Cnpj),
+            JobTitle: NullIfBlank(parsed.Work?.JobTitle),
+            Income: NullIfBlank(parsed.Work?.Income),
+            EmploymentDuration: NullIfBlank(parsed.Work?.EmploymentDuration),
             RawJson: json);
     }
 
@@ -114,12 +149,15 @@ internal static class GeminiDocumentDataReader
 
         Required JSON shape:
         {
-          "document_type": "identity_document | drivers_license | cpf | residence_proof | utility_bill | company_document | unknown",
+          "document_type": "identity_document | drivers_license | cpf | residence_proof | utility_bill | company_document | work_document | unknown",
           "person": {
             "name": null,
             "cpf": null,
             "rg": null,
-            "birth_date": null
+            "birth_date": null,
+            "nationality": null,
+            "email": null,
+            "phone": null
           },
           "address": {
             "cep": null,
@@ -133,6 +171,11 @@ internal static class GeminiDocumentDataReader
           "company": {
             "name": null,
             "cnpj": null
+          },
+          "work": {
+            "job_title": null,
+            "income": null,
+            "employment_duration": null
           }
         }
 
@@ -140,8 +183,10 @@ internal static class GeminiDocumentDataReader
         - Do not guess.
         - If a field is not clearly visible, return null.
         - Do not use CEP as RG.
-        - Do not use issue date, first-license date, due date, or document validity date as birth date.
+        - Do not use issue date, first-license date, due date, billing date, or document validity date as birth date.
         - For utility bills or residence proof, do not invent RG or birth date.
+        - For CNH, prefer the field "Nome e sobrenome" for person.name.
+        - If the document has multiple pages/front/back/QR, choose the actual person/company data, not document title text.
         - CPF and CNPJ may be returned with or without punctuation.
         - Dates must be dd/MM/yyyy.
         """;
@@ -228,11 +273,24 @@ internal static class GeminiDocumentDataReader
         [property: JsonPropertyName("document_type")] string? DocumentType,
         GeminiPersonJson? Person,
         GeminiAddressJson? Address,
-        GeminiCompanyJson? Company);
+        GeminiCompanyJson? Company,
+        GeminiWorkJson? Work);
 
-    private sealed record GeminiPersonJson(string? Name, string? Cpf, string? Rg, [property: JsonPropertyName("birth_date")] string? BirthDate);
+    private sealed record GeminiPersonJson(
+        string? Name,
+        string? Cpf,
+        string? Rg,
+        [property: JsonPropertyName("birth_date")] string? BirthDate,
+        string? Nationality,
+        string? Email,
+        string? Phone);
 
     private sealed record GeminiAddressJson(string? Cep, string? Street, string? Number, string? Complement, string? Neighborhood, string? City, string? State);
 
     private sealed record GeminiCompanyJson(string? Name, string? Cnpj);
+
+    private sealed record GeminiWorkJson(
+        [property: JsonPropertyName("job_title")] string? JobTitle,
+        string? Income,
+        [property: JsonPropertyName("employment_duration")] string? EmploymentDuration);
 }

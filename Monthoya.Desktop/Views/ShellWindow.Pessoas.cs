@@ -778,6 +778,11 @@ public partial class ShellWindow
                 ? "Escolha o PDF, imagem ou arquivo digitalizado no computador."
                 : "Clique em Editar para selecionar arquivos.";
         }
+
+        if (_usarPessoaDocumentosInformacoesButton is not null)
+        {
+            _usarPessoaDocumentosInformacoesButton.IsEnabled = canEditDocuments && HasPessoaDocumentoItems();
+        }
     }
 
     private IEnumerable<DatePicker> GetPessoaDatePickers()

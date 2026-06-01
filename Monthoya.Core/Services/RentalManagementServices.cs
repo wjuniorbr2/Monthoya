@@ -11,6 +11,7 @@ public interface IRentalManagementService
     Task SetPessoaActiveAsync(Guid pessoaId, bool isActive, CancellationToken cancellationToken = default);
     Task<PessoaDocumentoSummary> CreatePessoaDocumentoAsync(CreatePessoaDocumentoRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosAsync(Guid? pessoaId = null, CancellationToken cancellationToken = default);
+    Task<PessoaDocumentoSummary> UpdatePessoaDocumentoOcrAsync(UpdatePessoaDocumentoOcrRequest request, CancellationToken cancellationToken = default);
     Task<PessoaContratoAutofillContext?> GetPessoaContratoAutofillContextAsync(Guid pessoaId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ImovelSummary>> GetImoveisAsync(CancellationToken cancellationToken = default);
     Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default);
@@ -139,7 +140,15 @@ public sealed record CreatePessoaDocumentoRequest(
     DateOnly? DataValidade,
     string? Observacoes,
     string? DocumentoDe = null,
-    bool ApplyOcrToPessoa = true);
+    bool ApplyOcrToPessoa = true,
+    string? OcrTextoExtraido = null);
+
+public sealed record UpdatePessoaDocumentoOcrRequest(
+    Guid DocumentoId,
+    string? OcrTextoExtraido,
+    bool Succeeded,
+    string? ErrorMessage = null,
+    string? CamposAplicados = null);
 
 public sealed record UpdatePessoaRequest(Guid Id, CreatePessoaRequest Pessoa);
 
@@ -198,7 +207,12 @@ public sealed record PessoaDocumentoSummary(
     string? OcrTextoExtraido,
     DateTimeOffset? OcrProcessadoEmUtc,
     string? OcrErroMensagem,
-    string? OcrCamposAplicados);
+    string? OcrCamposAplicados)
+{
+    public string Arquivo => string.IsNullOrWhiteSpace(StoragePath)
+        ? "-"
+        : Path.GetFileName(StoragePath);
+}
 public sealed record PessoaContratoAutofillContext(
     PessoaSummary Pessoa,
     IReadOnlyList<PessoaDocumentoSummary> Documentos,

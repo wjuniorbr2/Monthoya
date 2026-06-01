@@ -103,7 +103,20 @@ public partial class ShellWindow
             if (LocalAiSettingsStore.HasGeminiApiKey())
             {
                 PessoaDocumentoErrorText.Text = "Lendo documento com Gemini...";
-                var geminiData = await GeminiDocumentDataReader.ExtractAsync(document.StoragePath);
+                var storedData = GeminiDocumentDataReader.ParseStoredJson(document.OcrTextoExtraido);
+                if (storedData is null && IsPessoaDocumentoOcrAlreadyAttempted(document))
+                {
+                    PessoaDocumentoErrorText.Text = string.IsNullOrWhiteSpace(document.OcrErroMensagem)
+                        ? "Este documento já foi processado e não possui dados reaproveitáveis."
+                        : document.OcrErroMensagem;
+                    return;
+                }
+
+                var geminiData = storedData ?? await GeminiDocumentDataReader.ExtractAsync(document.StoragePath);
+                if (storedData is null)
+                {
+                    await StorePessoaDocumentoOcrResultAsync(document, geminiData.RawJson, succeeded: true);
+                }
                 var confirmText = BuildGeminiConfirmationText(geminiData);
                 var result = MessageBox.Show(
                     this,
@@ -159,6 +172,12 @@ public partial class ShellWindow
         builder.AppendLine($"CPF: {data.Cpf ?? "-"}");
         builder.AppendLine($"RG: {data.Rg ?? "-"}");
         builder.AppendLine($"Data de nascimento: {(data.BirthDate.HasValue ? data.BirthDate.Value.ToString("dd/MM/yyyy") : "-")}");
+        builder.AppendLine($"Nacionalidade: {data.Nationality ?? "-"}");
+        builder.AppendLine($"Telefone: {data.Phone ?? "-"}");
+        builder.AppendLine($"E-mail: {data.Email ?? "-"}");
+        builder.AppendLine($"Empresa: {data.CompanyName ?? "-"}");
+        builder.AppendLine($"CNPJ: {data.Cnpj ?? "-"}");
+        builder.AppendLine($"Cargo: {data.JobTitle ?? "-"}");
         builder.AppendLine($"CEP: {data.Cep ?? "-"}");
         builder.AppendLine($"Rua: {data.Street ?? "-"}");
         builder.AppendLine($"Número: {data.Number ?? "-"}");
@@ -178,6 +197,9 @@ public partial class ShellWindow
                 FillIfBlank(PessoaNomeBox, data.Name);
                 FillIfBlank(PessoaDocumentoBox, data.Cpf);
                 FillIfBlank(PessoaRgBox, data.Rg);
+                FillIfBlank(PessoaNacionalidadeBox, data.Nationality);
+                FillIfBlank(PessoaTelefoneBox, data.Phone);
+                FillIfBlank(PessoaEmailBox, data.Email);
                 FillIfBlank(PessoaCepBox, data.Cep);
                 FillIfBlank(PessoaRuaBox, data.Street);
                 FillIfBlank(PessoaNumeroBox, data.Number);
@@ -191,12 +213,56 @@ public partial class ShellWindow
                 FillIfBlank(PessoaConjugeNomeBox, data.Name);
                 FillIfBlank(PessoaConjugeCpfBox, data.Cpf);
                 FillIfBlank(PessoaConjugeRgBox, data.Rg);
+                FillIfBlank(PessoaConjugeNacionalidadeBox, data.Nationality);
+                FillIfBlank(PessoaConjugeTelefoneBox, data.Phone);
+                FillIfBlank(_pessoaConjugeEmailBox, data.Email);
                 ReplaceRecentDate(PessoaConjugeDataNascimentoBox, data.BirthDate);
+                break;
+            case "empresa_trabalho":
+                if (_pessoaWorkComboBox is not null)
+                {
+                    _pessoaWorkComboBox.SelectedItem = "Possui trabalho";
+                }
+
+                FillIfBlank(PessoaNomeEmpresaTrabalhoBox, data.CompanyName ?? data.Name);
+                FillIfBlank(_pessoaCnpjEmpresaTrabalhoBox, data.Cnpj);
+                FillIfBlank(PessoaTelefoneEmpresaTrabalhoBox, data.Phone);
+                FillIfBlank(_pessoaEmailEmpresaTrabalhoBox, data.Email);
+                FillIfBlank(_pessoaCargoTrabalhoBox, data.JobTitle);
+                FillIfBlank(_pessoaTrabalhoCepBox, data.Cep);
+                FillIfBlank(_pessoaTrabalhoRuaBox, data.Street);
+                FillIfBlank(_pessoaTrabalhoNumeroBox, data.Number);
+                FillIfBlank(_pessoaTrabalhoComplementoBox, data.Complement);
+                FillIfBlank(_pessoaTrabalhoBairroBox, data.Neighborhood);
+                FillIfBlank(_pessoaTrabalhoCidadeBox, data.City);
+                FillIfBlank(_pessoaTrabalhoEstadoBox, data.State);
+                break;
+            case "trabalho_conjuge":
+                if (_pessoaConjugeWorkComboBox is not null)
+                {
+                    _pessoaConjugeWorkComboBox.SelectedItem = "Possui trabalho";
+                }
+
+                FillIfBlank(_pessoaConjugeNomeEmpresaTrabalhoBox, data.CompanyName ?? data.Name);
+                FillIfBlank(_pessoaConjugeCnpjEmpresaTrabalhoBox, data.Cnpj);
+                FillIfBlank(_pessoaConjugeTelefoneEmpresaTrabalhoBox, data.Phone);
+                FillIfBlank(_pessoaConjugeEmailEmpresaTrabalhoBox, data.Email);
+                FillIfBlank(_pessoaConjugeCargoTrabalhoBox, data.JobTitle);
+                FillIfBlank(_pessoaConjugeEmpresaCepBox, data.Cep);
+                FillIfBlank(_pessoaConjugeEmpresaRuaBox, data.Street);
+                FillIfBlank(_pessoaConjugeEmpresaNumeroBox, data.Number);
+                FillIfBlank(_pessoaConjugeEmpresaComplementoBox, data.Complement);
+                FillIfBlank(_pessoaConjugeEmpresaBairroBox, data.Neighborhood);
+                FillIfBlank(_pessoaConjugeEmpresaCidadeBox, data.City);
+                FillIfBlank(_pessoaConjugeEmpresaEstadoBox, data.State);
                 break;
             case "responsavel":
                 FillIfBlank(PessoaResponsavelNomeBox, data.Name);
                 FillIfBlank(PessoaResponsavelCpfBox, data.Cpf);
                 FillIfBlank(PessoaResponsavelRgBox, data.Rg);
+                FillIfBlank(PessoaResponsavelNacionalidadeBox, data.Nationality);
+                FillIfBlank(PessoaResponsavelTelefoneBox, data.Phone);
+                FillIfBlank(PessoaResponsavelEmailBox, data.Email);
                 FillIfBlank(PessoaResponsavelCepBox, data.Cep);
                 FillIfBlank(PessoaResponsavelRuaBox, data.Street);
                 FillIfBlank(PessoaResponsavelNumeroBox, data.Number);
@@ -209,6 +275,7 @@ public partial class ShellWindow
             case "empresa":
                 FillIfBlank(PessoaNomeBox, data.CompanyName ?? data.Name);
                 FillIfBlank(PessoaDocumentoBox, data.Cnpj ?? data.Cpf);
+                FillIfBlank(_pessoaNomeFantasiaBox, data.CompanyName);
                 FillIfBlank(PessoaEmpresaCepBox, data.Cep);
                 FillIfBlank(PessoaEmpresaRuaBox, data.Street);
                 FillIfBlank(PessoaEmpresaNumeroBox, data.Number);

@@ -76,7 +76,6 @@ public partial class ShellWindow
                 await SavePessoaDocumentoDraftAsync(_selectedPessoaId.Value, draft, applyOcrToPessoa: false);
                 ClearPessoaDocumentoInputs();
                 await LoadPessoaDocumentosAsync(_selectedPessoaId);
-                PessoaDocumentoErrorText.Text = "Documento anexado. Para extrair dados, clique com o botão direito e escolha Usar dados do documento.";
                 QueuePessoaDocumentosCardPruning();
                 return;
             }
@@ -84,7 +83,6 @@ public partial class ShellWindow
             _pendingPessoaDocumentos.Add(draft);
             ClearPessoaDocumentoInputs();
             RefreshPendingPessoaDocumentosGrid();
-            PessoaDocumentoErrorText.Text = "Documento anexado. Para extrair dados, clique com o botão direito e escolha Usar dados do documento.";
             QueuePessoaDocumentosCardPruning();
         }
         catch (Exception ex)
@@ -208,7 +206,8 @@ public partial class ShellWindow
             draft.DataValidade,
             draft.Observacoes,
             draft.DocumentoDe,
-            applyOcrToPessoa));
+            applyOcrToPessoa,
+            draft.OcrText));
 
     private async Task RefreshSelectedPessoaAfterDocumentoOcrAsync(Guid pessoaId)
     {

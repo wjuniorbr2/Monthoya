@@ -617,8 +617,8 @@
                                                 <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="*" />
                                                 <DataGridTextColumn Header="De" Binding="{Binding DocumentoDe}" Width="*" />
                                                 <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="2*" />
+                                                <DataGridTextColumn Header="Arquivo" Binding="{Binding Arquivo}" Width="2*" />
                                                 <DataGridTextColumn Header="OCR" Binding="{Binding OcrStatus}" Width="*" />
-                                                <DataGridTextColumn Header="Caminho" Binding="{Binding StoragePath}" Width="3*" />
                                             </DataGrid.Columns>
                                         </DataGrid>
                                     </Grid>

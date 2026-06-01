@@ -9,6 +9,7 @@ namespace Monthoya.Desktop.Views;
 
 public partial class ShellWindow
 {
+    private static readonly bool ShowOcrDebugPanel = false;
     private bool _pessoaDocumentoOcrDebugApplied;
     private TextBox? _pessoaDocumentoOcrDebugBox;
     private TextBlock? _pessoaDocumentoOcrDebugTitle;
@@ -28,6 +29,11 @@ public partial class ShellWindow
     private void ApplyPessoaDocumentoOcrDebugPanel()
     {
         _ = PessoaDocumentoOcrDebugHandlerRegistered;
+
+        if (!ShowOcrDebugPanel)
+        {
+            return;
+        }
 
         if (_pessoaDocumentoOcrDebugApplied)
         {
@@ -122,6 +128,11 @@ public partial class ShellWindow
 
     private void ShowPessoaDocumentoOcrDebugText(string documentName, string documentoDe, string? rawText)
     {
+        if (!ShowOcrDebugPanel)
+        {
+            return;
+        }
+
         Dispatcher.BeginInvoke(() =>
         {
             CreatePessoaDocumentoOcrDebugPanel();
