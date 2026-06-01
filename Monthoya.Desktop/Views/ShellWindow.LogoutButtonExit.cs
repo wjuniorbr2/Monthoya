@@ -55,7 +55,7 @@ public partial class ShellWindow
         }
 
         IsLogoutRequested = false;
-        Application.Current.Shutdown();
+        Close();
     }
 
     private static Button? FindSidebarExitButton(DependencyObject parent)
