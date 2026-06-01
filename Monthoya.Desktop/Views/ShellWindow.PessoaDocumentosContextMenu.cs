@@ -1,10 +1,12 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Monthoya.Core.Services;
+using Monthoya.Desktop.Services;
 
 namespace Monthoya.Desktop.Views;
 
@@ -98,17 +100,41 @@ public partial class ShellWindow
 
         try
         {
-            var rawText = document.OcrTextoExtraido;
-            if (string.IsNullOrWhiteSpace(rawText))
+            if (LocalAiSettingsStore.HasGeminiApiKey())
             {
-                rawText = await ExtractPessoaDocumentoTextForFormAsync(document.StoragePath, GuessPessoaDocumentoContentType(document.StoragePath));
+                PessoaDocumentoErrorText.Text = "Lendo documento com Gemini...";
+                var geminiData = await GeminiDocumentDataReader.ExtractAsync(document.StoragePath);
+                var confirmText = BuildGeminiConfirmationText(geminiData);
+                var result = MessageBox.Show(
+                    this,
+                    confirmText,
+                    "Usar dados encontrados?",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes)
+                {
+                    PessoaDocumentoErrorText.Text = "Dados encontrados, mas não aplicados.";
+                    return;
+                }
+
+                ApplyGeminiDocumentDataToPessoaForm(NormalizeDocumentoDeFromDisplay(document.DocumentoDe), geminiData);
+                ShowPessoaDocumentoOcrDebugText(document.Nome, NormalizeDocumentoDeFromDisplay(document.DocumentoDe), geminiData.RawJson);
+            }
+            else
+            {
+                var rawText = document.OcrTextoExtraido;
+                if (string.IsNullOrWhiteSpace(rawText))
+                {
+                    rawText = await ExtractPessoaDocumentoTextForFormAsync(document.StoragePath, GuessPessoaDocumentoContentType(document.StoragePath));
+                }
+
+                ShowPessoaDocumentoOcrDebugText(document.Nome, NormalizeDocumentoDeFromDisplay(document.DocumentoDe), rawText);
+                ApplyPessoaDocumentoOcrTextToForm(document.Tipo, NormalizeDocumentoDeFromDisplay(document.DocumentoDe), rawText);
+                ApplyPessoaDocumentoOcrIdentityFallbackToForm(NormalizeDocumentoDeFromDisplay(document.DocumentoDe), rawText);
             }
 
-            ShowPessoaDocumentoOcrDebugText(document.Nome, NormalizeDocumentoDeFromDisplay(document.DocumentoDe), rawText);
-            ApplyPessoaDocumentoOcrTextToForm(document.Tipo, NormalizeDocumentoDeFromDisplay(document.DocumentoDe), rawText);
-            ApplyPessoaDocumentoOcrIdentityFallbackToForm(NormalizeDocumentoDeFromDisplay(document.DocumentoDe), rawText);
-
-            if (_selectedPessoaId.HasValue && _isPessoaEditing && !string.IsNullOrWhiteSpace(rawText))
+            if (_selectedPessoaId.HasValue && _isPessoaEditing)
             {
                 await _rentalManagementService.UpdatePessoaAsync(new UpdatePessoaRequest(_selectedPessoaId.Value, BuildPessoaRequest()));
                 await RefreshSelectedPessoaAfterDocumentoOcrAsync(_selectedPessoaId.Value);
@@ -120,6 +146,79 @@ public partial class ShellWindow
         catch (Exception ex)
         {
             PessoaDocumentoErrorText.Text = ex.Message;
+        }
+    }
+
+    private static string BuildGeminiConfirmationText(GeminiDocumentData data)
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("O Gemini encontrou os seguintes dados:");
+        builder.AppendLine();
+        builder.AppendLine($"Tipo: {data.DocumentType ?? "-"}");
+        builder.AppendLine($"Nome: {data.Name ?? "-"}");
+        builder.AppendLine($"CPF: {data.Cpf ?? "-"}");
+        builder.AppendLine($"RG: {data.Rg ?? "-"}");
+        builder.AppendLine($"Data de nascimento: {(data.BirthDate.HasValue ? data.BirthDate.Value.ToString("dd/MM/yyyy") : "-")}");
+        builder.AppendLine($"CEP: {data.Cep ?? "-"}");
+        builder.AppendLine($"Rua: {data.Street ?? "-"}");
+        builder.AppendLine($"Número: {data.Number ?? "-"}");
+        builder.AppendLine($"Complemento: {data.Complement ?? "-"}");
+        builder.AppendLine($"Bairro: {data.Neighborhood ?? "-"}");
+        builder.AppendLine($"Cidade/UF: {data.City ?? "-"}/{data.State ?? "-"}");
+        builder.AppendLine();
+        builder.AppendLine("Aplicar esses dados aos campos em branco?");
+        return builder.ToString();
+    }
+
+    private void ApplyGeminiDocumentDataToPessoaForm(string documentoDe, GeminiDocumentData data)
+    {
+        switch (documentoDe)
+        {
+            case "pessoa":
+                FillIfBlank(PessoaNomeBox, data.Name);
+                FillIfBlank(PessoaDocumentoBox, data.Cpf);
+                FillIfBlank(PessoaRgBox, data.Rg);
+                FillIfBlank(PessoaCepBox, data.Cep);
+                FillIfBlank(PessoaRuaBox, data.Street);
+                FillIfBlank(PessoaNumeroBox, data.Number);
+                FillIfBlank(PessoaComplementoBox, data.Complement);
+                FillIfBlank(PessoaBairroBox, data.Neighborhood);
+                FillIfBlank(PessoaCidadeBox, data.City);
+                FillIfBlank(PessoaEstadoBox, data.State);
+                ReplaceRecentDate(PessoaDataNascimentoBox, data.BirthDate);
+                break;
+            case "conjuge":
+                FillIfBlank(PessoaConjugeNomeBox, data.Name);
+                FillIfBlank(PessoaConjugeCpfBox, data.Cpf);
+                FillIfBlank(PessoaConjugeRgBox, data.Rg);
+                ReplaceRecentDate(PessoaConjugeDataNascimentoBox, data.BirthDate);
+                break;
+            case "responsavel":
+                FillIfBlank(PessoaResponsavelNomeBox, data.Name);
+                FillIfBlank(PessoaResponsavelCpfBox, data.Cpf);
+                FillIfBlank(PessoaResponsavelRgBox, data.Rg);
+                FillIfBlank(PessoaResponsavelCepBox, data.Cep);
+                FillIfBlank(PessoaResponsavelRuaBox, data.Street);
+                FillIfBlank(PessoaResponsavelNumeroBox, data.Number);
+                FillIfBlank(PessoaResponsavelComplementoBox, data.Complement);
+                FillIfBlank(PessoaResponsavelBairroBox, data.Neighborhood);
+                FillIfBlank(PessoaResponsavelCidadeBox, data.City);
+                FillIfBlank(PessoaResponsavelEstadoBox, data.State);
+                ReplaceRecentDate(PessoaResponsavelDataNascimentoBox, data.BirthDate);
+                break;
+            case "empresa":
+                FillIfBlank(PessoaNomeBox, data.CompanyName ?? data.Name);
+                FillIfBlank(PessoaDocumentoBox, data.Cnpj ?? data.Cpf);
+                FillIfBlank(PessoaEmpresaCepBox, data.Cep);
+                FillIfBlank(PessoaEmpresaRuaBox, data.Street);
+                FillIfBlank(PessoaEmpresaNumeroBox, data.Number);
+                FillIfBlank(PessoaEmpresaComplementoBox, data.Complement);
+                FillIfBlank(PessoaEmpresaBairroBox, data.Neighborhood);
+                FillIfBlank(PessoaEmpresaCidadeBox, data.City);
+                FillIfBlank(PessoaEmpresaEstadoBox, data.State);
+                break;
+            default:
+                break;
         }
     }
 
