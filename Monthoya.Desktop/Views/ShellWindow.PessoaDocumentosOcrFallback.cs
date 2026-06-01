@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Threading;
 
 namespace Monthoya.Desktop.Views;
@@ -64,7 +65,7 @@ public partial class ShellWindow
     private void ApplyPessoaDocumentoOcrIdentityFallbackToForm(string documentoDe, string? text)
     {
         var values = PessoaDocumentoOcrParser.ExtractIdentityFields(text);
-        CleanPessoaDocumentoSuspiciousName(documentoDe);
+        ApplyPessoaDocumentoFallbackName(documentoDe, values.Nome);
         if (string.IsNullOrWhiteSpace(values.Cpf) && !values.DataNascimento.HasValue)
         {
             return;
@@ -89,7 +90,7 @@ public partial class ShellWindow
         }
     }
 
-    private static void ReplaceRecentDate(System.Windows.Controls.DatePicker? datePicker, DateOnly? value)
+    private static void ReplaceRecentDate(DatePicker? datePicker, DateOnly? value)
     {
         if (datePicker is null || !value.HasValue)
         {
@@ -102,7 +103,7 @@ public partial class ShellWindow
         }
     }
 
-    private void CleanPessoaDocumentoSuspiciousName(string documentoDe)
+    private void ApplyPessoaDocumentoFallbackName(string documentoDe, string? fallbackName)
     {
         var box = documentoDe switch
         {
@@ -112,10 +113,17 @@ public partial class ShellWindow
             _ => null
         };
 
-        if (box is not null && IsSuspiciousOcrName(box.Text))
+        if (box is null)
+        {
+            return;
+        }
+
+        if (IsSuspiciousOcrName(box.Text))
         {
             box.Clear();
         }
+
+        FillIfBlank(box, fallbackName);
     }
 
     private static bool IsSuspiciousOcrName(string? value)
@@ -132,10 +140,13 @@ public partial class ShellWindow
             return false;
         }
 
-        var shortWords = words.Count(word => word.Length <= 2);
-        var noCommonPortugueseNameParts = !Regex.IsMatch(cleaned, @"\b(DE|DA|DO|DAS|DOS|SILVA|SOUZA|SOUSA|SANTOS|OLIVEIRA|PEREIRA|CARVALHO|JUNIOR|JÚNIOR|FILHO|NETO)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
-        var tooManyOddLetters = words.Count(word => Regex.IsMatch(word, @"[WVY]{2,}|[QKX]{1,}")) >= 2;
+        var hasCommonPortugueseNameParts = Regex.IsMatch(cleaned, @"\b(DE|DA|DO|DAS|DOS|SILVA|SOUZA|SOUSA|SANTOS|OLIVEIRA|PEREIRA|CARVALHO|JUNIOR|JÚNIOR|FILHO|NETO|SMITH|PALHETA)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var tooManyOddLetters = words.Count(word => Regex.IsMatch(word, @"[WVY]{2,}|[QKX]{1,}|^[BCDFGHJKLMNPQRSTVWXYZ]{5,}$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)) >= 2;
+        var looksLikeRotatedPortuguese = cleaned.Contains("NOID", StringComparison.OrdinalIgnoreCase)
+            || cleaned.Contains("OVS", StringComparison.OrdinalIgnoreCase)
+            || cleaned.Contains("TYAI", StringComparison.OrdinalIgnoreCase)
+            || cleaned.Contains("HT", StringComparison.OrdinalIgnoreCase);
 
-        return noCommonPortugueseNameParts && (shortWords >= 1 || tooManyOddLetters);
+        return !hasCommonPortugueseNameParts && (tooManyOddLetters || looksLikeRotatedPortuguese);
     }
 }
