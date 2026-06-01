@@ -88,6 +88,7 @@ public partial class ShellWindow
         RemovePessoaDocumentosGridColumn("Caminho");
 
         ConfigurePessoaDocumentoArquivoSelector();
+        EnsurePessoaDocumentosBatchUseDataButton();
         UpdatePessoaDocumentoEditorAvailability();
     }
 
