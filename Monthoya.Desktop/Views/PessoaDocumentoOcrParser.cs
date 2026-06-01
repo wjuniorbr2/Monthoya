@@ -43,7 +43,7 @@ internal static class PessoaDocumentoOcrParser
     private static DateOnly? ExtractBirthDate(string text)
     {
         var lines = text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        var candidates = new List<(DateOnly Date, int Score)>();
+        var candidates = new List<(DateOnly Date, int Score, string Source)>();
 
         for (var index = 0; index < lines.Length; index++)
         {
@@ -55,9 +55,15 @@ internal static class PessoaDocumentoOcrParser
                     continue;
                 }
 
-                var context = string.Join(" ", lines.Skip(Math.Max(0, index - 2)).Take(5));
-                candidates.Add((date.Value, ScoreBirthDateCandidate(date.Value, context)));
+                var context = string.Join(" ", lines.Skip(Math.Max(0, index - 2)).Take(6));
+                candidates.Add((date.Value, ScoreBirthDateCandidate(date.Value, context), match.Value));
             }
+        }
+
+        var mrzBirthDate = ExtractCnhMrzBirthDate(text);
+        if (mrzBirthDate.HasValue)
+        {
+            candidates.Add((mrzBirthDate.Value, 260, "CNH MRZ"));
         }
 
         if (candidates.Count == 0)
@@ -79,26 +85,65 @@ internal static class PessoaDocumentoOcrParser
 
         if (lower.Contains("nasc"))
         {
-            score += 100;
+            score += 250;
         }
 
-        if (lower.Contains("emiss") || lower.Contains("exped") || lower.Contains("valid"))
+        if (lower.Contains("data, local") || lower.Contains("local e uf") || lower.Contains("place of birth"))
         {
-            score -= 100;
+            score += 140;
+        }
+
+        if (lower.Contains("habilit"))
+        {
+            score -= 220;
+        }
+
+        if (lower.Contains("emiss") || lower.Contains("exped") || lower.Contains("valid") || lower.Contains("validade"))
+        {
+            score -= 180;
         }
 
         var age = DateTime.Today.Year - date.Year;
         if (age is >= 18 and <= 90)
         {
-            score += 20;
+            score += 30;
         }
 
         if (date.Year >= DateTime.Today.Year - 15)
         {
-            score -= 80;
+            score -= 120;
         }
 
         return score;
+    }
+
+    private static DateOnly? ExtractCnhMrzBirthDate(string text)
+    {
+        foreach (Match match in Regex.Matches(text, @"\b(?<yy>\d{2})(?<mm>\d{2})(?<dd>\d{2})[0-9A-Z][MF<]", RegexOptions.CultureInvariant))
+        {
+            if (!int.TryParse(match.Groups["yy"].Value, out var year)
+                || !int.TryParse(match.Groups["mm"].Value, out var month)
+                || !int.TryParse(match.Groups["dd"].Value, out var day))
+            {
+                continue;
+            }
+
+            var fullYear = year <= DateTime.Today.Year % 100 ? 2000 + year : 1900 + year;
+            try
+            {
+                var date = new DateOnly(fullYear, month, day);
+                if (IsRealisticBirthDate(date))
+                {
+                    return date;
+                }
+            }
+            catch
+            {
+                // Ignore invalid OCR-like MRZ fragments.
+            }
+        }
+
+        return null;
     }
 
     private static bool IsRealisticBirthDate(DateOnly date)
