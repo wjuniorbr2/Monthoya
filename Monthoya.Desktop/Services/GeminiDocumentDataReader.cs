@@ -24,7 +24,12 @@ internal sealed record GeminiDocumentData(
     string? City,
     string? State,
     string? CompanyName,
+    string? CompanyTradeName,
     string? Cnpj,
+    string? CompanyActivity,
+    string? CompanyStateRegistration,
+    string? CompanyMunicipalRegistration,
+    DateOnly? CompanyOpeningDate,
     string? JobTitle,
     string? Income,
     string? EmploymentDuration,
@@ -135,7 +140,12 @@ internal static class GeminiDocumentDataReader
             City: NullIfBlank(parsed.Address?.City),
             State: NormalizeState(parsed.Address?.State),
             CompanyName: NullIfBlank(parsed.Company?.Name),
+            CompanyTradeName: NullIfBlank(parsed.Company?.TradeName),
             Cnpj: OnlyDigits(parsed.Company?.Cnpj),
+            CompanyActivity: NullIfBlank(parsed.Company?.Activity),
+            CompanyStateRegistration: OnlyDigits(parsed.Company?.StateRegistration),
+            CompanyMunicipalRegistration: OnlyDigits(parsed.Company?.MunicipalRegistration),
+            CompanyOpeningDate: ParseDate(parsed.Company?.OpeningDate),
             JobTitle: NullIfBlank(parsed.Work?.JobTitle),
             Income: NullIfBlank(parsed.Work?.Income),
             EmploymentDuration: NullIfBlank(parsed.Work?.EmploymentDuration),
@@ -170,7 +180,12 @@ internal static class GeminiDocumentDataReader
           },
           "company": {
             "name": null,
-            "cnpj": null
+            "trade_name": null,
+            "cnpj": null,
+            "activity": null,
+            "state_registration": null,
+            "municipal_registration": null,
+            "opening_date": null
           },
           "work": {
             "job_title": null,
@@ -188,6 +203,7 @@ internal static class GeminiDocumentDataReader
         - For CNH, prefer the field "Nome e sobrenome" for person.name.
         - If the document has multiple pages/front/back/QR, choose the actual person/company data, not document title text.
         - CPF and CNPJ may be returned with or without punctuation.
+        - State registration and municipal registration may be returned with or without punctuation.
         - Dates must be dd/MM/yyyy.
         """;
 
@@ -287,7 +303,14 @@ internal static class GeminiDocumentDataReader
 
     private sealed record GeminiAddressJson(string? Cep, string? Street, string? Number, string? Complement, string? Neighborhood, string? City, string? State);
 
-    private sealed record GeminiCompanyJson(string? Name, string? Cnpj);
+    private sealed record GeminiCompanyJson(
+        string? Name,
+        [property: JsonPropertyName("trade_name")] string? TradeName,
+        string? Cnpj,
+        string? Activity,
+        [property: JsonPropertyName("state_registration")] string? StateRegistration,
+        [property: JsonPropertyName("municipal_registration")] string? MunicipalRegistration,
+        [property: JsonPropertyName("opening_date")] string? OpeningDate);
 
     private sealed record GeminiWorkJson(
         [property: JsonPropertyName("job_title")] string? JobTitle,

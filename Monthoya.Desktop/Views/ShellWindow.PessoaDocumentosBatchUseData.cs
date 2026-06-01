@@ -141,8 +141,7 @@ public partial class ShellWindow
         }
 
         var confirmation = BuildBatchConfirmationText(results, localFallbacks, errors);
-        var answer = MessageBox.Show(this, confirmation, "Usar informações encontradas?", MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (answer != MessageBoxResult.Yes)
+        if (!ShowPessoaDocumentoInformationDialog("Usar informações encontradas?", confirmation))
         {
             PessoaDocumentoErrorText.Text = "Dados encontrados, mas não aplicados.";
             return;
