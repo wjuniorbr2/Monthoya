@@ -239,7 +239,7 @@ public partial class ShellWindow
                 "Pendente",
                 GetDocumentoDeDisplayLabel(draft.DocumentoDe),
                 draft.Nome,
-                Path.GetFileName(draft.StoragePath),
+                draft.StoragePath,
                 draft.DataValidade,
                 "Pendente",
                 string.IsNullOrWhiteSpace(draft.OcrText) ? "Não processado" : "Processado",
