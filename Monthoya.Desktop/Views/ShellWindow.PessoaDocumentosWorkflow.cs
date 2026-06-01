@@ -71,30 +71,12 @@ public partial class ShellWindow
                 return;
             }
 
-            var extractedText = await ExtractPessoaDocumentoTextForFormAsync(draft.StoragePath, draft.ContentType);
-            draft = draft with { OcrText = extractedText };
-            ShowPessoaDocumentoOcrDebugText(draft.Nome, draft.DocumentoDe, extractedText);
-            var ocrWarning = string.IsNullOrWhiteSpace(extractedText) && IsPessoaDocumentoPdf(draft.StoragePath, draft.ContentType)
-                ? "Documento PDF anexado, mas o OCR local ainda não lê PDF digitalizado. Converta para imagem ou configure um motor OCR com suporte a PDF."
-                : null;
-            if (_isPessoaEditing)
-            {
-                ApplyPessoaDocumentoOcrTextToForm(draft.Tipo, draft.DocumentoDe, extractedText);
-                ApplyPessoaDocumentoOcrIdentityFallbackToForm(draft.DocumentoDe, extractedText);
-            }
-
             if (_selectedPessoaId.HasValue)
             {
-                await SavePessoaDocumentoDraftAsync(_selectedPessoaId.Value, draft, applyOcrToPessoa: _isPessoaEditing);
-                if (_isPessoaEditing && !string.IsNullOrWhiteSpace(extractedText))
-                {
-                    await _rentalManagementService.UpdatePessoaAsync(new UpdatePessoaRequest(_selectedPessoaId.Value, BuildPessoaRequest()));
-                }
-
+                await SavePessoaDocumentoDraftAsync(_selectedPessoaId.Value, draft, applyOcrToPessoa: false);
                 ClearPessoaDocumentoInputs();
-                await RefreshSelectedPessoaAfterDocumentoOcrAsync(_selectedPessoaId.Value);
                 await LoadPessoaDocumentosAsync(_selectedPessoaId);
-                PessoaDocumentoErrorText.Text = ocrWarning ?? string.Empty;
+                PessoaDocumentoErrorText.Text = "Documento anexado. Para extrair dados, clique com o botão direito e escolha Usar dados do documento.";
                 QueuePessoaDocumentosCardPruning();
                 return;
             }
@@ -102,7 +84,7 @@ public partial class ShellWindow
             _pendingPessoaDocumentos.Add(draft);
             ClearPessoaDocumentoInputs();
             RefreshPendingPessoaDocumentosGrid();
-            PessoaDocumentoErrorText.Text = ocrWarning ?? string.Empty;
+            PessoaDocumentoErrorText.Text = "Documento anexado. Para extrair dados, clique com o botão direito e escolha Usar dados do documento.";
             QueuePessoaDocumentosCardPruning();
         }
         catch (Exception ex)
@@ -210,7 +192,7 @@ public partial class ShellWindow
 
         foreach (var draft in _pendingPessoaDocumentos.ToList())
         {
-            await SavePessoaDocumentoDraftAsync(pessoaId, draft, applyOcrToPessoa: true);
+            await SavePessoaDocumentoDraftAsync(pessoaId, draft, applyOcrToPessoa: false);
         }
 
         _pendingPessoaDocumentos.Clear();
@@ -260,11 +242,11 @@ public partial class ShellWindow
                 Path.GetFileName(draft.StoragePath),
                 draft.DataValidade,
                 "Pendente",
-                string.IsNullOrWhiteSpace(draft.OcrText) ? "Pendente" : "Processado",
+                string.IsNullOrWhiteSpace(draft.OcrText) ? "Não processado" : "Processado",
                 draft.OcrText,
                 null,
                 null,
-                string.IsNullOrWhiteSpace(draft.OcrText) ? null : "Aplicado aos campos em branco"))
+                null))
             .ToList();
     }
 
