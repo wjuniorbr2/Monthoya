@@ -108,8 +108,8 @@ public partial class ShellWindow
         pessoasWorkspace.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
         pessoasWorkspace.ColumnDefinitions.Clear();
-        pessoasWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(3, GridUnitType.Star) });
-        pessoasWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+        pessoasWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(4, GridUnitType.Star) });
+        pessoasWorkspace.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
         if (!pessoasWorkspace.Children.Contains(resultsCard))
         {
@@ -124,7 +124,7 @@ public partial class ShellWindow
         Grid.SetRow(resultsCard, 0);
         Grid.SetColumn(resultsCard, 0);
         Grid.SetColumnSpan(resultsCard, 1);
-        resultsCard.Margin = new Thickness(0);
+        resultsCard.Margin = new Thickness(0, 0, 18, 0);
         resultsCard.VerticalAlignment = VerticalAlignment.Stretch;
         resultsCard.HorizontalAlignment = HorizontalAlignment.Stretch;
         PessoasGrid.MaxHeight = 220;
@@ -290,10 +290,10 @@ public partial class ShellWindow
 
         documentsGrid.RowDefinitions.Clear();
         documentsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(260) });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(220) });
         documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        PessoaDocumentosGrid.MaxHeight = 260;
+        PessoaDocumentosGrid.MaxHeight = 220;
         PessoaDocumentosGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         Grid.SetRow(PessoaDocumentosGrid, 1);
 

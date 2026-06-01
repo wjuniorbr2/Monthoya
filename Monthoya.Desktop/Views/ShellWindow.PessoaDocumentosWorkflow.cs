@@ -287,7 +287,9 @@ public partial class ShellWindow
         {
             ".pdf" => "application/pdf",
             ".png" => "image/png",
+            ".bmp" => "image/bmp",
             ".jpg" or ".jpeg" => "image/jpeg",
+            ".tif" or ".tiff" => "image/tiff",
             ".txt" => "text/plain",
             _ => "application/octet-stream"
         };

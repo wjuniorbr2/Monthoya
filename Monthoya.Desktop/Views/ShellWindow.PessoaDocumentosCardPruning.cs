@@ -113,26 +113,29 @@ public partial class ShellWindow
             _selecionarPessoaDocumentoArquivoButton = new Button
             {
                 Content = "Selecionar arquivo",
-                Style = TryFindResource("SecondaryButton") as Style,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Margin = new Thickness(0, 0, 0, 6),
-                ToolTip = "Escolha uma imagem ou arquivo de texto no computador."
+                ToolTip = "Escolha uma imagem para OCR inteligente ou um TXT para fallback local."
             };
             _selecionarPessoaDocumentoArquivoButton.Click += SelecionarPessoaDocumentoArquivoButton_Click;
             parent.Children.Insert(index + 1, _selecionarPessoaDocumentoArquivoButton);
         }
 
+        _selecionarPessoaDocumentoArquivoButton.Style = TryFindResource("PrimaryButtonSmall") as Style ?? TryFindResource("PrimaryButton") as Style;
+        SavePessoaDocumentoButton.Style = TryFindResource("PrimaryButton") as Style;
+
         if (_pessoaDocumentoArquivoTiposText is null)
         {
             _pessoaDocumentoArquivoTiposText = new TextBlock
             {
-                Text = "Arquivos aceitos: PNG, JPG, JPEG e TXT.",
                 Foreground = TryFindResource("MutedBrush") as Brush,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 0, 0, 12)
             };
             parent.Children.Insert(parent.Children.IndexOf(_selecionarPessoaDocumentoArquivoButton) + 1, _pessoaDocumentoArquivoTiposText);
         }
+
+        _pessoaDocumentoArquivoTiposText.Text = "Arquivos aceitos: PNG, JPG, JPEG, BMP, TIF, TIFF e TXT.";
     }
 
     private void SelecionarPessoaDocumentoArquivoButton_Click(object sender, RoutedEventArgs e)
@@ -146,7 +149,7 @@ public partial class ShellWindow
         var dialog = new OpenFileDialog
         {
             Title = "Selecionar documento digitalizado",
-            Filter = "Documentos aceitos|*.png;*.jpg;*.jpeg;*.txt|Imagens|*.png;*.jpg;*.jpeg|Texto|*.txt|Todos os arquivos|*.*",
+            Filter = "Documentos aceitos|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.txt|Imagens|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff|Texto|*.txt|Todos os arquivos|*.*",
             CheckFileExists = true,
             Multiselect = false
         };

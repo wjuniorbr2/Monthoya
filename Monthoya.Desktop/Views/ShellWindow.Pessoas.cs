@@ -775,7 +775,7 @@ public partial class ShellWindow
         {
             _selecionarPessoaDocumentoArquivoButton.IsEnabled = canEditDocuments;
             _selecionarPessoaDocumentoArquivoButton.ToolTip = canEditDocuments
-                ? "Escolha o PDF, imagem ou arquivo digitalizado no computador."
+                ? "Escolha PNG, JPG, JPEG, BMP, TIF, TIFF ou TXT no computador."
                 : "Clique em Editar para selecionar arquivos.";
         }
 
