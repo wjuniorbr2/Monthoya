@@ -35,4 +35,14 @@ public sealed class ManualPortalNfseProvider : INfseProvider
 
     public Task<NfseProviderResult> DownloadNotaFiscalPdfAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
         Task.FromResult(new NfseProviderResult(false, NotConfigured));
+
+    // Backward-compatible aliases used by existing tests/older call sites.
+    public Task<NfseProviderResult> EmitirNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
+        IssueNotaFiscalAsync(notaFiscal, cancellationToken);
+
+    public Task<NfseProviderResult> CancelarNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
+        CancelNotaFiscalAsync(notaFiscal, string.Empty, cancellationToken);
+
+    public Task<NfseProviderResult> BaixarPdfNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
+        DownloadNotaFiscalPdfAsync(notaFiscal, cancellationToken);
 }
