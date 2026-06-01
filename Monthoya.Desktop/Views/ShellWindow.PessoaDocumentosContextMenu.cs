@@ -58,7 +58,8 @@ public partial class ShellWindow
 
         menu.Opened += (_, _) =>
         {
-            var hasSelection = PessoaDocumentosGrid.SelectedItem is PessoaDocumentoSummary;
+            var selected = PessoaDocumentosGrid.SelectedItem as PessoaDocumentoSummary;
+            var hasSelection = selected is not null;
             useDataItem.IsEnabled = hasSelection && _isPessoaEditing;
             openItem.IsEnabled = hasSelection;
             removeItem.IsEnabled = hasSelection && _isPessoaEditing;
@@ -145,7 +146,7 @@ public partial class ShellWindow
         }
     }
 
-    private async void RemovePessoaDocumentoMenuItem_Click(object sender, RoutedEventArgs e)
+    private void RemovePessoaDocumentoMenuItem_Click(object sender, RoutedEventArgs e)
     {
         PessoaDocumentoErrorText.Text = string.Empty;
 
@@ -157,6 +158,12 @@ public partial class ShellWindow
 
         if (PessoaDocumentosGrid.SelectedItem is not PessoaDocumentoSummary document)
         {
+            return;
+        }
+
+        if (document.Id != Guid.Empty)
+        {
+            PessoaDocumentoErrorText.Text = "Remoção de documento já salvo será habilitada na próxima etapa.";
             return;
         }
 
@@ -172,26 +179,10 @@ public partial class ShellWindow
             return;
         }
 
-        try
-        {
-            if (document.Id == Guid.Empty)
-            {
-                RemovePendingPessoaDocumento(document);
-                RefreshPendingPessoaDocumentosGrid();
-            }
-            else
-            {
-                await _rentalManagementService.DeletePessoaDocumentoAsync(document.Id);
-                await LoadPessoaDocumentosAsync(_selectedPessoaId);
-            }
-
-            PessoaDocumentoErrorText.Text = "Documento removido.";
-            QueuePessoaDocumentosCardPruning();
-        }
-        catch (Exception ex)
-        {
-            PessoaDocumentoErrorText.Text = ex.Message;
-        }
+        RemovePendingPessoaDocumento(document);
+        RefreshPendingPessoaDocumentosGrid();
+        PessoaDocumentoErrorText.Text = "Documento removido.";
+        QueuePessoaDocumentosCardPruning();
     }
 
     private void RemovePendingPessoaDocumento(PessoaDocumentoSummary document)
