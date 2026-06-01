@@ -141,13 +141,13 @@ public partial class ShellWindow
                     FillIfBlank(_pessoaConjugeEmpresaEstadoBox, values.Estado);
                     break;
                 case "pessoa":
-                    FillIfBlank(PessoaNomeBox, values.Nome);
-                    FillIfBlank(PessoaDocumentoBox, values.Cpf);
+                    // For personal identity documents, the old generic parser may briefly fill
+                    // a bad rotated/cropped name. The safer fallback parser fills Nome, CPF and
+                    // Data de nascimento after this method. Keep only RG and secondary fields here.
                     FillIfBlank(PessoaRgBox, values.Rg);
                     FillIfBlank(PessoaEstadoCivilBox, values.EstadoCivil);
                     FillIfBlank(PessoaNacionalidadeBox, values.Nacionalidade);
                     FillIfBlank(PessoaProfissaoBox, values.Profissao);
-                    FillDateIfBlank(PessoaDataNascimentoBox, values.DataNascimento);
                     if (IsResidencePessoaDocumento(documentoTipo))
                     {
                         FillIfBlank(PessoaCepBox, values.Cep);
@@ -218,25 +218,21 @@ public partial class ShellWindow
             Cpf: cpf,
             Cnpj: cnpj,
             Rg: DigitsOnlyOrNull(FindPessoaDocumentoLabeledValue(normalized, "rg") ?? FindPessoaDocumentoLabeledValue(normalized, "registro geral") ?? FindPessoaDocumentoLabeledValue(normalized, "identidade")) ?? FindPessoaDocumentoRgFallback(normalized, cpf, cnpj),
-            Email: FindPessoaDocumentoRegex(normalized, @"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", RegexOptions.IgnoreCase),
-            Telefone: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"(?:\(?\d{2}\)?\s?)?(?:9\s?)?\d{4}[-\s]?\d{4}")),
-            Cep: DigitsOnlyOrNull(FindPessoaDocumentoRegex(normalized, @"\b\d{5}-?\d{3}\b")),
+            Email: FindPessoaDocumentoRegex(normalized, @"[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}", RegexOptions.IgnoreCase),
+            Telefone: DigitsOnlyOrNull(FindPessoaDocumentoLabeledValue(normalized, "telefone") ?? FindPessoaDocumentoLabeledValue(normalized, "celular") ?? FindPessoaDocumentoRegex(normalized, @"\(?\d{2}\)?\s?9?\d{4}[\-\s]?\d{4}")),
+            Cep: DigitsOnlyOrNull(FindPessoaDocumentoLabeledValue(normalized, "cep") ?? FindPessoaDocumentoRegex(normalized, @"\b\d{5}-?\d{3}\b")),
             Endereco: FindPessoaDocumentoLabeledValue(normalized, "endereço") ?? FindPessoaDocumentoLabeledValue(normalized, "endereco"),
             Rua: FindPessoaDocumentoLabeledValue(normalized, "rua") ?? FindPessoaDocumentoLabeledValue(normalized, "logradouro"),
-            Numero: FindPessoaDocumentoLabeledValue(normalized, "número") ?? FindPessoaDocumentoLabeledValue(normalized, "numero") ?? FindPessoaDocumentoLabeledValue(normalized, "nº"),
+            Numero: FindPessoaDocumentoLabeledValue(normalized, "número") ?? FindPessoaDocumentoLabeledValue(normalized, "numero"),
             Bairro: FindPessoaDocumentoLabeledValue(normalized, "bairro"),
             Cidade: FindPessoaDocumentoLabeledValue(normalized, "cidade") ?? FindPessoaDocumentoLabeledValue(normalized, "município") ?? FindPessoaDocumentoLabeledValue(normalized, "municipio"),
             Estado: NormalizeState(FindPessoaDocumentoLabeledValue(normalized, "estado") ?? FindPessoaDocumentoLabeledValue(normalized, "uf")),
             Nacionalidade: FindPessoaDocumentoLabeledValue(normalized, "nacionalidade"),
             EstadoCivil: FindPessoaDocumentoLabeledValue(normalized, "estado civil"),
             Profissao: FindPessoaDocumentoLabeledValue(normalized, "profissão") ?? FindPessoaDocumentoLabeledValue(normalized, "profissao"),
-            Cargo: FindPessoaDocumentoLabeledValue(normalized, "cargo") ?? FindPessoaDocumentoLabeledValue(normalized, "função") ?? FindPessoaDocumentoLabeledValue(normalized, "funcao"),
+            Cargo: FindPessoaDocumentoLabeledValue(normalized, "cargo"),
             DataNascimento: ParsePessoaDocumentoBirthDateOnly(birthDateText));
     }
-
-    private static bool IsResidencePessoaDocumento(string documentoTipo) =>
-        documentoTipo.Equals("residencia", StringComparison.OrdinalIgnoreCase)
-        || documentoTipo.Equals("endereco_residencia", StringComparison.OrdinalIgnoreCase);
 
     private static void FillIfBlank(TextBox? textBox, string? value)
     {
