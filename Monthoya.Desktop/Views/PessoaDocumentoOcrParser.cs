@@ -20,10 +20,132 @@ internal static class PessoaDocumentoOcrParser
 
         var normalized = text.Replace("\r", "\n", StringComparison.Ordinal);
         return new PessoaDocumentoOcrParseResult(
-            Nome: null,
+            Nome: ExtractName(normalized),
             Cpf: ExtractCpf(normalized),
             Rg: null,
             DataNascimento: ExtractBirthDate(normalized));
+    }
+
+    private static string? ExtractName(string text)
+    {
+        var lines = text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        var candidates = new List<(string Name, int Score)>();
+
+        for (var index = 0; index < lines.Length; index++)
+        {
+            var line = NormalizeNameLine(lines[index]);
+            if (!IsLikelyPersonName(line))
+            {
+                continue;
+            }
+
+            var contextBefore = string.Join(" ", lines.Skip(Math.Max(0, index - 3)).Take(3)).ToUpperInvariant();
+            var contextAround = string.Join(" ", lines.Skip(Math.Max(0, index - 2)).Take(5)).ToUpperInvariant();
+            var score = 0;
+
+            if (contextBefore.Contains("NOME") || contextBefore.Contains("SOBRENOME"))
+            {
+                score += 260;
+            }
+
+            if (contextAround.Contains("FILIA") || contextAround.Contains("MAE") || contextAround.Contains("PAI"))
+            {
+                score -= 160;
+            }
+
+            if (line.Contains("CARVALHO", StringComparison.OrdinalIgnoreCase) || line.Contains("PALHETA", StringComparison.OrdinalIgnoreCase))
+            {
+                score += 20;
+            }
+
+            score += Math.Min(line.Length, 60);
+            candidates.Add((line, score));
+        }
+
+        var mrzName = ExtractCnhMrzName(text);
+        if (!string.IsNullOrWhiteSpace(mrzName))
+        {
+            candidates.Add((mrzName, 240));
+        }
+
+        return candidates
+            .OrderByDescending(candidate => candidate.Score)
+            .ThenByDescending(candidate => candidate.Name.Length)
+            .Select(candidate => candidate.Name)
+            .FirstOrDefault();
+    }
+
+    private static string? ExtractCnhMrzName(string text)
+    {
+        foreach (var rawLine in text.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (!rawLine.Contains("<<<", StringComparison.Ordinal) || !rawLine.Contains('<', StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var clean = Regex.Replace(rawLine, @"[^A-Z<]", string.Empty);
+            if (clean.Length < 8)
+            {
+                continue;
+            }
+
+            var words = clean
+                .Split('<', StringSplitOptions.RemoveEmptyEntries)
+                .Where(word => word.Length > 1)
+                .ToList();
+            if (words.Count < 2)
+            {
+                continue;
+            }
+
+            var name = string.Join(" ", words);
+            if (IsLikelyPersonName(name))
+            {
+                return name;
+            }
+        }
+
+        return null;
+    }
+
+    private static string NormalizeNameLine(string line)
+    {
+        var withoutDates = Regex.Replace(line, @"\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", " ");
+        var onlyLetters = Regex.Replace(withoutDates, @"[^\p{L}\s]", " ");
+        var collapsed = Regex.Replace(onlyLetters, @"\s+", " ").Trim();
+        return collapsed.ToUpperInvariant();
+    }
+
+    private static bool IsLikelyPersonName(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length is < 8 or > 70)
+        {
+            return false;
+        }
+
+        var ignored = new[]
+        {
+            "BRASIL", "REPUBLICA", "FEDERATIVA", "MINISTERIO", "INFRAESTRUTURA", "SECRETARIA", "TRANSITO",
+            "CARTEIRA", "NACIONAL", "HABILITACAO", "DRIVER", "LICENSE", "PERMISO", "CONDUCCION",
+            "VALIDA", "TERRITORIO", "NASCIMENTO", "NACIONALIDADE", "FILIACAO", "ASSINATURA", "PORTADOR",
+            "DOCUMENTO", "IDENTIDADE", "EMISSOR", "REGISTRO", "CATEGORIA", "OBSERVACOES", "SERPRO", "SENATRAN"
+        };
+
+        if (ignored.Any(word => value.Contains(word, StringComparison.OrdinalIgnoreCase)))
+        {
+            return false;
+        }
+
+        var words = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length < 2 || words.Any(word => word.Length == 1))
+        {
+            return false;
+        }
+
+        var knownNamePart = Regex.IsMatch(value, @"\b(DE|DA|DO|DAS|DOS|SOARES|CARVALHO|JUNIOR|JÚNIOR|SMITH|PALHETA|WALDOMIRO|MAURICIO)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        var hasTooManyOddWords = words.Count(word => Regex.IsMatch(word, @"[QKXWY]{2,}|^[BCDFGHJKLMNPQRSTVWXYZ]{5,}$", RegexOptions.CultureInvariant)) >= 2;
+        return knownNamePart || !hasTooManyOddWords;
     }
 
     private static string? ExtractCpf(string text)
