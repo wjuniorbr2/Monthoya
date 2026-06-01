@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using Monthoya.Core.Services;
 
@@ -53,13 +53,18 @@ public partial class ShellWindow
 
     private void ModulePrimaryActionButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_activeModulePage == ShellPage.Configuracoes)
+        {
+            ShowAiSettingsDialog();
+            return;
+        }
+
         var message = _activeModulePage switch
         {
             ShellPage.Boletos => "Integração bancária ainda não configurada.",
             ShellPage.NotasFiscais => "Integração automática com NFS-e ainda não configurada. Use o fluxo manual/semi-manual.",
             ShellPage.Dimob => "Exportação oficial DIMOB pendente de confirmação do layout vigente da Receita Federal.",
             ShellPage.Documentos => "Modelos iniciais criados como pendentes de revisão. A redação final deve ser confirmada com o cliente.",
-            ShellPage.Configuracoes => "Certificados A1: registrar apenas metadados por enquanto. Não armazene senha ou arquivo do certificado sem armazenamento seguro.",
             _ => "CRUD completo deste módulo será implementado em uma próxima etapa."
         };
 
@@ -82,6 +87,3 @@ public partial class ShellWindow
         public static ModulePageState Default { get; } = new("", null);
     }
 }
-
-
-
