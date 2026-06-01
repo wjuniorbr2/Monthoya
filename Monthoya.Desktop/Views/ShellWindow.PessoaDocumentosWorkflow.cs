@@ -80,6 +80,7 @@ public partial class ShellWindow
             if (_isPessoaEditing)
             {
                 ApplyPessoaDocumentoOcrTextToForm(draft.Tipo, draft.DocumentoDe, extractedText);
+                ApplyPessoaDocumentoOcrIdentityFallbackToForm(draft.DocumentoDe, extractedText);
             }
 
             if (_selectedPessoaId.HasValue)
