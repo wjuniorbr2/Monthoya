@@ -17,11 +17,8 @@ public partial class ShellWindow
         if (_settingsMenuButtonsPanel is null)
         {
             _settingsMenuButtonsPanel = BuildSettingsMenuButtonsPanel();
-            if (ModuleGrid.Parent is Panel parent)
-            {
-                parent.Children.Add(_settingsMenuButtonsPanel);
-                Grid.SetRow(_settingsMenuButtonsPanel, Grid.GetRow(ModuleGrid));
-            }
+            ModulePanel.Children.Add(_settingsMenuButtonsPanel);
+            Grid.SetRow(_settingsMenuButtonsPanel, 2);
         }
 
         _settingsMenuButtonsPanel.Visibility = Visibility.Visible;
