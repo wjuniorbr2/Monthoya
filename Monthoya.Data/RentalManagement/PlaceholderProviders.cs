@@ -27,18 +27,12 @@ public sealed class ManualPortalNfseProvider : INfseProvider
 {
     private const string NotConfigured = "Integração automática com NFS-e ainda não configurada. Use o fluxo manual/semi-manual.";
 
-    public Task<NfseProviderResult> EmitirNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
+    public Task<NfseProviderResult> IssueNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
         Task.FromResult(new NfseProviderResult(false, NotConfigured));
 
-    public Task<NfseProviderResult> CancelarNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
+    public Task<NfseProviderResult> CancelNotaFiscalAsync(NotaFiscal notaFiscal, string motivo, CancellationToken cancellationToken = default) =>
         Task.FromResult(new NfseProviderResult(false, NotConfigured));
 
-    public Task<NfseProviderResult> ConsultarNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new NfseProviderResult(false, NotConfigured));
-
-    public Task<NfseProviderResult> BaixarPdfNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new NfseProviderResult(false, NotConfigured));
-
-    public Task<NfseProviderResult> BaixarXmlNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
+    public Task<NfseProviderResult> DownloadNotaFiscalPdfAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
         Task.FromResult(new NfseProviderResult(false, NotConfigured));
 }
