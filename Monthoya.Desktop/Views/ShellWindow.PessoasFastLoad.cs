@@ -83,7 +83,9 @@ public partial class ShellWindow
             _isOpeningPessoasFast = true;
             await UpdateActiveTabAsync(ShellPage.Pessoas, "Pessoas", loadData: false);
             await LoadPessoasFastAsync();
-            await RestoreActiveTabStateAsync(ShellPage.Pessoas);
+
+            // Do not call RestoreActiveTabStateAsync again here. The list is already visible,
+            // and a delayed restore can clear a row the user clicked immediately after opening.
         }
         finally
         {
