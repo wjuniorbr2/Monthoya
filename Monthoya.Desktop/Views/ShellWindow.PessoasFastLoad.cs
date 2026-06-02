@@ -10,6 +10,7 @@ public partial class ShellWindow
 {
     private static readonly bool PessoasFastLoadRegistered = RegisterPessoasFastLoad();
     private bool _pessoasFastLoadApplied;
+    private bool _isOpeningPessoasFast;
 
     private static bool RegisterPessoasFastLoad()
     {
@@ -38,9 +39,56 @@ public partial class ShellWindow
 
         _pessoasFastLoadApplied = true;
 
+        // Opening Pessoas should load the list only. Address/street suggestions must not be rebuilt
+        // every time the module opens, because that causes one detailed query per person.
+        PessoasNavButton.PreviewMouseLeftButtonDown += PessoasNavButton_PreviewMouseLeftButtonDownForFastOpen;
+        PessoasNavButton.PreviewKeyDown += PessoasNavButton_PreviewKeyDownForFastOpen;
+
         // The Pessoas refresh button has no x:Name in XAML, so intercept mouse refresh before
         // the original Click handler. This keeps refresh fast and avoids rebuilding address suggestions.
         PessoasPanel.PreviewMouseLeftButtonDown += PessoasPanel_PreviewMouseLeftButtonDownForFastRefresh;
+    }
+
+    private async void PessoasNavButton_PreviewMouseLeftButtonDownForFastOpen(object sender, MouseButtonEventArgs e)
+    {
+        if (_isOpeningPessoasFast)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        await OpenPessoasFastAsync();
+    }
+
+    private async void PessoasNavButton_PreviewKeyDownForFastOpen(object sender, KeyEventArgs e)
+    {
+        if (e.Key is not (Key.Enter or Key.Space) || _isOpeningPessoasFast)
+        {
+            return;
+        }
+
+        e.Handled = true;
+        await OpenPessoasFastAsync();
+    }
+
+    private async Task OpenPessoasFastAsync()
+    {
+        if (_isOpeningPessoasFast)
+        {
+            return;
+        }
+
+        try
+        {
+            _isOpeningPessoasFast = true;
+            await UpdateActiveTabAsync(ShellPage.Pessoas, "Pessoas", loadData: false);
+            await LoadPessoasFastAsync();
+            await RestoreActiveTabStateAsync(ShellPage.Pessoas);
+        }
+        finally
+        {
+            _isOpeningPessoasFast = false;
+        }
     }
 
     private async void PessoasPanel_PreviewMouseLeftButtonDownForFastRefresh(object sender, MouseButtonEventArgs e)
