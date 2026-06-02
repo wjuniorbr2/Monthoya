@@ -21,10 +21,11 @@ These instructions apply to this repository unless the user gives a more specifi
 
 ## Git Defaults
 
-- After completing requested code changes, commit and push to `origin/main` unless the user says not to.
+- Do not automatically commit or push after every change.
+- Commit and push to `origin/main` only when the user explicitly asks, or when the user says to keep GitHub synced for that task.
 - Use concise commit messages.
 - Before committing, run `git status -sb` and stage only files related to the request.
-- Commit/push are still expected even when tests are skipped, as long as the change is complete.
+- When commit/push is requested, it is acceptable to skip tests for UI-only tweaks under the validation defaults above.
 
 ## Monthoya Product Guardrails
 

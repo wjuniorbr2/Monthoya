@@ -27,10 +27,17 @@ public partial class ShellWindow : Window
     private IReadOnlyList<PessoaSummary> _pessoas = [];
     private IReadOnlyList<PessoaDocumentoSummary> _pessoaDocumentos = [];
     private IReadOnlyList<ImovelSummary> _imoveis = [];
+    private IReadOnlyList<ImovelImagemSummary> _imovelImagens = [];
+    private readonly List<PendingImovelMedia> _pendingImovelMedia = [];
+    private IReadOnlyList<VistoriaSummary> _imovelVistorias = [];
+    private IReadOnlyList<ImovelChaveMovimentoSummary> _chaveMovimentos = [];
     private IReadOnlyList<object> _moduleItems = [];
     private Guid? _selectedPessoaId;
     private PessoaDetails? _selectedPessoaDetails;
+    private Guid? _selectedImovelId;
+    private ImovelDetails? _selectedImovelDetails;
     private bool _isPessoaEditing = true;
+    private bool _isImovelEditing = true;
     private bool _isFormattingPessoaText;
     private bool _isRestoringTabState;
     private bool _isAutoCompletingText;
@@ -73,7 +80,7 @@ public partial class ShellWindow : Window
         PessoaDocumentoDonoBox.ItemsSource = PessoaDocumentoDonoFisicaOptions;
         PessoaDocumentoDonoBox.SelectedValuePath = "Tipo";
         PessoaDocumentoDonoBox.DisplayMemberPath = "Label";
-        PessoaDocumentoDonoBox.SelectedValue = "pessoa";
+        PessoaDocumentoDonoBox.SelectedValue = "";
         PessoaStatusFilterBox.ItemsSource = PessoaStatusFilterOptions;
         PessoaStatusFilterBox.SelectedValuePath = "Status";
         PessoaStatusFilterBox.DisplayMemberPath = "Label";
@@ -85,6 +92,51 @@ public partial class ShellWindow : Window
         ImovelFinalidadeBox.SelectedValuePath = "Finalidade";
         ImovelFinalidadeBox.DisplayMemberPath = "Label";
         ImovelFinalidadeBox.SelectedValue = ImovelFinalidade.Locacao;
+        ImoveisFinalidadeFilterBox.ItemsSource = ImoveisFinalidadeFilterOptions;
+        ImoveisFinalidadeFilterBox.SelectedValuePath = "Finalidade";
+        ImoveisFinalidadeFilterBox.DisplayMemberPath = "Label";
+        ImoveisFinalidadeFilterBox.SelectedValue = null;
+        ImoveisStatusFilterBox.ItemsSource = ImoveisStatusFilterOptions;
+        ImoveisStatusFilterBox.SelectedValuePath = "Status";
+        ImoveisStatusFilterBox.DisplayMemberPath = "Label";
+        ImoveisStatusFilterBox.SelectedValue = "ativos";
+        ImoveisPublicacaoFilterBox.ItemsSource = ImoveisPublicacaoFilterOptions;
+        ImoveisPublicacaoFilterBox.SelectedValuePath = "Publicacao";
+        ImoveisPublicacaoFilterBox.DisplayMemberPath = "Label";
+        ImoveisPublicacaoFilterBox.SelectedValue = "todos";
+        ImovelTipoBox.ItemsSource = ImovelTipoOptions;
+        ImovelStatusBox.ItemsSource = ImovelStatusOptions;
+        ImovelStatusBox.SelectedValuePath = "Status";
+        ImovelStatusBox.DisplayMemberPath = "Label";
+        ImovelStatusBox.SelectedValue = ImovelStatus.Disponivel;
+        ImovelChavePosseBox.ItemsSource = ImovelChavePosseOptions;
+        ImovelChavePosseBox.SelectedValuePath = "Posse";
+        ImovelChavePosseBox.DisplayMemberPath = "Label";
+        ImovelChavePosseBox.SelectedValue = ImovelChavePosse.NaoCadastrada;
+        ImovelChavePosseBox.SelectionChanged += (_, _) => UpdateImovelChaveFieldsVisibility();
+        UpdateImovelChaveFieldsVisibility();
+        ImovelEnderecoPublicoModoBox.ItemsSource = ImovelEnderecoPublicoModoOptions;
+        ImovelEnderecoPublicoModoBox.SelectedValuePath = "Modo";
+        ImovelEnderecoPublicoModoBox.DisplayMemberPath = "Label";
+        ImovelEnderecoPublicoModoBox.SelectedValue = ImovelEnderecoPublicoModo.BairroCidade;
+        ImovelMediaCategoryBox.ItemsSource = ImovelMediaCategoryOptions;
+        ImovelMediaCategoryBox.SelectedValuePath = "Category";
+        ImovelMediaCategoryBox.DisplayMemberPath = "Label";
+        ImovelMediaCategoryBox.SelectedValue = ImovelMediaCategory.PropertyPhoto;
+        ImovelVistoriaTipoBox.ItemsSource = ImovelVistoriaTipoOptions;
+        ImovelVistoriaTipoBox.SelectedValuePath = "Tipo";
+        ImovelVistoriaTipoBox.DisplayMemberPath = "Label";
+        ImovelVistoriaTipoBox.SelectedValue = VistoriaTipo.InicialProprietario;
+        ImovelVistoriaStatusBox.ItemsSource = VistoriaStatusOptions;
+        ImovelVistoriaStatusBox.SelectedValuePath = "Status";
+        ImovelVistoriaStatusBox.DisplayMemberPath = "Label";
+        ImovelVistoriaStatusBox.SelectedValue = VistoriaStatus.Draft;
+        ChavesStatusFilterBox.ItemsSource = ChavesStatusFilterOptions;
+        ChavesStatusFilterBox.SelectedValuePath = "Status";
+        ChavesStatusFilterBox.DisplayMemberPath = "Label";
+        ChavesStatusFilterBox.SelectedValue = "ativas";
+        ChavesImovelBox.DisplayMemberPath = "Endereco";
+        ChavesImovelBox.SelectedValuePath = "Id";
         SetAccessCheckboxes(RolePermissions.DefaultUserAccess);
         UpdateAccessControlState();
         DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {GetRoleLabel(currentUser.Role)}{Environment.NewLine}Acessos: {GetAccessLabel(RolePermissions.GetEffectiveAccess(currentUser.Role, currentUser.Access))}{Environment.NewLine}Banco: configurado via secrets/appsettings";
@@ -344,6 +396,7 @@ public partial class ShellWindow : Window
         DashboardPanel.Visibility = Visibility.Visible;
         UsersPanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
+        ChavesPanel.Visibility = Visibility.Collapsed;
     }
 
     private async void DashboardNavButton_Click(object sender, RoutedEventArgs e)
@@ -377,6 +430,7 @@ public partial class ShellWindow : Window
         UsersNavButton.Style = (Style)FindResource("NavButton");
         PessoasNavButton.Style = (Style)FindResource("NavButton");
         ImoveisNavButton.Style = (Style)FindResource("NavButton");
+        ChavesNavButton.Style = (Style)FindResource("NavButton");
         LocacoesNavButton.Style = (Style)FindResource("NavButton");
         FinanceiroNavButton.Style = (Style)FindResource("NavButton");
         BoletosNavButton.Style = (Style)FindResource("NavButton");
@@ -396,6 +450,9 @@ public partial class ShellWindow : Window
 
     private async void ImoveisNavButton_Click(object sender, RoutedEventArgs e) =>
         await UpdateActiveTabAsync(ShellPage.Imoveis, "Imóveis", true);
+
+    private async void ChavesNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Chaves, "Chaves", true);
 
     private async void LocacoesNavButton_Click(object sender, RoutedEventArgs e) =>
         await UpdateActiveTabAsync(ShellPage.Locacoes, "Locações", true);
@@ -615,6 +672,7 @@ public partial class ShellWindow : Window
             ShellPage.Relatorios => new("Relatórios", "Consultas operacionais de aluguéis, imóveis, locações e contas.", "Relatórios oficiais e exportações finais serão detalhados conforme os dados reais e decisões do cliente.", "Gerar relatório"),
             ShellPage.Dimob => new("DIMOB", "Fundação para conferência anual de dados da DIMOB.", "Exportação TXT oficial pendente de confirmação do layout vigente da Receita Federal/PGD/Receitanet.", "Exportar DIMOB"),
             ShellPage.Manutencoes => new("Manutenções", "Solicitações e execução de manutenção de imóveis.", "Fundação criada com status solicitada, em andamento, concluída e cancelada.", "Nova manutenção"),
+            ShellPage.Chaves => new("Chaves", "Controle de retirada, devolução e atraso de chaves dos imóveis.", "Retiradas vencidas continuam em atraso até devolução/fechamento. A tela detalhada de lançamento será separada de Imóveis.", "Nova movimentação"),
             ShellPage.Vistorias => new("Vistorias", "Vistorias de entrada, saída, periódicas e outras.", "Fundação criada. Anexos, fotos e laudos em PDF devem usar o módulo de documentos.", "Nova vistoria"),
             ShellPage.Configuracoes => new("Configurações", "Índices de reajuste, certificado A1 e integrações futuras.", "Certificados digitais: registrar somente metadados agora. TODO: armazenamento criptografado, senha segura, auditoria, alertas e ambiente homologação/produção.", "Abrir configurações"),
             _ => new("Módulo", "Fundação do módulo.", "Sem ações disponíveis.", "Abrir")
@@ -670,6 +728,7 @@ public partial class ShellWindow : Window
         Users,
         Pessoas,
         Imoveis,
+        Chaves,
         Locacoes,
         Financeiro,
         Boletos,
@@ -688,6 +747,16 @@ public partial class ShellWindow : Window
     private sealed record UserRoleOption(string Label, UserRole Role);
     private sealed record TipoPessoaOption(string Label, TipoPessoa Tipo);
     private sealed record ImovelFinalidadeOption(string Label, ImovelFinalidade Finalidade);
+    private sealed record ImovelStatusOption(string Label, ImovelStatus Status);
+    private sealed record ImovelFinalidadeFilterOption(string Label, ImovelFinalidade? Finalidade);
+    private sealed record ImovelStatusFilterOption(string Label, string Status);
+    private sealed record ImovelPublicacaoFilterOption(string Label, string Publicacao);
+    private sealed record ImovelChavePosseOption(string Label, ImovelChavePosse Posse);
+    private sealed record ImovelEnderecoPublicoModoOption(string Label, ImovelEnderecoPublicoModo Modo);
+    private sealed record ImovelMediaCategoryOption(string Label, ImovelMediaCategory Category);
+    private sealed record VistoriaTipoOption(string Label, VistoriaTipo Tipo);
+    private sealed record VistoriaStatusOption(string Label, VistoriaStatus Status);
+    private sealed record ChavesStatusFilterOption(string Label, string Status);
     private sealed record PessoaDocumentoTipoOption(string Label, string Tipo);
     private sealed record PessoaDocumentoDonoOption(string Label, string Tipo);
     private sealed record PessoaStatusFilterOption(string Label, string Status);
@@ -713,6 +782,108 @@ public partial class ShellWindow : Window
         new("Ambos", ImovelFinalidade.Ambos)
     ];
 
+    private static readonly IReadOnlyList<string> ImovelTipoOptions =
+    [
+        "Casa", "Apartamento", "Sobrado", "Kitnet", "Sala comercial", "Barracão", "Terreno", "Chácara", "Outro"
+    ];
+
+    private static readonly IReadOnlyList<ImovelStatusOption> ImovelStatusOptions =
+    [
+        new("Disponível", ImovelStatus.Disponivel),
+        new("Reservado", ImovelStatus.Reservado),
+        new("Locado", ImovelStatus.Locado),
+        new("Vendido", ImovelStatus.Vendido),
+        new("Inativo", ImovelStatus.Inativo)
+    ];
+
+    private static readonly IReadOnlyList<ImovelFinalidadeFilterOption> ImoveisFinalidadeFilterOptions =
+    [
+        new("Todas finalidades", null),
+        new("Locação", ImovelFinalidade.Locacao),
+        new("Venda", ImovelFinalidade.Venda),
+        new("Ambos", ImovelFinalidade.Ambos)
+    ];
+
+    private static readonly IReadOnlyList<ImovelStatusFilterOption> ImoveisStatusFilterOptions =
+    [
+        new("Ativos", "ativos"),
+        new("Disponíveis", "disponivel"),
+        new("Reservados", "reservado"),
+        new("Locados", "locado"),
+        new("Vendidos", "vendido"),
+        new("Inativos", "inativo"),
+        new("Todos", "todos")
+    ];
+
+    private static readonly IReadOnlyList<ImovelPublicacaoFilterOption> ImoveisPublicacaoFilterOptions =
+    [
+        new("Todas publicações", "todos"),
+        new("Privados", "privado"),
+        new("Site", "site"),
+        new("App", "app"),
+        new("Destaques", "destaque")
+    ];
+
+    private static readonly IReadOnlyList<ImovelChavePosseOption> ImovelChavePosseOptions =
+    [
+        new("Sem chave cadastrada", ImovelChavePosse.NaoCadastrada),
+        new("Imobiliária está com a chave", ImovelChavePosse.Imobiliaria),
+        new("Proprietário está com a chave", ImovelChavePosse.Proprietario),
+        new("Locatário está com a chave", ImovelChavePosse.Locatario),
+        new("Terceiro está com a chave", ImovelChavePosse.Terceiro),
+        new("Outro", ImovelChavePosse.Outro)
+    ];
+
+    private static readonly IReadOnlyList<ImovelEnderecoPublicoModoOption> ImovelEnderecoPublicoModoOptions =
+    [
+        new("Bairro e cidade", ImovelEnderecoPublicoModo.BairroCidade),
+        new("Endereço aproximado", ImovelEnderecoPublicoModo.EnderecoAproximado),
+        new("Endereço completo", ImovelEnderecoPublicoModo.EnderecoCompleto)
+    ];
+
+    private static readonly IReadOnlyList<ImovelMediaCategoryOption> ImovelMediaCategoryOptions =
+    [
+        new("Foto pública do imóvel", ImovelMediaCategory.PropertyPhoto),
+        new("Foto privada", ImovelMediaCategory.Other),
+        new("Documento", ImovelMediaCategory.Document),
+        new("Foto de vistoria (privada por padrão)", ImovelMediaCategory.InspectionPhoto),
+        new("Foto de manutenção", ImovelMediaCategory.MaintenancePhoto)
+    ];
+
+    private static readonly IReadOnlyList<VistoriaTipoOption> VistoriaTipoOptions =
+    [
+        new("Inicial do proprietário", VistoriaTipo.InicialProprietario),
+        new("Entrada da locação", VistoriaTipo.Entrada),
+        new("Saída da locação", VistoriaTipo.Saida),
+        new("Periódica", VistoriaTipo.Periodica),
+        new("Manutenção", VistoriaTipo.Manutencao),
+        new("Outra", VistoriaTipo.Outros)
+    ];
+
+    private static readonly IReadOnlyList<VistoriaTipoOption> ImovelVistoriaTipoOptions =
+    [
+        new("Inicial do proprietário", VistoriaTipo.InicialProprietario)
+    ];
+
+    private static readonly IReadOnlyList<VistoriaStatusOption> VistoriaStatusOptions =
+    [
+        new("Rascunho", VistoriaStatus.Draft),
+        new("Em andamento", VistoriaStatus.InProgress),
+        new("Pronta para revisão", VistoriaStatus.ReadyToReview),
+        new("Finalizada", VistoriaStatus.Finished),
+        new("Assinada em papel", VistoriaStatus.SignedPaper),
+        new("Assinada digitalmente", VistoriaStatus.SignedDigitally),
+        new("Cancelada", VistoriaStatus.Canceled)
+    ];
+
+    private static readonly IReadOnlyList<ChavesStatusFilterOption> ChavesStatusFilterOptions =
+    [
+        new("Retiradas ativas", "ativas"),
+        new("Em atraso", "atraso"),
+        new("Devolvidas", "devolvidas"),
+        new("Todas", "todas")
+    ];
+
     private static readonly IReadOnlyList<PessoaDocumentoTipoOption> PessoaDocumentoTipoFisicaOptions =
     [
         new("Pessoal", "pessoal"),
@@ -734,6 +905,7 @@ public partial class ShellWindow : Window
 
     private static readonly IReadOnlyList<PessoaDocumentoDonoOption> PessoaDocumentoDonoFisicaOptions =
     [
+        new("", ""),
         new("Pessoa", "pessoa"),
         new("Trabalho da pessoa", "empresa_trabalho"),
         new("Cônjuge", "conjuge"),
@@ -743,6 +915,7 @@ public partial class ShellWindow : Window
 
     private static readonly IReadOnlyList<PessoaDocumentoDonoOption> PessoaDocumentoDonoJuridicaOptions =
     [
+        new("", ""),
         new("Empresa", "empresa"),
         new("Responsável", "responsavel"),
         new("Cônjuge do responsável", "conjuge_responsavel"),

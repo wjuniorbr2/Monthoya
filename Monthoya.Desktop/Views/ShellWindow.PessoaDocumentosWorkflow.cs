@@ -146,6 +146,13 @@ public partial class ShellWindow
 
     private PessoaDocumentoDraft? BuildPessoaDocumentoDraft()
     {
+        var documentoDe = PessoaDocumentoDonoBox.SelectedValue as string;
+        if (string.IsNullOrWhiteSpace(documentoDe))
+        {
+            PessoaDocumentoDonoErrorText.Text = "Escolha uma opção em Documento de.";
+            return null;
+        }
+
         var filePath = PessoaDocumentoArquivoBox.Text?.Trim();
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -172,7 +179,7 @@ public partial class ShellWindow
 
         return new PessoaDocumentoDraft(
             Tipo: PessoaDocumentoTipoBox.SelectedValue as string ?? "outros",
-            DocumentoDe: PessoaDocumentoDonoBox.SelectedValue as string ?? "pessoa",
+            DocumentoDe: documentoDe,
             Nome: documentName,
             StoragePath: filePath,
             ContentType: GuessPessoaDocumentoContentType(filePath),
@@ -223,6 +230,8 @@ public partial class ShellWindow
     {
         PessoaDocumentoNomeBox.Clear();
         PessoaDocumentoArquivoBox.Clear();
+        PessoaDocumentoDonoBox.SelectedValue = "";
+        PessoaDocumentoDonoErrorText.Text = string.Empty;
         PessoaDocumentoValidadeBox.SelectedDate = null;
         PessoaDocumentoObservacoesBox.Clear();
     }
@@ -235,7 +244,7 @@ public partial class ShellWindow
                 Guid.Empty,
                 Guid.Empty,
                 "Nova pessoa",
-                "Pendente",
+                GetPessoaDocumentoTipoDisplayLabel(draft.Tipo),
                 GetDocumentoDeDisplayLabel(draft.DocumentoDe),
                 draft.Nome,
                 draft.StoragePath,
@@ -280,6 +289,29 @@ public partial class ShellWindow
             "trabalho_conjuge_responsavel" => "Trabalho do cônjuge do responsável",
             "outros" => "Outros",
             _ => "Pessoa"
+        };
+
+    private static string GetPessoaDocumentoTipoDisplayLabel(string tipo) =>
+        tipo switch
+        {
+            "cpf" => "CPF",
+            "rg" => "RG",
+            "comprovante_residencia" => "Comprovante de residência",
+            "comprovante_renda" => "Comprovante de renda",
+            "estado_civil" => "Comprovante de estado civil",
+            "contrato_social" => "Contrato social",
+            "cartao_cnpj" => "Cartão CNPJ",
+            "procuracao" => "Procuração/autorização",
+            "dados_bancarios" => "Dados bancários",
+            "documentos_empresa" => "Documentos da empresa",
+            "endereco_residencia" => "Endereço/residência",
+            "identificacao_pessoal" => "Identificação pessoal",
+            "receita_renda" => "Receita/Renda",
+            "pessoal_pessoa" => "Pessoal da pessoa",
+            "trabalho_pessoa" => "Trabalho da pessoa",
+            "pessoal_conjuge" => "Pessoal do cônjuge",
+            "trabalho_conjuge" => "Trabalho do cônjuge",
+            _ => "Outros"
         };
 
     private static string GuessPessoaDocumentoContentType(string fileName) =>

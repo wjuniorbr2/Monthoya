@@ -290,12 +290,14 @@ public partial class ShellWindow
 
         documentsGrid.RowDefinitions.Clear();
         documentsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(220) });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(160) });
+        documentsGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         documentsGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        PessoaDocumentosGrid.MaxHeight = 220;
+        PessoaDocumentosGrid.MaxHeight = 160;
         PessoaDocumentosGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
         Grid.SetRow(PessoaDocumentosGrid, 1);
+        Grid.SetRow(PessoaDocumentosListErrorText, 2);
 
         var editorScrollViewer = new ScrollViewer
         {
@@ -304,7 +306,7 @@ public partial class ShellWindow
             Content = documentEditorStack
         };
 
-        Grid.SetRow(editorScrollViewer, 2);
+        Grid.SetRow(editorScrollViewer, 3);
         documentsGrid.Children.Add(editorScrollViewer);
     }
 
@@ -668,7 +670,7 @@ public partial class ShellWindow
         }
         if (_pessoaPetQualTopCell is not null)
         {
-            _pessoaPetQualTopCell.Visibility = fisicaOnlyVisibility;
+            UpdatePessoaPetQualVisibility();
         }
     }
 
@@ -1016,13 +1018,25 @@ public partial class ShellWindow
         };
         _pessoaPetComboBox.SelectionChanged += (_, _) =>
         {
-            if (_pessoaPetQualBox is not null)
-            {
-                _pessoaPetQualBox.Visibility = string.Equals(_pessoaPetComboBox.SelectedItem as string, "Sim", StringComparison.OrdinalIgnoreCase)
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            }
+            UpdatePessoaPetQualVisibility();
         };
+    }
+
+    private void UpdatePessoaPetQualVisibility()
+    {
+        var isJuridica = PessoaTipoBox.SelectedValue is Monthoya.Core.Entities.TipoPessoa.Juridica;
+        var hasPet = string.Equals(_pessoaPetComboBox?.SelectedItem as string, "Sim", StringComparison.OrdinalIgnoreCase);
+        var visibility = !isJuridica && hasPet ? Visibility.Visible : Visibility.Collapsed;
+
+        if (_pessoaPetQualTopCell is not null)
+        {
+            _pessoaPetQualTopCell.Visibility = visibility;
+        }
+
+        if (_pessoaPetQualBox is not null)
+        {
+            _pessoaPetQualBox.Visibility = visibility;
+        }
     }
 
     private void AttachPessoaRgEightDigitFormatter()

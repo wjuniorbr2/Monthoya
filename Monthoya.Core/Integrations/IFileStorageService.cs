@@ -19,6 +19,8 @@ public interface IFileStorageService
         string storagePath,
         TimeSpan? expiresIn = null,
         CancellationToken cancellationToken = default);
+
+    Task DeleteAsync(string storagePath, CancellationToken cancellationToken = default);
 }
 
 public sealed record FileStorageSaveRequest(

@@ -140,6 +140,12 @@
                                 <TextBlock Style="{StaticResource NavLabelText}" Text="Im&#xF3;veis" />
                             </StackPanel>
                         </Button>
+                        <Button x:Name="ChavesNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="ChavesNavButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource NavIconText}" Text="&#xE8D7;" />
+                                <TextBlock Style="{StaticResource NavLabelText}" Text="Chaves" />
+                            </StackPanel>
+                        </Button>
                         <Button x:Name="FinanceiroNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="FinanceiroNavButton_Click">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource NavIconText}" Text="$" FontFamily="Segoe UI Black" FontSize="17" />
@@ -603,6 +609,7 @@
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto" />
                                             <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <TextBlock x:Name="PessoaDocumentosTitleText"
                                                    Text="Documentos da pessoa selecionada"
@@ -616,11 +623,15 @@
                                             <DataGrid.Columns>
                                                 <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="*" />
                                                 <DataGridTextColumn Header="De" Binding="{Binding DocumentoDe}" Width="*" />
-                                                <DataGridTextColumn Header="Nome" Binding="{Binding Nome}" Width="2*" />
                                                 <DataGridTextColumn Header="Arquivo" Binding="{Binding Arquivo}" Width="2*" />
                                                 <DataGridTextColumn Header="OCR" Binding="{Binding OcrStatus}" Width="*" />
                                             </DataGrid.Columns>
                                         </DataGrid>
+                                        <TextBlock x:Name="PessoaDocumentosListErrorText"
+                                                   Grid.Row="2"
+                                                   Foreground="#B42318"
+                                                   TextWrapping="Wrap"
+                                                   Margin="14,6,14,10" />
                                     </Grid>
                                 </Border>
                             </Grid>
@@ -770,7 +781,8 @@
                                         <TextBlock Text="Pessoa selecionada" FontWeight="SemiBold" />
                                         <TextBlock x:Name="PessoaDocumentoPessoaText" Text="Nenhuma pessoa selecionada" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,12" />
                                         <TextBlock Text="Documento de" FontWeight="SemiBold" />
-                                        <ComboBox x:Name="PessoaDocumentoDonoBox" Margin="0,6,0,12" />
+                                        <ComboBox x:Name="PessoaDocumentoDonoBox" Margin="0,6,0,4" />
+                                        <TextBlock x:Name="PessoaDocumentoDonoErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,8" />
                                         <TextBlock Text="Tipo de documento" FontWeight="SemiBold" />
                                         <ComboBox x:Name="PessoaDocumentoTipoBox" Margin="0,6,0,12" />
                                         <TextBlock Text="Descrição" FontWeight="SemiBold" />
@@ -794,80 +806,410 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                         </Grid.RowDefinitions>
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Left">
                                 <TextBlock Text="Imóveis" FontSize="30" FontWeight="SemiBold" />
-                                <TextBlock Text="Cadastro inicial de imóveis vinculados a proprietário." Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
+                                <TextBlock Text="Cadastro, chaves, fotos, publicação, vistorias e histórico dos imóveis da imobiliária." Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" TextWrapping="Wrap" />
                             </StackPanel>
-                            <Button Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ReloadImoveisButton_Click" Content="Atualizar" />
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Style="{StaticResource PrimaryButtonSmall}" Click="NewImovelButton_Click" Content="Novo imóvel" Margin="0,0,8,0" />
+                                <Button Style="{StaticResource SecondaryButton}" Click="ReloadImoveisButton_Click" Content="Atualizar" />
+                            </StackPanel>
                         </DockPanel>
-                        <TextBox x:Name="ImoveisSearchBox"
-                                 Grid.Row="1"
-                                 Margin="0,16,0,0"
-                                 TextChanged="ImoveisSearchBox_TextChanged"
-                                 ToolTip="Pesquisar por rua, bairro ou proprietário" />
-                        <Grid Grid.Row="2" Margin="0,16,0,0">
+                        <Grid Grid.Row="1" Margin="0,16,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="360" />
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="190" />
                             </Grid.ColumnDefinitions>
-                            <Border Style="{StaticResource CardBorder}" Padding="0">
-                                <DataGrid x:Name="ImoveisGrid" AutoGenerateColumns="False" IsReadOnly="True" BorderThickness="0">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Endereço" Binding="{Binding Endereco}" Width="2*" />
-                                        <DataGridTextColumn Header="Bairro" Binding="{Binding Bairro}" Width="*" />
-                                        <DataGridTextColumn Header="Proprietário" Binding="{Binding Proprietario}" Width="2*" />
-                                        <DataGridTextColumn Header="Finalidade" Binding="{Binding Finalidade}" Width="*" />
-                                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
-                                        <DataGridTextColumn Header="Aluguel" Binding="{Binding ValorAluguel, StringFormat=R$ {0:N2}}" Width="*" />
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                            </Border>
-                            <Border Grid.Column="1" Style="{StaticResource CardBorder}" Margin="18,0,0,0">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                    <StackPanel>
-                                        <TextBlock Text="Novo imóvel" FontSize="20" FontWeight="SemiBold" />
-                                        <TextBlock Text="Selecione uma pessoa com função Proprietário." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,16" />
-                                        <TextBlock Text="Proprietário" FontWeight="SemiBold" />
-                                        <ComboBox x:Name="ImovelProprietarioBox" DisplayMemberPath="Nome" SelectedValuePath="Id" Margin="0,6,0,12" />
-                                        <TextBlock Text="Rua" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelRuaBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Número" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelNumeroBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Complemento" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelComplementoBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Bairro" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelBairroBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="CEP" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelCepBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Tipo do imóvel" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelTipoBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Matrícula Sanepar" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelSaneparBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Matrícula Copel" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelCopelBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Matrícula IPTU" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelIptuBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Valor do aluguel" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelValorAluguelBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Valor de venda" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelValorVendaBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Finalidade" FontWeight="SemiBold" />
-                                        <ComboBox x:Name="ImovelFinalidadeBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Latitude" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelLatitudeBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Longitude" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelLongitudeBox" Margin="0,6,0,12" />
-                                        <TextBlock Text="Descrição" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelDescricaoBox" AcceptsReturn="True" Height="74" TextWrapping="Wrap" Margin="0,6,0,12" />
-                                        <TextBlock Text="Observações" FontWeight="SemiBold" />
-                                        <TextBox x:Name="ImovelObservacoesBox" AcceptsReturn="True" Height="74" TextWrapping="Wrap" Margin="0,6,0,12" />
-                                        <TextBlock x:Name="ImovelErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,12" />
-                                        <Button Style="{StaticResource PrimaryButton}" HorizontalAlignment="Stretch" Click="SaveImovelButton_Click" Content="Salvar imóvel" />
+                            <TextBox x:Name="ImoveisSearchBox"
+                                     TextChanged="ImoveisFilter_Changed"
+                                     ToolTip="Pesquisar por endereço, proprietário, bairro, tipo ou status" />
+                            <ComboBox x:Name="ImoveisStatusFilterBox" Grid.Column="1" Margin="10,0,0,0" SelectionChanged="ImoveisFilter_Changed" />
+                            <ComboBox x:Name="ImoveisFinalidadeFilterBox" Grid.Column="2" Margin="10,0,0,0" SelectionChanged="ImoveisFilter_Changed" />
+                            <ComboBox x:Name="ImoveisPublicacaoFilterBox" Grid.Column="3" Margin="10,0,0,0" SelectionChanged="ImoveisFilter_Changed" />
+                        </Grid>
+                        <Border Grid.Row="2" Style="{StaticResource CardBorder}" Padding="0" Margin="0,16,0,14">
+                            <DataGrid x:Name="ImoveisGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      SelectionChanged="ImoveisGrid_SelectionChanged"
+                                      MaxHeight="190"
+                                      VerticalScrollBarVisibility="Auto"
+                                      BorderThickness="0">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Endereço" Binding="{Binding Endereco}" Width="2*" />
+                                    <DataGridTextColumn Header="Bairro" Binding="{Binding Bairro}" Width="*" />
+                                    <DataGridTextColumn Header="Proprietário" Binding="{Binding Proprietario}" Width="2*" />
+                                    <DataGridTextColumn Header="Tipo" Binding="{Binding TipoImovel}" Width="*" />
+                                    <DataGridTextColumn Header="Finalidade" Binding="{Binding Finalidade}" Width="*" />
+                                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
+                                    <DataGridTextColumn Header="Chaves" Binding="{Binding Chaves}" Width="*" />
+                                    <DataGridTextColumn Header="Publicação" Binding="{Binding Publicacao}" Width="*" />
+                                    <DataGridTextColumn Header="Aluguel" Binding="{Binding ValorAluguel, StringFormat=R$ {0:N2}}" Width="*" />
+                                    <DataGridTextColumn Header="Venda" Binding="{Binding ValorVenda, StringFormat=R$ {0:N2}}" Width="*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                        <Border Grid.Row="3" Style="{StaticResource CardBorder}" Padding="0">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="18">
+                                    <DockPanel Margin="0,0,0,14">
+                                        <StackPanel DockPanel.Dock="Left">
+                                            <TextBlock x:Name="ImovelFormTitleText" Text="Criar novo" FontSize="20" FontWeight="SemiBold" />
+                                            <TextBlock Text="Informações internas ficam separadas das informações públicas do site/app." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                                        </StackPanel>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                            <TextBlock x:Name="ImovelOverdueKeysText" Foreground="#B42318" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0" />
+                                            <Button x:Name="ImovelEditButton" Style="{StaticResource SecondaryButton}" Click="EditImovelButton_Click" Content="Editar" Margin="0,0,8,0" IsEnabled="False" />
+                                            <Button x:Name="ImovelDeactivateButton" Style="{StaticResource SecondaryButton}" Click="DeactivateImovelButton_Click" Content="Remover" IsEnabled="False" />
+                                        </StackPanel>
+                                    </DockPanel>
+
+                                    <TabControl x:Name="ImovelDetailsTabControl">
+                                        <TabItem Header="Dados do imóvel">
+                                            <StackPanel Margin="0,14,0,0">
+                                                <WrapPanel>
+                                                    <StackPanel Width="260" Margin="0,0,14,12">
+                                                        <TextBlock Text="Proprietário" FontWeight="SemiBold" />
+                                                        <ComboBox x:Name="ImovelProprietarioBox"
+                                                                  DisplayMemberPath="Nome"
+                                                                  SelectedValuePath="Id"
+                                                                  IsEditable="True"
+                                                                  IsTextSearchEnabled="False"
+                                                                  StaysOpenOnEdit="True"
+                                                                  TextSearch.TextPath="Nome"
+                                                                  MaxDropDownHeight="320"
+                                                                  KeyUp="ImovelProprietarioBox_KeyUp"
+                                                                  ToolTip="Digite parte do nome, CPF/CNPJ ou telefone do proprietário para localizar mais rápido."
+                                                                  Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Width="180" Margin="0,0,14,12">
+                                                        <TextBlock Text="Tipo do imóvel" FontWeight="SemiBold" />
+                                                        <ComboBox x:Name="ImovelTipoBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Width="160" Margin="0,0,14,12">
+                                                        <TextBlock Text="Finalidade" FontWeight="SemiBold" />
+                                                        <ComboBox x:Name="ImovelFinalidadeBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Width="160" Margin="0,0,14,12">
+                                                        <TextBlock Text="Status" FontWeight="SemiBold" />
+                                                        <ComboBox x:Name="ImovelStatusBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                </WrapPanel>
+                                                <TextBlock Text="ENDEREÇO:" FontWeight="SemiBold" Margin="0,6,0,8" />
+                                                <WrapPanel>
+                                                    <StackPanel Width="150" Margin="0,0,14,12"><TextBlock Text="CEP" FontWeight="SemiBold" /><TextBox x:Name="ImovelCepBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="300" Margin="0,0,14,12"><TextBlock Text="Rua" FontWeight="SemiBold" /><TextBox x:Name="ImovelRuaBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Número" FontWeight="SemiBold" /><TextBox x:Name="ImovelNumeroBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="180" Margin="0,0,14,12"><TextBlock Text="Complemento" FontWeight="SemiBold" /><TextBox x:Name="ImovelComplementoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="180" Margin="0,0,14,12"><TextBlock Text="Bairro" FontWeight="SemiBold" /><TextBox x:Name="ImovelBairroBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="180" Margin="0,0,14,12"><TextBlock Text="Cidade" FontWeight="SemiBold" /><TextBox x:Name="ImovelCidadeBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="80" Margin="0,0,14,12"><TextBlock Text="Estado" FontWeight="SemiBold" /><TextBox x:Name="ImovelEstadoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="120" Margin="0,0,14,12" Visibility="Collapsed"><TextBlock Text="Latitude" FontWeight="SemiBold" /><TextBox x:Name="ImovelLatitudeBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="120" Margin="0,0,14,12" Visibility="Collapsed"><TextBlock Text="Longitude" FontWeight="SemiBold" /><TextBox x:Name="ImovelLongitudeBox" Margin="0,6,0,0" /></StackPanel>
+                                                </WrapPanel>
+                                                <TextBlock Text="VALORES E CARACTERÍSTICAS:" FontWeight="SemiBold" Margin="0,6,0,8" />
+                                                <WrapPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Aluguel" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorAluguelBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Venda" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorVendaBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Condomínio" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorCondominioBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Quartos" FontWeight="SemiBold" /><TextBox x:Name="ImovelQuartosBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Suítes" FontWeight="SemiBold" /><TextBox x:Name="ImovelSuitesBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Banheiros" FontWeight="SemiBold" /><TextBox x:Name="ImovelBanheirosBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Garagens" FontWeight="SemiBold" /><TextBox x:Name="ImovelVagasBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área construída" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaConstruidaBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área terreno" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaTerrenoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <CheckBox x:Name="ImovelMobiliadoBox" Content="Mobiliado" Margin="0,24,18,12" />
+                                                    <CheckBox x:Name="ImovelAceitaPetsBox" Content="Aceita pets" Margin="0,24,18,12" />
+                                                </WrapPanel>
+                                                <TextBlock Text="CADASTROS DE UTILIDADE:" FontWeight="SemiBold" Margin="0,6,0,8" />
+                                                <WrapPanel>
+                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula Sanepar" FontWeight="SemiBold" /><TextBox x:Name="ImovelSaneparBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula Copel" FontWeight="SemiBold" /><TextBox x:Name="ImovelCopelBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuBox" Margin="0,6,0,0" /></StackPanel>
+                                                </WrapPanel>
+                                            </StackPanel>
+                                        </TabItem>
+                                        <TabItem Header="Fotos e arquivos">
+                                            <StackPanel Margin="0,14,0,0">
+                                                <TextBlock Text="Mídia do imóvel" FontWeight="SemiBold" />
+                                                <TextBlock Text="Separe fotos públicas, fotos privadas, documentos e fotos de vistoria. Fotos de vistoria são privadas por padrão e não vão para site/app." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,12" />
+                                                <WrapPanel>
+                                                    <StackPanel Width="360" Margin="0,0,14,12">
+                                                        <TextBlock Text="Arquivo" FontWeight="SemiBold" />
+                                                        <DockPanel Margin="0,6,0,0">
+                                                            <Button x:Name="BrowseImovelImagemButton" DockPanel.Dock="Right" Style="{StaticResource SecondaryButton}" Click="BrowseImovelImagemButton_Click" Content="Selecionar" Margin="8,0,0,0" />
+                                                            <TextBox x:Name="ImovelImagemArquivoBox" />
+                                                        </DockPanel>
+                                                    </StackPanel>
+                                                    <StackPanel Width="240" Margin="0,0,14,12">
+                                                        <TextBlock Text="Categoria" FontWeight="SemiBold" />
+                                                        <ComboBox x:Name="ImovelMediaCategoryBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Width="320" Margin="0,0,14,12">
+                                                        <TextBlock Text="Legenda" FontWeight="SemiBold" />
+                                                        <TextBox x:Name="ImovelImagemLegendaBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12">
+                                                        <TextBlock Text="Ordem" FontWeight="SemiBold" />
+                                                        <TextBox x:Name="ImovelImagemOrdemBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                </WrapPanel>
+                                                <WrapPanel>
+                                                    <CheckBox x:Name="ImovelImagemPublicaBox" Content="Foto pública do imóvel" Margin="0,0,18,12" />
+                                                    <CheckBox x:Name="ImovelImagemCapaBox" Content="Usar como capa" Margin="0,0,18,12" />
+                                                </WrapPanel>
+                                                <TextBlock x:Name="ImovelImagemErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,10" />
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                                    <Button x:Name="SaveImovelImagemButton" Style="{StaticResource PrimaryButtonSmall}" HorizontalAlignment="Left" Click="SaveImovelImagemButton_Click" Content="Adicionar mídia" />
+                                                    <Button x:Name="BrowseImovelImagensBulkButton" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Left" Click="BrowseImovelImagensBulkButton_Click" Content="Selecionar em lote" Margin="10,0,0,0" />
+                                                </StackPanel>
+                                                <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto">
+                                                    <ItemsControl x:Name="ImovelImagensGrid">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <WrapPanel />
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Width="142" Height="156" Margin="0,0,12,12" Padding="8" BorderBrush="{StaticResource LineBrush}" BorderThickness="1" CornerRadius="6" Background="White">
+                                                                    <StackPanel>
+                                                                        <Border Height="78" Background="#F3F4F6" CornerRadius="4">
+                                                                            <Grid>
+                                                                                <Image Source="{Binding PreviewPath}" Stretch="UniformToFill" />
+                                                                                <TextBlock Text="{Binding FileKind}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}" FontWeight="SemiBold" />
+                                                                            </Grid>
+                                                                        </Border>
+                                                                        <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" Margin="0,8,0,2" />
+                                                                        <TextBlock Text="{Binding MediaCategory}" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+                                                                        <TextBlock Text="{Binding Status}" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" />
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </ScrollViewer>
+                                            </StackPanel>
+                                        </TabItem>
+                                        <TabItem Header="Chaves">
+                                            <StackPanel Margin="0,14,0,0">
+                                                <WrapPanel>
+                                                    <StackPanel Width="220" Margin="0,0,14,12"><TextBlock Text="Posse atual da chave" FontWeight="SemiBold" /><ComboBox x:Name="ImovelChavePosseBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel x:Name="ImovelChaveCodigoPanel" Width="160" Margin="0,0,14,12"><TextBlock Text="Código/etiqueta" FontWeight="SemiBold" /><TextBox x:Name="ImovelChaveCodigoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <CheckBox x:Name="ImovelChaveAutorizacaoBox" Content="Autorização necessária antes da visita" Margin="0,24,18,12" />
+                                                </WrapPanel>
+                                                <WrapPanel x:Name="ImovelChaveContatoPanel">
+                                                    <StackPanel Width="220" Margin="0,0,14,12"><TextBlock Text="Quem está com a chave" FontWeight="SemiBold" /><TextBox x:Name="ImovelChaveQuemTemBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="180" Margin="0,0,14,12"><TextBlock Text="Telefone/WhatsApp" FontWeight="SemiBold" /><TextBox x:Name="ImovelChaveTelefoneBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="220" Margin="0,0,14,12"><TextBlock Text="Contato" FontWeight="SemiBold" /><TextBox x:Name="ImovelChaveContatoNomeBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="160" Margin="0,0,14,12"><TextBlock Text="Documento" FontWeight="SemiBold" /><TextBox x:Name="ImovelChaveContatoDocumentoBox" Margin="0,6,0,0" /></StackPanel>
+                                                </WrapPanel>
+                                                <WrapPanel x:Name="ImovelChaveRetiradaPanel">
+                                                    <StackPanel Width="360" Margin="0,0,14,12"><TextBlock Text="Local para retirar a chave" FontWeight="SemiBold" /><TextBox x:Name="ImovelChaveLocalBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="220" Margin="0,0,14,12"><TextBlock Text="Melhor horário" FontWeight="SemiBold" /><TextBox x:Name="ImovelChaveHorarioBox" Margin="0,6,0,0" /></StackPanel>
+                                                </WrapPanel>
+                                                <TextBlock Text="Observações sobre chaves" FontWeight="SemiBold" />
+                                                <TextBox x:Name="ImovelChaveObservacoesBox" AcceptsReturn="True" Height="64" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                                <TextBlock Text="Retiradas e devoluções de chave ficam no módulo Chaves." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,8,0,0" />
+                                            </StackPanel>
+                                        </TabItem>
+                                        <TabItem Header="Vistorias">
+                                            <StackPanel Margin="0,14,0,0">
+                                                <TextBlock Text="Vistorias vinculadas ao imóvel" FontWeight="SemiBold" />
+                                                <TextBlock Text="Crie o registro base da vistoria aqui. Ambientes, itens, muitas fotos, comparação entrada/saída e análise por IA já estão preparados no modelo para as próximas etapas." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,12" />
+                                                <WrapPanel>
+                                                    <StackPanel Width="220" Margin="0,0,14,12">
+                                                        <TextBlock Text="Tipo de vistoria" FontWeight="SemiBold" />
+                                                        <ComboBox x:Name="ImovelVistoriaTipoBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Width="160" Margin="0,0,14,12">
+                                                        <TextBlock Text="Data" FontWeight="SemiBold" />
+                                                        <DatePicker x:Name="ImovelVistoriaDataBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Width="220" Margin="0,0,14,12">
+                                                        <TextBlock Text="Responsável" FontWeight="SemiBold" />
+                                                        <TextBox x:Name="ImovelVistoriaResponsavelBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                    <StackPanel Width="220" Margin="0,0,14,12">
+                                                        <TextBlock Text="Status" FontWeight="SemiBold" />
+                                                        <ComboBox x:Name="ImovelVistoriaStatusBox" Margin="0,6,0,0" />
+                                                    </StackPanel>
+                                                </WrapPanel>
+                                                <TextBlock Text="Descrição geral" FontWeight="SemiBold" />
+                                                <TextBox x:Name="ImovelVistoriaDescricaoBox" AcceptsReturn="True" Height="70" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                                <TextBlock Text="Observações" FontWeight="SemiBold" />
+                                                <TextBox x:Name="ImovelVistoriaObservacoesBox" AcceptsReturn="True" Height="60" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                                <TextBlock x:Name="ImovelVistoriaErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,10" />
+                                                <Button x:Name="SaveImovelVistoriaButton" Style="{StaticResource PrimaryButtonSmall}" HorizontalAlignment="Left" Click="SaveImovelVistoriaButton_Click" Content="Adicionar vistoria" Margin="0,0,0,14" />
+                                                <DataGrid x:Name="ImovelVistoriasGrid"
+                                                          AutoGenerateColumns="False"
+                                                          IsReadOnly="True"
+                                                          MaxHeight="220"
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          BorderThickness="0">
+                                                    <DataGrid.Columns>
+                                                        <DataGridTextColumn Header="Tipo" Binding="{Binding Tipo}" Width="2*" />
+                                                        <DataGridTextColumn Header="Data" Binding="{Binding DataVistoria}" Width="*" />
+                                                        <DataGridTextColumn Header="Responsável" Binding="{Binding Responsavel}" Width="2*" />
+                                                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
+                                                        <DataGridTextColumn Header="Observações" Binding="{Binding Observacoes}" Width="2*" />
+                                                    </DataGrid.Columns>
+                                                </DataGrid>
+                                            </StackPanel>
+                                        </TabItem>
+                                        <TabItem Header="Publicação">
+                                            <StackPanel Margin="0,14,0,0">
+                                                <TextBlock Text="Informações públicas para site/app" FontWeight="SemiBold" />
+                                                <TextBlock Text="Por padrão, o site/app mostra apenas bairro e cidade. Marque endereço completo somente quando o proprietário autorizar." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,12" />
+                                                <WrapPanel>
+                                                    <CheckBox x:Name="ImovelPublicarSiteBox" Content="Publicar no site" Margin="0,0,18,12" />
+                                                    <CheckBox x:Name="ImovelPublicarAppBox" Content="Publicar no app" Margin="0,0,18,12" />
+                                                    <CheckBox x:Name="ImovelDestaqueBox" Content="Destaque" Margin="0,0,18,12" />
+                                                    <CheckBox x:Name="ImovelMostrarEnderecoCompletoBox" Content="Exibir endereço completo publicamente" Margin="0,0,18,12" />
+                                                </WrapPanel>
+                                                <StackPanel Width="260" Margin="0,0,0,12">
+                                                    <TextBlock Text="Modo de exibição do endereço público" FontWeight="SemiBold" />
+                                                    <ComboBox x:Name="ImovelEnderecoPublicoModoBox" Margin="0,6,0,0" />
+                                                </StackPanel>
+                                                <TextBlock Text="Descrição pública (usada no site/app para clientes)" FontWeight="SemiBold" />
+                                                <TextBox x:Name="ImovelDescricaoPublicaBox" AcceptsReturn="True" Height="94" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                            </StackPanel>
+                                        </TabItem>
+                                        <TabItem Header="Observações internas">
+                                            <StackPanel Margin="0,14,0,0">
+                                                <TextBlock Text="Descrição interna (não aparece no site/app)" FontWeight="SemiBold" />
+                                                <TextBlock Text="Use este campo para problemas, negociação, manutenção, comportamento do proprietário e notas privadas da imobiliária." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,8" />
+                                                <TextBox x:Name="ImovelDescricaoBox" AcceptsReturn="True" Height="94" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                                <TextBlock Text="Observações internas" FontWeight="SemiBold" />
+                                                <TextBox x:Name="ImovelObservacoesBox" AcceptsReturn="True" Height="94" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                            </StackPanel>
+                                        </TabItem>
+                                    </TabControl>
+                                    <TextBlock x:Name="ImovelErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,12,0,12" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button x:Name="SaveImovelButton" Style="{StaticResource PrimaryButtonSmall}" HorizontalAlignment="Left" Click="SaveImovelButton_Click" Content="Salvar imóvel" />
+                                        <Button x:Name="CancelImovelEditButton" Style="{StaticResource SecondaryButton}" Margin="10,0,0,0" HorizontalAlignment="Left" Click="CancelImovelEditButton_Click" Content="Cancelar edição" Visibility="Collapsed" />
                                     </StackPanel>
-                                </ScrollViewer>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+
+                    <Grid x:Name="ChavesPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Left">
+                                <TextBlock Text="Chaves" FontSize="30" FontWeight="SemiBold" />
+                                <TextBlock Text="Retiradas, devoluções e atrasos das chaves dos imóveis." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <Button Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" HorizontalAlignment="Right" Click="ReloadChavesButton_Click" Content="Atualizar" />
+                        </DockPanel>
+                        <Grid Grid.Row="1" Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="180" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ChavesSearchBox"
+                                     TextChanged="ChavesSearchBox_TextChanged"
+                                     ToolTip="Pesquisar por imóvel, código, pessoa, telefone ou motivo" />
+                            <ComboBox x:Name="ChavesStatusFilterBox"
+                                      Grid.Column="1"
+                                      Margin="10,0,0,0"
+                                      SelectionChanged="ChavesStatusFilterBox_SelectionChanged" />
+                        </Grid>
+                        <Border Grid.Row="2" Style="{StaticResource CardBorder}" Padding="0" Margin="0,16,0,16">
+                            <DataGrid x:Name="ChavesGrid"
+                                      AutoGenerateColumns="False"
+                                      IsReadOnly="True"
+                                      BorderThickness="0"
+                                      SelectionChanged="ChavesGrid_SelectionChanged">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Imóvel" Binding="{Binding Imovel}" Width="2*" />
+                                    <DataGridTextColumn Header="Código" Binding="{Binding ChaveCodigo}" Width="*" />
+                                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
+                                    <DataGridTextColumn Header="Retirado por" Binding="{Binding RetiradoPorNome}" Width="1.4*" />
+                                    <DataGridTextColumn Header="Telefone" Binding="{Binding RetiradoPorTelefone}" Width="*" />
+                                    <DataGridTextColumn Header="Relação" Binding="{Binding RetiradoPorRelacao}" Width="*" />
+                                    <DataGridTextColumn Header="Motivo" Binding="{Binding Motivo}" Width="1.4*" />
+                                    <DataGridTextColumn Header="Retirado em" Binding="{Binding RetiradoEm, StringFormat=dd/MM/yyyy HH:mm}" Width="1.1*" />
+                                    <DataGridTextColumn Header="Previsão" Binding="{Binding PrevisaoDevolucaoEm, StringFormat=dd/MM/yyyy HH:mm}" Width="1.1*" />
+                                    <DataGridTextColumn Header="Devolvido em" Binding="{Binding DevolvidoEm, StringFormat=dd/MM/yyyy HH:mm}" Width="1.1*" />
+                                    <DataGridTextColumn Header="Observações" Binding="{Binding Observacoes}" Width="1.6*" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+                        <Grid Grid.Row="3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource CardBorder}" Margin="0,0,14,0">
+                                <StackPanel>
+                                    <TextBlock Text="Registrar retirada" FontSize="18" FontWeight="SemiBold" />
+                                    <WrapPanel Margin="0,12,0,0">
+                                        <StackPanel Width="320" Margin="0,0,14,12">
+                                            <TextBlock Text="Imóvel" FontWeight="SemiBold" />
+                                            <ComboBox x:Name="ChavesImovelBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Width="130" Margin="0,0,14,12">
+                                            <TextBlock Text="Código" FontWeight="SemiBold" />
+                                            <TextBox x:Name="ChavesCodigoBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Width="210" Margin="0,0,14,12">
+                                            <TextBlock Text="Retirado por" FontWeight="SemiBold" />
+                                            <TextBox x:Name="ChavesRetiradoPorNomeBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Width="160" Margin="0,0,14,12">
+                                            <TextBlock Text="Telefone" FontWeight="SemiBold" />
+                                            <TextBox x:Name="ChavesRetiradoPorTelefoneBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Width="150" Margin="0,0,14,12">
+                                            <TextBlock Text="Documento" FontWeight="SemiBold" />
+                                            <TextBox x:Name="ChavesRetiradoPorDocumentoBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Width="160" Margin="0,0,14,12">
+                                            <TextBlock Text="Relação" FontWeight="SemiBold" />
+                                            <TextBox x:Name="ChavesRetiradoPorRelacaoBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Width="190" Margin="0,0,14,12">
+                                            <TextBlock Text="Previsão de devolução" FontWeight="SemiBold" />
+                                            <DatePicker x:Name="ChavesPrevisaoBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Width="260" Margin="0,0,14,12">
+                                            <TextBlock Text="Motivo" FontWeight="SemiBold" />
+                                            <TextBox x:Name="ChavesMotivoBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                        <StackPanel Width="360" Margin="0,0,14,12">
+                                            <TextBlock Text="Observações" FontWeight="SemiBold" />
+                                            <TextBox x:Name="ChavesObservacoesBox" Margin="0,6,0,0" />
+                                        </StackPanel>
+                                    </WrapPanel>
+                                    <Button x:Name="SaveChaveRetiradaButton" Style="{StaticResource PrimaryButtonSmall}" HorizontalAlignment="Left" Click="SaveChaveRetiradaButton_Click" Content="Registrar retirada" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Style="{StaticResource CardBorder}">
+                                <StackPanel>
+                                    <TextBlock Text="Registrar devolução" FontSize="18" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="ChavesSelectedMovimentoText" Text="Selecione uma retirada ativa na lista." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                    <TextBlock Text="Recebido por" FontWeight="SemiBold" />
+                                    <TextBox x:Name="ChavesDevolvidoParaBox" Margin="0,6,0,12" />
+                                    <TextBlock Text="Observações" FontWeight="SemiBold" />
+                                    <TextBox x:Name="ChavesDevolucaoObservacoesBox" AcceptsReturn="True" Height="64" TextWrapping="Wrap" Margin="0,6,0,12" />
+                                    <TextBlock x:Name="ChavesErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                    <Button x:Name="ReturnChaveButton" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Stretch" Click="ReturnChaveButton_Click" Content="Registrar devolução" IsEnabled="False" />
+                                </StackPanel>
                             </Border>
                         </Grid>
                     </Grid>

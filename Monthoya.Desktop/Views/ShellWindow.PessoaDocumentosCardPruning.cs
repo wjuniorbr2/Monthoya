@@ -43,6 +43,7 @@ public partial class ShellWindow
         PessoasPanel.IsVisibleChanged += (_, _) => QueuePessoaDocumentosCardPruning();
         PessoasNavButton.Click += (_, _) => QueuePessoaDocumentosCardPruning();
         SavePessoaDocumentoButton.Loaded += (_, _) => QueuePessoaDocumentosCardPruning();
+        PessoaDocumentoDonoBox.SelectionChanged += (_, _) => PessoaDocumentoDonoErrorText.Text = string.Empty;
 
         QueuePessoaDocumentosCardPruning();
         _ = QueueDelayedPessoaDocumentosCardPruningAsync();
@@ -70,7 +71,8 @@ public partial class ShellWindow
         RenamePessoaDocumentosCardTextBlock("Documentos da pessoa selecionada", "Documentos anexos");
         RemovePessoaDocumentosCardTextBlockStartingWith("Nenhum documento cadastrado para esta pessoa");
         RenamePessoaDocumentosCardTextBlock("Documentos anexos:", "Anexar mais documentos");
-        RenamePessoaDocumentosCardTextBlock("Caminho no Supabase Storage ou arquivo local", "Arquivo digitalizado");
+        RenamePessoaDocumentosCardTextBlock("Caminho no Supabase Storage ou arquivo local", "Arquivo para digitalizar");
+        RenamePessoaDocumentosCardTextBlock("Arquivo digitalizado", "Arquivo para digitalizar");
 
         RemovePessoaDocumentosCardTextBlockStartingWith("Selecione uma pessoa na lista para vincular documentos");
         RemovePessoaDocumentosCardTextBlockStartingWith("OCR local será tentado ao registrar");
@@ -84,6 +86,9 @@ public partial class ShellWindow
             PessoaDocumentoTipoBox.SelectedIndex = 0;
         }
 
+        RemovePessoaDocumentosCardLabelBefore(PessoaDocumentoNomeBox, "Descrição");
+        RemovePessoaDocumentosCardControl(PessoaDocumentoNomeBox);
+
         RemovePessoaDocumentosGridColumn("OCR");
         RemovePessoaDocumentosGridColumn("Caminho");
 
@@ -96,6 +101,8 @@ public partial class ShellWindow
     {
         PessoaDocumentoArquivoBox.IsReadOnly = true;
         PessoaDocumentoArquivoBox.ToolTip = "Arquivo local selecionado. O sistema envia o arquivo para o armazenamento configurado ao adicionar o documento.";
+        PessoaDocumentoObservacoesBox.Margin = new Thickness(0, 6, 0, 6);
+        PessoaDocumentoErrorText.Margin = new Thickness(0, 0, 0, 6);
 
         if (PessoaDocumentoArquivoBox.Parent is not Panel parent)
         {
@@ -115,7 +122,7 @@ public partial class ShellWindow
                 Content = "Selecionar arquivo",
                 HorizontalAlignment = HorizontalAlignment.Stretch,
                 Margin = new Thickness(0, 0, 0, 6),
-                ToolTip = "Escolha uma imagem para OCR inteligente ou um TXT para fallback local."
+                ToolTip = "Escolha PDF ou imagem para OCR inteligente, ou TXT para fallback local."
             };
             _selecionarPessoaDocumentoArquivoButton.Click += SelecionarPessoaDocumentoArquivoButton_Click;
             parent.Children.Insert(index + 1, _selecionarPessoaDocumentoArquivoButton);
@@ -135,21 +142,30 @@ public partial class ShellWindow
             parent.Children.Insert(parent.Children.IndexOf(_selecionarPessoaDocumentoArquivoButton) + 1, _pessoaDocumentoArquivoTiposText);
         }
 
-        _pessoaDocumentoArquivoTiposText.Text = "Arquivos aceitos: PNG, JPG, JPEG, BMP, TIF, TIFF e TXT.";
+        _pessoaDocumentoArquivoTiposText.Text = "PDF, PNG, JPG, JPEG, BMP, TIF, TIFF e TXT.";
     }
 
     private void SelecionarPessoaDocumentoArquivoButton_Click(object sender, RoutedEventArgs e)
     {
+        PessoaDocumentoDonoErrorText.Text = string.Empty;
+
         if (!_isPessoaEditing)
         {
             PessoaDocumentoErrorText.Text = "Clique em Editar para selecionar arquivos.";
             return;
         }
 
+        if (string.IsNullOrWhiteSpace(PessoaDocumentoDonoBox.SelectedValue as string))
+        {
+            PessoaDocumentoDonoErrorText.Text = "Escolha uma opção em Documento de.";
+            PessoaDocumentoDonoBox.Focus();
+            return;
+        }
+
         var dialog = new OpenFileDialog
         {
             Title = "Selecionar documento digitalizado",
-            Filter = "Documentos aceitos|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.txt|Imagens|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff|Texto|*.txt|Todos os arquivos|*.*",
+            Filter = "Documentos aceitos|*.pdf;*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff;*.txt|PDF|*.pdf|Imagens|*.png;*.jpg;*.jpeg;*.bmp;*.tif;*.tiff|Texto|*.txt|Todos os arquivos|*.*",
             CheckFileExists = true,
             Multiselect = false
         };

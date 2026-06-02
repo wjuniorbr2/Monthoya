@@ -107,6 +107,24 @@ public sealed class ConfiguredFileStorageService(IConfiguration configuration) :
         return new FileStorageSignedUrl(signedUrl, DateTimeOffset.UtcNow.Add(effectiveExpiresIn));
     }
 
+    public async Task DeleteAsync(string storagePath, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(storagePath)
+            || Uri.TryCreate(storagePath, UriKind.Absolute, out _)
+            || Path.IsPathRooted(storagePath))
+        {
+            return;
+        }
+
+        if (UseSupabase())
+        {
+            await DeleteFromSupabaseAsync(storagePath, cancellationToken);
+            return;
+        }
+
+        DeleteFromLocalStorage(storagePath);
+    }
+
     public static string SanitizeFileName(string fileName)
     {
         var safeFileName = Path.GetFileName(fileName);
@@ -158,6 +176,25 @@ public sealed class ConfiguredFileStorageService(IConfiguration configuration) :
         Directory.CreateDirectory(Path.GetDirectoryName(localPath)!);
         await using var output = File.Create(localPath);
         await content.CopyToAsync(output, cancellationToken);
+    }
+
+    private async Task DeleteFromSupabaseAsync(string storagePath, CancellationToken cancellationToken)
+    {
+        var (bucket, objectPath) = SplitStoragePath(storagePath);
+        using var request = CreateSupabaseRequest(HttpMethod.Delete, $"object/{bucket}/{objectPath}");
+        using var response = await HttpClient.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+    }
+
+    private void DeleteFromLocalStorage(string storagePath)
+    {
+        var localPath = GetLocalStoragePath(storagePath);
+        if (!File.Exists(localPath))
+        {
+            return;
+        }
+
+        File.Delete(localPath);
     }
 
     private HttpRequestMessage CreateSupabaseRequest(HttpMethod method, string relativePath)

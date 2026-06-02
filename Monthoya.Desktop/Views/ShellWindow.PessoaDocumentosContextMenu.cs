@@ -40,6 +40,12 @@ public partial class ShellWindow
         PessoaDocumentosGrid.ContextMenu = BuildPessoaDocumentosContextMenu();
     }
 
+    private void SetPessoaDocumentosListMessage(string message)
+    {
+        PessoaDocumentosListErrorText.Text = message;
+        PessoaDocumentoErrorText.Text = string.Empty;
+    }
+
     private ContextMenu BuildPessoaDocumentosContextMenu()
     {
         var menu = new ContextMenu();
@@ -49,13 +55,13 @@ public partial class ShellWindow
         menu.Items.Add(useDataItem);
 
         var openItem = new MenuItem { Header = "Abrir documento" };
-        openItem.Click += OpenPessoaDocumentoMenuItem_Click;
+        openItem.Click += OpenPessoaDocumentoFromListMenuItem_Click;
         menu.Items.Add(openItem);
 
         menu.Items.Add(new Separator());
 
         var removeItem = new MenuItem { Header = "Remover documento" };
-        removeItem.Click += RemovePessoaDocumentoMenuItem_Click;
+        removeItem.Click += RemovePessoaDocumentoFromListMenuItem_Click;
         menu.Items.Add(removeItem);
 
         menu.Opened += (_, _) =>
@@ -112,7 +118,24 @@ public partial class ShellWindow
                     return;
                 }
 
-                var geminiData = storedData ?? await GeminiDocumentDataReader.ExtractAsync(document.StoragePath);
+                GeminiDocumentData geminiData;
+                if (storedData is not null)
+                {
+                    geminiData = storedData;
+                }
+                else
+                {
+                    var localFile = await PreparePessoaDocumentoLocalFileAsync(document);
+                    try
+                    {
+                        geminiData = await GeminiDocumentDataReader.ExtractAsync(localFile.Path);
+                    }
+                    finally
+                    {
+                        TryDeletePessoaDocumentoLocalFile(localFile);
+                    }
+                }
+
                 if (storedData is null)
                 {
                     await StorePessoaDocumentoOcrResultAsync(document, geminiData.RawJson, succeeded: true);
@@ -132,7 +155,15 @@ public partial class ShellWindow
                 var rawText = document.OcrTextoExtraido;
                 if (string.IsNullOrWhiteSpace(rawText))
                 {
-                    rawText = await ExtractPessoaDocumentoTextForFormAsync(document.StoragePath, GuessPessoaDocumentoContentType(document.StoragePath));
+                    var localFile = await PreparePessoaDocumentoLocalFileAsync(document);
+                    try
+                    {
+                        rawText = await ExtractPessoaDocumentoTextForFormAsync(localFile.Path, GuessPessoaDocumentoContentType(localFile.Path));
+                    }
+                    finally
+                    {
+                        TryDeletePessoaDocumentoLocalFile(localFile);
+                    }
                 }
 
                 ShowPessoaDocumentoOcrDebugText(document.Nome, NormalizeDocumentoDeFromDisplay(document.DocumentoDe), rawText);
@@ -297,6 +328,85 @@ public partial class ShellWindow
         }
     }
 
+    private async void OpenPessoaDocumentoFromListMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        PessoaDocumentosListErrorText.Text = string.Empty;
+
+        if (PessoaDocumentosGrid.SelectedItem is not PessoaDocumentoSummary document)
+        {
+            return;
+        }
+
+        try
+        {
+            var openTarget = document.Id == Guid.Empty
+                ? document.StoragePath
+                : await _rentalManagementService.GetPessoaDocumentoOpenTargetAsync(document.Id);
+
+            if (Path.IsPathRooted(openTarget) && !File.Exists(openTarget))
+            {
+                SetPessoaDocumentosListMessage("O arquivo do documento não foi encontrado no computador.");
+                return;
+            }
+
+            Process.Start(new ProcessStartInfo(openTarget) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetPessoaDocumentosListMessage(ex.Message);
+        }
+    }
+
+    private async void RemovePessoaDocumentoFromListMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        PessoaDocumentosListErrorText.Text = string.Empty;
+        PessoaDocumentoErrorText.Text = string.Empty;
+
+        if (!_isPessoaEditing)
+        {
+            SetPessoaDocumentosListMessage("Clique em Editar antes de remover documentos.");
+            return;
+        }
+
+        if (PessoaDocumentosGrid.SelectedItem is not PessoaDocumentoSummary document)
+        {
+            return;
+        }
+
+        var result = MessageBox.Show(
+            this,
+            $"Deseja remover o documento '{document.Nome}'?",
+            "Remover documento",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            if (document.Id == Guid.Empty)
+            {
+                RemovePendingPessoaDocumento(document);
+                RefreshPendingPessoaDocumentosGrid();
+            }
+            else
+            {
+                await _rentalManagementService.DeletePessoaDocumentoAsync(document.Id);
+                await LoadPessoaDocumentosAsync(_selectedPessoaId);
+            }
+
+            SetPessoaDocumentosListMessage("Documento removido.");
+            QueuePessoaDocumentosCardPruning();
+        }
+        catch (Exception ex)
+        {
+            SetPessoaDocumentosListMessage(ex.Message);
+        }
+    }
+
     private void OpenPessoaDocumentoMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (PessoaDocumentosGrid.SelectedItem is not PessoaDocumentoSummary document)
@@ -363,7 +473,7 @@ public partial class ShellWindow
     {
         var index = _pendingPessoaDocumentos.FindIndex(draft =>
             string.Equals(draft.Nome, document.Nome, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(Path.GetFileName(draft.StoragePath), document.StoragePath, StringComparison.OrdinalIgnoreCase));
+            && string.Equals(Path.GetFileName(draft.StoragePath), Path.GetFileName(document.StoragePath), StringComparison.OrdinalIgnoreCase));
 
         if (index >= 0)
         {

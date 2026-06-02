@@ -117,13 +117,22 @@ public partial class ShellWindow
                     continue;
                 }
 
-                if (!File.Exists(document.StoragePath))
+                if (Path.IsPathRooted(document.StoragePath) && !File.Exists(document.StoragePath))
                 {
                     errors.Add($"{document.Nome}: arquivo não encontrado.");
                     continue;
                 }
 
-                var data = await GeminiDocumentDataReader.ExtractAsync(document.StoragePath);
+                var localFile = await PreparePessoaDocumentoLocalFileAsync(document);
+                GeminiDocumentData data;
+                try
+                {
+                    data = await GeminiDocumentDataReader.ExtractAsync(localFile.Path);
+                }
+                finally
+                {
+                    TryDeletePessoaDocumentoLocalFile(localFile);
+                }
                 results.Add((document, data));
                 await StorePessoaDocumentoOcrResultAsync(document, data.RawJson, succeeded: true);
             }
@@ -169,14 +178,28 @@ public partial class ShellWindow
         var processed = 0;
         foreach (var document in documents)
         {
-            if (!File.Exists(document.StoragePath) && string.IsNullOrWhiteSpace(document.OcrTextoExtraido))
+            if (Path.IsPathRooted(document.StoragePath) && !File.Exists(document.StoragePath) && string.IsNullOrWhiteSpace(document.OcrTextoExtraido))
             {
                 continue;
             }
 
-            var rawText = string.IsNullOrWhiteSpace(document.OcrTextoExtraido)
-                ? await ExtractPessoaDocumentoTextForFormAsync(document.StoragePath, GuessPessoaDocumentoContentType(document.StoragePath))
-                : document.OcrTextoExtraido;
+            string? rawText;
+            if (string.IsNullOrWhiteSpace(document.OcrTextoExtraido))
+            {
+                var localFile = await PreparePessoaDocumentoLocalFileAsync(document);
+                try
+                {
+                    rawText = await ExtractPessoaDocumentoTextForFormAsync(localFile.Path, GuessPessoaDocumentoContentType(localFile.Path));
+                }
+                finally
+                {
+                    TryDeletePessoaDocumentoLocalFile(localFile);
+                }
+            }
+            else
+            {
+                rawText = document.OcrTextoExtraido;
+            }
 
             if (string.IsNullOrWhiteSpace(rawText))
             {

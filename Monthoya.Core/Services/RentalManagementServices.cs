@@ -12,9 +12,17 @@ public interface IRentalManagementService
     Task<PessoaDocumentoSummary> CreatePessoaDocumentoAsync(CreatePessoaDocumentoRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosAsync(Guid? pessoaId = null, CancellationToken cancellationToken = default);
     Task<PessoaDocumentoSummary> UpdatePessoaDocumentoOcrAsync(UpdatePessoaDocumentoOcrRequest request, CancellationToken cancellationToken = default);
+    Task DeletePessoaDocumentoAsync(Guid documentoId, CancellationToken cancellationToken = default);
+    Task<string> GetPessoaDocumentoOpenTargetAsync(Guid documentoId, CancellationToken cancellationToken = default);
     Task<PessoaContratoAutofillContext?> GetPessoaContratoAutofillContextAsync(Guid pessoaId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ImovelSummary>> GetImoveisAsync(CancellationToken cancellationToken = default);
+    Task<ImovelDetails?> GetImovelAsync(Guid imovelId, CancellationToken cancellationToken = default);
     Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default);
+    Task<ImovelSummary> UpdateImovelAsync(UpdateImovelRequest request, CancellationToken cancellationToken = default);
+    Task SetImovelActiveAsync(Guid imovelId, bool isActive, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ImovelChaveMovimentoSummary>> GetImovelChaveMovimentosAsync(Guid? imovelId = null, CancellationToken cancellationToken = default);
+    Task<ImovelChaveMovimentoSummary> CreateImovelChaveMovimentoAsync(CreateImovelChaveMovimentoRequest request, CancellationToken cancellationToken = default);
+    Task<ImovelChaveMovimentoSummary> ReturnImovelChaveMovimentoAsync(ReturnImovelChaveMovimentoRequest request, CancellationToken cancellationToken = default);
     Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default);
@@ -25,7 +33,8 @@ public interface IRentalManagementService
     Task<IReadOnlyList<DocumentoModeloSummary>> GetDocumentoModelosAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<DimobDeclaracaoSummary>> GetDimobDeclaracoesAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ManutencaoSummary>> GetManutencoesAsync(CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<VistoriaSummary>> GetVistoriasAsync(CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<VistoriaSummary>> GetVistoriasAsync(Guid? imovelId = null, CancellationToken cancellationToken = default);
+    Task<VistoriaSummary> CreateVistoriaAsync(CreateVistoriaRequest request, CancellationToken cancellationToken = default);
 }
 
 public sealed record CreatePessoaRequest(
@@ -151,6 +160,7 @@ public sealed record UpdatePessoaDocumentoOcrRequest(
     string? CamposAplicados = null);
 
 public sealed record UpdatePessoaRequest(Guid Id, CreatePessoaRequest Pessoa);
+public sealed record UpdateImovelRequest(Guid Id, CreateImovelRequest Imovel);
 
 public sealed record CreateImovelRequest(
     Guid ProprietarioId,
@@ -171,14 +181,75 @@ public sealed record CreateImovelRequest(
     string? Descricao = null,
     decimal? ValorVenda = null,
     decimal? Latitude = null,
-    decimal? Longitude = null);
+    decimal? Longitude = null,
+    ImovelStatus Status = ImovelStatus.Disponivel,
+    decimal? ValorCondominio = null,
+    decimal? ValorIptu = null,
+    int? Quartos = null,
+    int? Suites = null,
+    int? Banheiros = null,
+    int? VagasGaragem = null,
+    decimal? AreaConstruida = null,
+    decimal? AreaTerreno = null,
+    bool? Mobiliado = null,
+    bool? AceitaPets = null,
+    string? DescricaoInterna = null,
+    string? DescricaoPublica = null,
+    bool PublicarNoSite = false,
+    bool PublicarNoApp = false,
+    bool Destaque = false,
+    bool MostrarEnderecoCompletoPublicamente = false,
+    ImovelEnderecoPublicoModo ModoExibicaoEnderecoPublico = ImovelEnderecoPublicoModo.BairroCidade,
+    ImovelChavePosse ChavePosse = ImovelChavePosse.NaoCadastrada,
+    string? ChaveCodigo = null,
+    string? ChaveQuemTem = null,
+    string? ChaveTelefone = null,
+    string? ChaveContatoNome = null,
+    string? ChaveContatoDocumento = null,
+    string? ChaveLocalRetirada = null,
+    string? ChaveMelhorHorario = null,
+    bool ChaveAutorizacaoNecessaria = false,
+    string? ChaveObservacoes = null);
 
 public sealed record CreateImovelImagemRequest(
     Guid ImovelId,
     string FileName,
     string StoragePath,
     string? ContentType,
-    int DisplayOrder = 0);
+    int DisplayOrder = 0,
+    string? Caption = null,
+    bool IsCover = false,
+    bool IsPublic = false,
+    ImovelMediaCategory MediaCategory = ImovelMediaCategory.PropertyPhoto,
+    ImovelMediaSource Source = ImovelMediaSource.Windows);
+
+public sealed record CreateImovelChaveMovimentoRequest(
+    Guid ImovelId,
+    string? ChaveCodigo,
+    ImovelChaveMovimentoTipo Tipo,
+    string? RetiradoPorNome,
+    string? RetiradoPorTelefone,
+    string? RetiradoPorDocumento,
+    string? RetiradoPorRelacao,
+    string? Motivo,
+    DateTimeOffset? RetiradoEm,
+    DateTimeOffset? PrevisaoDevolucaoEm,
+    string? Observacoes);
+
+public sealed record ReturnImovelChaveMovimentoRequest(
+    Guid MovimentoId,
+    string? DevolvidoParaNome,
+    string? Observacoes);
+
+public sealed record CreateVistoriaRequest(
+    Guid ImovelId,
+    Guid? LocacaoId,
+    VistoriaTipo Tipo,
+    DateOnly DataVistoria,
+    string? Responsavel,
+    VistoriaStatus WorkflowStatus,
+    string? DescricaoGeral,
+    string? Observacoes);
 
 public sealed record PessoaSummary(
     Guid Id,
@@ -217,8 +288,49 @@ public sealed record PessoaContratoAutofillContext(
     PessoaSummary Pessoa,
     IReadOnlyList<PessoaDocumentoSummary> Documentos,
     string TextoDocumentosOcr);
-public sealed record ImovelSummary(Guid Id, string Endereco, string? Bairro, string Proprietario, string Finalidade, string Status, decimal? ValorAluguel);
-public sealed record ImovelImagemSummary(Guid Id, Guid ImovelId, string FileName, string StoragePath, string? ContentType, int DisplayOrder, string Status);
+public sealed record ImovelSummary(
+    Guid Id,
+    string Endereco,
+    string? Bairro,
+    string Proprietario,
+    string? TipoImovel,
+    string Finalidade,
+    string Status,
+    string Chaves,
+    string Publicacao,
+    decimal? ValorAluguel,
+    decimal? ValorVenda);
+public sealed record ImovelDetails(ImovelSummary Summary, CreateImovelRequest Dados);
+public sealed record ImovelImagemSummary(
+    Guid Id,
+    Guid ImovelId,
+    string FileName,
+    string StoragePath,
+    string? ContentType,
+    int DisplayOrder,
+    string? Caption,
+    bool IsCover,
+    bool IsPublic,
+    string MediaCategory,
+    string Source,
+    string Status);
+public sealed record ImovelChaveMovimentoSummary(
+    Guid Id,
+    Guid ImovelId,
+    string Imovel,
+    string Tipo,
+    string Status,
+    string? ChaveCodigo,
+    string? RetiradoPorNome,
+    string? RetiradoPorTelefone,
+    string? RetiradoPorDocumento,
+    string? RetiradoPorRelacao,
+    string? Motivo,
+    DateTimeOffset? RetiradoEm,
+    DateTimeOffset? PrevisaoDevolucaoEm,
+    DateTimeOffset? DevolvidoEm,
+    string? DevolvidoParaNome,
+    string? Observacoes);
 public sealed record LocacaoSummary(Guid Id, string Imovel, string Proprietario, string Locatario, string Fiadores, decimal ValorAluguel, string Status);
 public sealed record IndiceReajusteSummary(Guid Id, string Nome, string Codigo, string Tipo, decimal? Percentual, string Ativo);
 public sealed record FinanceiroSummary(Guid Id, string Tipo, string Categoria, string Descricao, decimal Valor, DateOnly DataVencimento, string Status);
@@ -227,7 +339,7 @@ public sealed record NotaFiscalSummary(Guid Id, string Status, decimal ValorServ
 public sealed record DocumentoModeloSummary(Guid Id, string Tipo, string Nome, string StatusRevisao, string Ativo);
 public sealed record DimobDeclaracaoSummary(Guid Id, int AnoCalendario, string Status, string? Observacoes);
 public sealed record ManutencaoSummary(Guid Id, string Descricao, string Status, DateOnly DataSolicitacao, decimal? Valor);
-public sealed record VistoriaSummary(Guid Id, string Tipo, DateOnly DataVistoria, string? Responsavel, string? Status);
+public sealed record VistoriaSummary(Guid Id, Guid ImovelId, string Imovel, string Tipo, DateOnly DataVistoria, string? Responsavel, string? Status, string? Observacoes);
 
 public interface IBoletoProvider
 {

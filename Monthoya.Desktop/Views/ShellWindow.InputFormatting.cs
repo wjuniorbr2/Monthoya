@@ -31,7 +31,8 @@ public partial class ShellWindow
         {
             PessoaDocumentoBox, PessoaConjugeCpfBox, PessoaResponsavelCpfBox,
             PessoaTelefoneBox, PessoaConjugeTelefoneBox, PessoaResponsavelTelefoneBox, PessoaTelefoneEmpresaTrabalhoBox, PessoaResponsavelTelefoneEmpresaTrabalhoBox,
-            PessoaCepBox, PessoaEmpresaCepBox, PessoaResponsavelCepBox,
+            ImovelChaveTelefoneBox, ChavesRetiradoPorTelefoneBox,
+            PessoaCepBox, PessoaEmpresaCepBox, PessoaResponsavelCepBox, ImovelCepBox,
             PessoaRgBox, PessoaConjugeRgBox, PessoaResponsavelRgBox
         })
         {
@@ -47,32 +48,46 @@ public partial class ShellWindow
         PessoaResponsavelTelefoneBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelTelefoneBox, FormatBrazilPhone);
         PessoaTelefoneEmpresaTrabalhoBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaTelefoneEmpresaTrabalhoBox, FormatBrazilPhone);
         PessoaResponsavelTelefoneEmpresaTrabalhoBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelTelefoneEmpresaTrabalhoBox, FormatBrazilPhone);
+        ImovelChaveTelefoneBox.TextChanged += (_, _) => FormatMaskedTextBox(ImovelChaveTelefoneBox, FormatBrazilPhone);
+        ChavesRetiradoPorTelefoneBox.TextChanged += (_, _) => FormatMaskedTextBox(ChavesRetiradoPorTelefoneBox, FormatBrazilPhone);
+
+        foreach (var textBox in new[] { ImovelValorAluguelBox, ImovelValorVendaBox, ImovelValorCondominioBox, ImovelValorIptuBox, ImovelAreaConstruidaBox, ImovelAreaTerrenoBox })
+        {
+            textBox.PreviewTextInput += DecimalTextBox_PreviewTextInput;
+            DataObject.AddPastingHandler(textBox, DecimalTextBox_OnPaste);
+            textBox.LostKeyboardFocus += (_, _) => FormatDecimalTextBox(textBox);
+        }
         PessoaCepBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaCepBox, FormatCep);
         PessoaEmpresaCepBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaEmpresaCepBox, FormatCep);
         PessoaResponsavelCepBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelCepBox, FormatCep);
+        ImovelCepBox.TextChanged += (_, _) => FormatMaskedTextBox(ImovelCepBox, FormatCep);
         PessoaRgBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaRgBox, FormatRg);
         PessoaConjugeRgBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaConjugeRgBox, FormatRg);
         PessoaResponsavelRgBox.TextChanged += (_, _) => FormatMaskedTextBox(PessoaResponsavelRgBox, FormatRg);
         PessoaEstadoBox.TextChanged += (_, _) => ApplyTextSuggestion(PessoaEstadoBox, BrazilianAddressSuggestions.States);
         PessoaEmpresaEstadoBox.TextChanged += (_, _) => ApplyTextSuggestion(PessoaEmpresaEstadoBox, BrazilianAddressSuggestions.States);
         PessoaResponsavelEstadoBox.TextChanged += (_, _) => ApplyTextSuggestion(PessoaResponsavelEstadoBox, BrazilianAddressSuggestions.States);
+        ImovelEstadoBox.TextChanged += (_, _) => ApplyTextSuggestion(ImovelEstadoBox, BrazilianAddressSuggestions.States);
         PessoaCidadeBox.TextChanged += async (_, _) => await ApplyCitySuggestionAsync(PessoaCidadeBox, PessoaEstadoBox);
         PessoaEmpresaCidadeBox.TextChanged += async (_, _) => await ApplyCitySuggestionAsync(PessoaEmpresaCidadeBox, PessoaEmpresaEstadoBox);
         PessoaResponsavelCidadeBox.TextChanged += async (_, _) => await ApplyCitySuggestionAsync(PessoaResponsavelCidadeBox, PessoaResponsavelEstadoBox);
+        ImovelCidadeBox.TextChanged += async (_, _) => await ApplyCitySuggestionAsync(ImovelCidadeBox, ImovelEstadoBox);
         PessoaRuaBox.TextChanged += (_, _) => ApplyTextSuggestion(PessoaRuaBox, _streetSuggestions);
         PessoaEmpresaRuaBox.TextChanged += (_, _) => ApplyTextSuggestion(PessoaEmpresaRuaBox, _streetSuggestions);
         PessoaResponsavelRuaBox.TextChanged += (_, _) => ApplyTextSuggestion(PessoaResponsavelRuaBox, _streetSuggestions);
+        ImovelRuaBox.TextChanged += (_, _) => ApplyTextSuggestion(ImovelRuaBox, _streetSuggestions);
         foreach (var textBox in new[]
         {
             PessoaEstadoBox, PessoaEmpresaEstadoBox, PessoaResponsavelEstadoBox,
             PessoaCidadeBox, PessoaEmpresaCidadeBox, PessoaResponsavelCidadeBox,
-            PessoaRuaBox, PessoaEmpresaRuaBox, PessoaResponsavelRuaBox
+            PessoaRuaBox, PessoaEmpresaRuaBox, PessoaResponsavelRuaBox,
+            ImovelEstadoBox, ImovelCidadeBox, ImovelRuaBox
         })
         {
             textBox.PreviewKeyDown += AddressSuggestionTextBox_PreviewKeyDown;
         }
 
-        foreach (var datePicker in new[] { PessoaDataNascimentoBox, PessoaConjugeDataNascimentoBox, PessoaResponsavelDataNascimentoBox, PessoaDocumentoValidadeBox })
+        foreach (var datePicker in new[] { PessoaDataNascimentoBox, PessoaConjugeDataNascimentoBox, PessoaResponsavelDataNascimentoBox, PessoaDocumentoValidadeBox, ChavesPrevisaoBox })
         {
             datePicker.Language = System.Windows.Markup.XmlLanguage.GetLanguage("pt-BR");
             datePicker.SelectedDateFormat = DatePickerFormat.Short;
@@ -139,8 +154,9 @@ public partial class ShellWindow
         AttachCepLookup(PessoaResponsavelCepBox, PessoaResponsavelRuaBox, PessoaResponsavelComplementoBox, PessoaResponsavelBairroBox, PessoaResponsavelCidadeBox, PessoaResponsavelEstadoBox);
         AttachCepLookup(_pessoaTrabalhoCepBox, _pessoaTrabalhoRuaBox, _pessoaTrabalhoComplementoBox, _pessoaTrabalhoBairroBox, _pessoaTrabalhoCidadeBox, _pessoaTrabalhoEstadoBox);
         AttachCepLookup(_pessoaConjugeEmpresaCepBox, _pessoaConjugeEmpresaRuaBox, _pessoaConjugeEmpresaComplementoBox, _pessoaConjugeEmpresaBairroBox, _pessoaConjugeEmpresaCidadeBox, _pessoaConjugeEmpresaEstadoBox);
+        AttachCepLookup(ImovelCepBox, ImovelRuaBox, ImovelComplementoBox, ImovelBairroBox, ImovelCidadeBox, ImovelEstadoBox);
 
-        foreach (var ruaBox in new[] { PessoaRuaBox, PessoaEmpresaRuaBox, PessoaResponsavelRuaBox, _pessoaTrabalhoRuaBox, _pessoaConjugeEmpresaRuaBox }.OfType<TextBox>())
+        foreach (var ruaBox in new[] { PessoaRuaBox, PessoaEmpresaRuaBox, PessoaResponsavelRuaBox, _pessoaTrabalhoRuaBox, _pessoaConjugeEmpresaRuaBox, ImovelRuaBox }.OfType<TextBox>())
         {
             ruaBox.LostKeyboardFocus += RuaBox_LostKeyboardFocus;
         }
@@ -449,6 +465,40 @@ public partial class ShellWindow
 
         e.Handled = true;
         PessoaErrorText.Text = "Digite apenas números. Pontos, traços, parênteses e espaços são preenchidos automaticamente pelo sistema.";
+    }
+
+    private void DecimalTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+    {
+        if (Regex.IsMatch(e.Text, @"^[\d,.]+$"))
+        {
+            return;
+        }
+
+        e.Handled = true;
+        PessoaErrorText.Text = "Digite apenas números, vírgula ou ponto para valores.";
+    }
+
+    private void DecimalTextBox_OnPaste(object sender, DataObjectPastingEventArgs e)
+    {
+        if (!e.DataObject.GetDataPresent(DataFormats.Text))
+        {
+            return;
+        }
+
+        var text = e.DataObject.GetData(DataFormats.Text) as string ?? string.Empty;
+        if (Regex.IsMatch(text, @"^[\d,.]+$"))
+        {
+            return;
+        }
+
+        e.CancelCommand();
+        PessoaErrorText.Text = "Cole apenas números, vírgula ou ponto para valores.";
+    }
+
+    private static void FormatDecimalTextBox(TextBox textBox)
+    {
+        var value = ParseNullableDecimal(textBox.Text);
+        textBox.Text = value?.ToString("N2", CultureInfo.GetCultureInfo("pt-BR")) ?? string.Empty;
     }
 
     private void NumericMaskedTextBox_OnPaste(object sender, DataObjectPastingEventArgs e)

@@ -476,6 +476,36 @@ public sealed class RentalManagementService(
         return (await GetPessoaDocumentosCoreAsync(documento.PessoaId, cancellationToken)).Single(x => x.Id == documento.Id);
     }
 
+    public async Task DeletePessoaDocumentoAsync(Guid documentoId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var documento = await dbContext.PessoaDocumentos.SingleOrDefaultAsync(x => x.Id == documentoId, cancellationToken)
+            ?? throw new InvalidOperationException("Documento não encontrado.");
+
+        if (fileStorageService is not null)
+        {
+            await fileStorageService.DeleteAsync(documento.StoragePath, cancellationToken);
+        }
+
+        dbContext.PessoaDocumentos.Remove(documento);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<string> GetPessoaDocumentoOpenTargetAsync(Guid documentoId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var documento = await dbContext.PessoaDocumentos.AsNoTracking().SingleOrDefaultAsync(x => x.Id == documentoId, cancellationToken)
+            ?? throw new InvalidOperationException("Documento não encontrado.");
+
+        if (Path.IsPathRooted(documento.StoragePath) || fileStorageService is null)
+        {
+            return documento.StoragePath;
+        }
+
+        var signedUrl = await fileStorageService.CreateSignedReadUrlAsync(documento.StoragePath, null, cancellationToken);
+        return signedUrl.Url;
+    }
+
     public async Task<IReadOnlyList<PessoaDocumentoSummary>> GetPessoaDocumentosAsync(Guid? pessoaId = null, CancellationToken cancellationToken = default)
     {
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
@@ -554,9 +584,30 @@ public sealed class RentalManagementService(
             $"{x.Rua}, {x.Numero}".Trim().Trim(','),
             x.Bairro,
             x.Proprietario?.NomeDisplay ?? "-",
-            GetEnumLabel(x.Finalidade),
-            GetEnumLabel(x.Status),
-            x.ValorAluguel)).ToList();
+            x.TipoImovel,
+            GetImovelFinalidadeLabel(x.Finalidade),
+            GetImovelStatusLabel(x.Status),
+            GetImovelChavePosseLabel(x.ChavePosse),
+            GetImovelPublicacaoLabel(x),
+            x.ValorAluguel,
+            x.ValorVenda)).ToList();
+    }
+
+    public async Task<ImovelDetails?> GetImovelAsync(Guid imovelId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var imovel = await dbContext.Imoveis
+            .AsNoTracking()
+            .Include(x => x.Proprietario)
+            .SingleOrDefaultAsync(x => x.Id == imovelId, cancellationToken);
+
+        if (imovel is null)
+        {
+            return null;
+        }
+
+        var summary = (await GetImoveisCoreAsync(cancellationToken)).Single(x => x.Id == imovel.Id);
+        return new ImovelDetails(summary, ToImovelRequest(imovel));
     }
 
     public async Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default)
@@ -576,33 +627,172 @@ public sealed class RentalManagementService(
             .SingleOrDefaultAsync(x => x.Id == request.ProprietarioId, cancellationToken)
             ?? throw new InvalidOperationException("Proprietário não encontrado.");
 
-        var imovel = new Imovel
-        {
-            ProprietarioId = proprietario.Id,
-            Rua = request.Rua.Trim(),
-            Numero = request.Numero?.Trim(),
-            Complemento = TrimOrNull(request.Complemento),
-            Bairro = request.Bairro?.Trim(),
-            Cidade = string.IsNullOrWhiteSpace(request.Cidade) ? "Paranavaí" : request.Cidade.Trim(),
-            Estado = string.IsNullOrWhiteSpace(request.Estado) ? "PR" : request.Estado.Trim().ToUpperInvariant(),
-            Cep = TrimOrNull(request.Cep),
-            SaneparMatricula = TrimOrNull(request.SaneparMatricula),
-            CopelMatricula = TrimOrNull(request.CopelMatricula),
-            IptuMatricula = TrimOrNull(request.IptuMatricula),
-            TipoImovel = TrimOrNull(request.TipoImovel),
-            Descricao = TrimOrNull(request.Descricao),
-            ValorAluguel = request.ValorAluguel,
-            ValorVenda = request.ValorVenda,
-            Finalidade = request.Finalidade,
-            Latitude = request.Latitude,
-            Longitude = request.Longitude,
-            Observacoes = request.Observacoes?.Trim()
-        };
+        var imovel = new Imovel();
+        ApplyImovelRequest(imovel, request, proprietario.Id);
 
         dbContext.Imoveis.Add(imovel);
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return (await GetImoveisCoreAsync(cancellationToken)).Single(x => x.Id == imovel.Id);
+    }
+
+    public async Task<ImovelSummary> UpdateImovelAsync(UpdateImovelRequest request, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        if (request.Id == Guid.Empty)
+        {
+            throw new InvalidOperationException("Selecione o imóvel para editar.");
+        }
+
+        ValidateImovelRequest(request.Imovel);
+
+        var proprietario = await dbContext.Pessoas
+            .SingleOrDefaultAsync(x => x.Id == request.Imovel.ProprietarioId, cancellationToken)
+            ?? throw new InvalidOperationException("Proprietário não encontrado.");
+
+        var imovel = await dbContext.Imoveis
+            .SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
+            ?? throw new InvalidOperationException("Imóvel não encontrado.");
+
+        ApplyImovelRequest(imovel, request.Imovel, proprietario.Id);
+        imovel.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return (await GetImoveisCoreAsync(cancellationToken)).Single(x => x.Id == imovel.Id);
+    }
+
+    public async Task SetImovelActiveAsync(Guid imovelId, bool isActive, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var imovel = await dbContext.Imoveis.SingleOrDefaultAsync(x => x.Id == imovelId, cancellationToken)
+            ?? throw new InvalidOperationException("Imóvel não encontrado.");
+
+        imovel.Status = isActive ? ImovelStatus.Disponivel : ImovelStatus.Inativo;
+        imovel.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ImovelChaveMovimentoSummary>> GetImovelChaveMovimentosAsync(Guid? imovelId = null, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var query = dbContext.ImovelChaveMovimentos
+            .AsNoTracking()
+            .Include(x => x.Imovel)
+            .AsQueryable();
+
+        if (imovelId.HasValue)
+        {
+            query = query.Where(x => x.ImovelId == imovelId.Value);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var movimentos = await query
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
+        return movimentos.Select(x =>
+        {
+            var status = x.Status == ImovelChaveMovimentoStatus.Retirada
+                && x.PrevisaoDevolucaoEm.HasValue
+                && x.PrevisaoDevolucaoEm.Value < now
+                && !x.DevolvidoEm.HasValue
+                    ? "Em atraso"
+                    : GetEnumLabel(x.Status);
+
+            return new ImovelChaveMovimentoSummary(
+                x.Id,
+                x.ImovelId,
+                x.Imovel is null ? "-" : $"{x.Imovel.Rua}, {x.Imovel.Numero}".Trim().Trim(','),
+                GetImovelChaveMovimentoTipoLabel(x.Tipo),
+                status,
+                x.ChaveCodigo,
+                x.RetiradoPorNome,
+                FormatPhoneForDisplay(x.RetiradoPorTelefone),
+                x.RetiradoPorDocumento,
+                x.RetiradoPorRelacao,
+                x.Motivo,
+                x.RetiradoEm,
+                x.PrevisaoDevolucaoEm,
+                x.DevolvidoEm,
+                x.DevolvidoParaNome,
+                x.Observacoes);
+        }).ToList();
+    }
+
+    public async Task<ImovelChaveMovimentoSummary> CreateImovelChaveMovimentoAsync(CreateImovelChaveMovimentoRequest request, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        if (request.ImovelId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Selecione o imóvel da chave.");
+        }
+
+        var imovel = await dbContext.Imoveis.SingleOrDefaultAsync(x => x.Id == request.ImovelId, cancellationToken)
+            ?? throw new InvalidOperationException("Imóvel não encontrado.");
+
+        if (request.Tipo == ImovelChaveMovimentoTipo.Retirada)
+        {
+            if (string.IsNullOrWhiteSpace(request.RetiradoPorNome))
+            {
+                throw new InvalidOperationException("Informe quem retirou a chave.");
+            }
+
+            if (!request.PrevisaoDevolucaoEm.HasValue)
+            {
+                throw new InvalidOperationException("Informe a previsão de devolução da chave.");
+            }
+        }
+
+        var movimento = new ImovelChaveMovimento
+        {
+            ImovelId = request.ImovelId,
+            ChaveCodigo = TrimOrNull(request.ChaveCodigo) ?? imovel.ChaveCodigo,
+            Tipo = request.Tipo,
+            RetiradoPorNome = TrimOrNull(request.RetiradoPorNome),
+            RetiradoPorTelefone = DigitsOrNull(request.RetiradoPorTelefone),
+            RetiradoPorDocumento = TrimOrNull(request.RetiradoPorDocumento),
+            RetiradoPorRelacao = TrimOrNull(request.RetiradoPorRelacao),
+            Motivo = TrimOrNull(request.Motivo),
+            RetiradoEm = request.RetiradoEm ?? DateTimeOffset.Now,
+            PrevisaoDevolucaoEm = request.PrevisaoDevolucaoEm,
+            Status = request.Tipo == ImovelChaveMovimentoTipo.Retirada
+                ? ImovelChaveMovimentoStatus.Retirada
+                : ImovelChaveMovimentoStatus.ComImobiliaria,
+            Observacoes = TrimOrNull(request.Observacoes)
+        };
+
+        dbContext.ImovelChaveMovimentos.Add(movimento);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return (await GetImovelChaveMovimentosAsync(request.ImovelId, cancellationToken)).Single(x => x.Id == movimento.Id);
+    }
+
+    public async Task<ImovelChaveMovimentoSummary> ReturnImovelChaveMovimentoAsync(ReturnImovelChaveMovimentoRequest request, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        if (request.MovimentoId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Selecione a retirada de chave.");
+        }
+
+        var movimento = await dbContext.ImovelChaveMovimentos
+            .SingleOrDefaultAsync(x => x.Id == request.MovimentoId, cancellationToken)
+            ?? throw new InvalidOperationException("Movimentação de chave não encontrada.");
+
+        if (movimento.DevolvidoEm.HasValue)
+        {
+            throw new InvalidOperationException("Esta chave já foi devolvida.");
+        }
+
+        movimento.Tipo = ImovelChaveMovimentoTipo.Devolucao;
+        movimento.Status = ImovelChaveMovimentoStatus.ComImobiliaria;
+        movimento.DevolvidoEm = DateTimeOffset.Now;
+        movimento.DevolvidoParaNome = TrimOrNull(request.DevolvidoParaNome);
+        movimento.Observacoes = MergeNotes(movimento.Observacoes, request.Observacoes);
+        movimento.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return (await GetImovelChaveMovimentosAsync(movimento.ImovelId, cancellationToken)).Single(x => x.Id == movimento.Id);
     }
 
     public async Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default)
@@ -624,15 +814,37 @@ public sealed class RentalManagementService(
             throw new InvalidOperationException("Imóvel não encontrado.");
         }
 
+        var isPublic = request.MediaCategory == ImovelMediaCategory.InspectionPhoto
+            ? false
+            : request.IsPublic;
+
+        if (request.IsCover)
+        {
+            var currentCovers = await dbContext.ImovelImagens
+                .Where(x => x.ImovelId == request.ImovelId && x.IsCover)
+                .ToListAsync(cancellationToken);
+
+            foreach (var currentCover in currentCovers)
+            {
+                currentCover.IsCover = false;
+                currentCover.UpdatedAtUtc = DateTimeOffset.UtcNow;
+            }
+        }
+
         var imagem = new ImovelImagem
         {
             ImovelId = request.ImovelId,
             FileName = string.IsNullOrWhiteSpace(request.FileName)
                 ? Path.GetFileName(request.StoragePath)
                 : request.FileName.Trim(),
-            StoragePath = await StoreImovelImagemAsync(request.ImovelId, request.StoragePath.Trim(), request.ContentType, cancellationToken),
+            StoragePath = await StoreImovelImagemAsync(request.ImovelId, request.StoragePath.Trim(), request.ContentType, request.MediaCategory, cancellationToken),
             ContentType = TrimOrNull(request.ContentType),
-            DisplayOrder = request.DisplayOrder
+            DisplayOrder = request.DisplayOrder,
+            Caption = TrimOrNull(request.Caption),
+            IsCover = request.IsCover,
+            IsPublic = isPublic,
+            MediaCategory = request.MediaCategory,
+            Source = request.Source
         };
 
         dbContext.Set<ImovelImagem>().Add(imagem);
@@ -661,6 +873,11 @@ public sealed class RentalManagementService(
                 x.StoragePath,
                 x.ContentType,
                 x.DisplayOrder,
+                x.Caption,
+                x.IsCover,
+                x.IsPublic,
+                GetImovelMediaCategoryLabel(x.MediaCategory),
+                GetImovelMediaSourceLabel(x.Source),
                 x.Status == RegistroStatus.Ativo ? "Ativo" : "Inativo"))
             .ToListAsync(cancellationToken);
     }
@@ -744,12 +961,64 @@ public sealed class RentalManagementService(
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<VistoriaSummary>> GetVistoriasAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<VistoriaSummary>> GetVistoriasAsync(Guid? imovelId = null, CancellationToken cancellationToken = default)
     {
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
-        return await dbContext.Vistorias.AsNoTracking().OrderByDescending(x => x.DataVistoria)
-            .Select(x => new VistoriaSummary(x.Id, x.Tipo.ToString(), x.DataVistoria, x.Responsavel, x.Status))
+        var query = dbContext.Vistorias
+            .AsNoTracking()
+            .Include(x => x.Imovel)
+            .AsQueryable();
+
+        if (imovelId.HasValue)
+        {
+            query = query.Where(x => x.ImovelId == imovelId.Value);
+        }
+
+        return await query.OrderByDescending(x => x.DataVistoria)
+            .Select(x => new VistoriaSummary(
+                x.Id,
+                x.ImovelId,
+                x.Imovel == null ? "-" : (x.Imovel.Rua + ", " + x.Imovel.Numero).Trim().Trim(','),
+                GetVistoriaTipoLabel(x.Tipo),
+                x.DataVistoria,
+                x.Responsavel,
+                GetVistoriaStatusLabel(x.WorkflowStatus),
+                x.Observacoes))
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<VistoriaSummary> CreateVistoriaAsync(CreateVistoriaRequest request, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        if (request.ImovelId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Selecione o imóvel da vistoria.");
+        }
+
+        var imovelExists = await dbContext.Imoveis.AnyAsync(x => x.Id == request.ImovelId, cancellationToken);
+        if (!imovelExists)
+        {
+            throw new InvalidOperationException("Imóvel não encontrado.");
+        }
+
+        var vistoria = new Vistoria
+        {
+            ImovelId = request.ImovelId,
+            LocacaoId = request.LocacaoId,
+            Tipo = request.Tipo,
+            DataVistoria = request.DataVistoria,
+            Responsavel = TrimOrNull(request.Responsavel),
+            WorkflowStatus = request.WorkflowStatus,
+            Status = GetVistoriaStatusLabel(request.WorkflowStatus),
+            Descricao = TrimOrNull(request.DescricaoGeral),
+            DescricaoGeral = TrimOrNull(request.DescricaoGeral),
+            Observacoes = TrimOrNull(request.Observacoes)
+        };
+
+        dbContext.Vistorias.Add(vistoria);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return (await GetVistoriasAsync(request.ImovelId, cancellationToken)).Single(x => x.Id == vistoria.Id);
     }
 
     private async Task<string> StorePessoaDocumentoAsync(
@@ -780,6 +1049,7 @@ public sealed class RentalManagementService(
         Guid imovelId,
         string storagePath,
         string? contentType,
+        ImovelMediaCategory category,
         CancellationToken cancellationToken)
     {
         if (fileStorageService is null || !File.Exists(storagePath))
@@ -790,7 +1060,15 @@ public sealed class RentalManagementService(
         var imageId = Guid.NewGuid();
         var fileName = Path.GetFileName(storagePath);
         var safeFileName = ConfiguredFileStorageService.SanitizeFileName(fileName);
-        var objectPath = $"imoveis/{imovelId}/fotos/{imageId}/{safeFileName}";
+        var folder = category switch
+        {
+            ImovelMediaCategory.Document => "documentos",
+            ImovelMediaCategory.InspectionPhoto => "vistorias",
+            ImovelMediaCategory.MaintenancePhoto => "manutencoes",
+            ImovelMediaCategory.Other => "outros",
+            _ => "fotos"
+        };
+        var objectPath = $"imoveis/{imovelId}/{folder}/{imageId}/{safeFileName}";
         await using var stream = File.OpenRead(storagePath);
         var stored = await fileStorageService.SaveAsync(
             stream,
@@ -1180,6 +1458,244 @@ public sealed class RentalManagementService(
             "conjuge" => "Cônjuge",
             "empresa_trabalho" => "Empresa onde trabalha",
             _ => "Pessoa"
+        };
+
+    private static string GetImovelPublicacaoLabel(Imovel imovel)
+    {
+        if (imovel.PublicarNoSite && imovel.PublicarNoApp)
+        {
+            return imovel.Destaque ? "Site/App - destaque" : "Site/App";
+        }
+
+        if (imovel.PublicarNoSite)
+        {
+            return imovel.Destaque ? "Site - destaque" : "Site";
+        }
+
+        if (imovel.PublicarNoApp)
+        {
+            return imovel.Destaque ? "App - destaque" : "App";
+        }
+
+        return "Privado";
+    }
+
+    private static void ValidateImovelRequest(CreateImovelRequest request)
+    {
+        if (request.ProprietarioId == Guid.Empty)
+        {
+            throw new InvalidOperationException("Selecione um proprietário.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Rua))
+        {
+            throw new InvalidOperationException("Informe a rua do imóvel.");
+        }
+    }
+
+    private static void ApplyImovelRequest(Imovel imovel, CreateImovelRequest request, Guid proprietarioId)
+    {
+        imovel.ProprietarioId = proprietarioId;
+        imovel.Rua = request.Rua.Trim();
+        imovel.Numero = TrimOrNull(request.Numero);
+        imovel.Complemento = TrimOrNull(request.Complemento);
+        imovel.Bairro = TrimOrNull(request.Bairro);
+        imovel.Cidade = string.IsNullOrWhiteSpace(request.Cidade) ? "Paranavaí" : request.Cidade.Trim();
+        imovel.Estado = string.IsNullOrWhiteSpace(request.Estado) ? "PR" : request.Estado.Trim().ToUpperInvariant();
+        imovel.Cep = TrimOrNull(request.Cep);
+        imovel.SaneparMatricula = TrimOrNull(request.SaneparMatricula);
+        imovel.CopelMatricula = TrimOrNull(request.CopelMatricula);
+        imovel.IptuMatricula = TrimOrNull(request.IptuMatricula);
+        imovel.TipoImovel = TrimOrNull(request.TipoImovel);
+        imovel.Descricao = TrimOrNull(request.Descricao);
+        imovel.DescricaoInterna = TrimOrNull(request.DescricaoInterna) ?? TrimOrNull(request.Descricao);
+        imovel.DescricaoPublica = TrimOrNull(request.DescricaoPublica);
+        imovel.ValorAluguel = request.ValorAluguel;
+        imovel.ValorVenda = request.ValorVenda;
+        imovel.ValorCondominio = request.ValorCondominio;
+        imovel.ValorIptu = request.ValorIptu;
+        imovel.Finalidade = request.Finalidade;
+        imovel.Status = request.Status;
+        imovel.Latitude = request.Latitude;
+        imovel.Longitude = request.Longitude;
+        imovel.Quartos = request.Quartos;
+        imovel.Suites = request.Suites;
+        imovel.Banheiros = request.Banheiros;
+        imovel.VagasGaragem = request.VagasGaragem;
+        imovel.AreaConstruida = request.AreaConstruida;
+        imovel.AreaTerreno = request.AreaTerreno;
+        imovel.Mobiliado = request.Mobiliado;
+        imovel.AceitaPets = request.AceitaPets;
+        imovel.PublicarNoSite = request.PublicarNoSite;
+        imovel.PublicarNoApp = request.PublicarNoApp;
+        imovel.Destaque = request.Destaque;
+        imovel.MostrarEnderecoCompletoPublicamente = request.MostrarEnderecoCompletoPublicamente;
+        imovel.ModoExibicaoEnderecoPublico = request.ModoExibicaoEnderecoPublico;
+        imovel.ChavePosse = request.ChavePosse;
+        imovel.ChaveCodigo = TrimOrNull(request.ChaveCodigo);
+        imovel.ChaveQuemTem = TrimOrNull(request.ChaveQuemTem);
+        imovel.ChaveTelefone = DigitsOrNull(request.ChaveTelefone);
+        imovel.ChaveContatoNome = TrimOrNull(request.ChaveContatoNome);
+        imovel.ChaveContatoDocumento = TrimOrNull(request.ChaveContatoDocumento);
+        imovel.ChaveLocalRetirada = TrimOrNull(request.ChaveLocalRetirada);
+        imovel.ChaveMelhorHorario = TrimOrNull(request.ChaveMelhorHorario);
+        imovel.ChaveAutorizacaoNecessaria = request.ChaveAutorizacaoNecessaria;
+        imovel.ChaveObservacoes = TrimOrNull(request.ChaveObservacoes);
+        imovel.Observacoes = TrimOrNull(request.Observacoes);
+    }
+
+    private static CreateImovelRequest ToImovelRequest(Imovel imovel) =>
+        new(
+            imovel.ProprietarioId,
+            imovel.Rua,
+            imovel.Numero,
+            imovel.Bairro,
+            imovel.Cidade,
+            imovel.Estado,
+            imovel.ValorAluguel,
+            imovel.Finalidade,
+            imovel.Observacoes,
+            imovel.Complemento,
+            imovel.Cep,
+            imovel.SaneparMatricula,
+            imovel.CopelMatricula,
+            imovel.IptuMatricula,
+            imovel.TipoImovel,
+            imovel.Descricao,
+            imovel.ValorVenda,
+            imovel.Latitude,
+            imovel.Longitude,
+            imovel.Status,
+            imovel.ValorCondominio,
+            imovel.ValorIptu,
+            imovel.Quartos,
+            imovel.Suites,
+            imovel.Banheiros,
+            imovel.VagasGaragem,
+            imovel.AreaConstruida,
+            imovel.AreaTerreno,
+            imovel.Mobiliado,
+            imovel.AceitaPets,
+            imovel.DescricaoInterna,
+            imovel.DescricaoPublica,
+            imovel.PublicarNoSite,
+            imovel.PublicarNoApp,
+            imovel.Destaque,
+            imovel.MostrarEnderecoCompletoPublicamente,
+            imovel.ModoExibicaoEnderecoPublico,
+            imovel.ChavePosse,
+            imovel.ChaveCodigo,
+            imovel.ChaveQuemTem,
+            FormatPhoneForDisplay(imovel.ChaveTelefone),
+            imovel.ChaveContatoNome,
+            imovel.ChaveContatoDocumento,
+            imovel.ChaveLocalRetirada,
+            imovel.ChaveMelhorHorario,
+            imovel.ChaveAutorizacaoNecessaria,
+            imovel.ChaveObservacoes);
+
+    private static string GetImovelFinalidadeLabel(ImovelFinalidade finalidade) =>
+        finalidade switch
+        {
+            ImovelFinalidade.Locacao => "Locação",
+            ImovelFinalidade.Venda => "Venda",
+            ImovelFinalidade.Ambos => "Ambos",
+            _ => finalidade.ToString()
+        };
+
+    private static string GetImovelStatusLabel(ImovelStatus status) =>
+        status switch
+        {
+            ImovelStatus.Disponivel => "Disponível",
+            ImovelStatus.Reservado => "Reservado",
+            ImovelStatus.Locado => "Locado",
+            ImovelStatus.Vendido => "Vendido",
+            ImovelStatus.Inativo => "Inativo",
+            _ => status.ToString()
+        };
+
+    private static string GetImovelChavePosseLabel(ImovelChavePosse posse) =>
+        posse switch
+        {
+            ImovelChavePosse.NaoCadastrada => "Sem chave",
+            ImovelChavePosse.Imobiliaria => "Na imobiliária",
+            ImovelChavePosse.Proprietario => "Com proprietário",
+            ImovelChavePosse.Locatario => "Com locatário",
+            ImovelChavePosse.Terceiro => "Com terceiro",
+            ImovelChavePosse.Outro => "Outro",
+            _ => posse.ToString()
+        };
+
+    private static string GetImovelChaveMovimentoTipoLabel(ImovelChaveMovimentoTipo tipo) =>
+        tipo switch
+        {
+            ImovelChaveMovimentoTipo.Retirada => "Retirada",
+            ImovelChaveMovimentoTipo.Devolucao => "Devolução",
+            ImovelChaveMovimentoTipo.Transferencia => "Transferência",
+            ImovelChaveMovimentoTipo.MarcadaPerdida => "Perdida",
+            ImovelChaveMovimentoTipo.Outro => "Outro",
+            _ => tipo.ToString()
+        };
+
+    private static string? MergeNotes(string? current, string? added)
+    {
+        if (string.IsNullOrWhiteSpace(added))
+        {
+            return TrimOrNull(current);
+        }
+
+        if (string.IsNullOrWhiteSpace(current))
+        {
+            return added.Trim();
+        }
+
+        return $"{current.Trim()}{Environment.NewLine}{added.Trim()}";
+    }
+
+    private static string GetImovelMediaCategoryLabel(ImovelMediaCategory category) =>
+        category switch
+        {
+            ImovelMediaCategory.PropertyPhoto => "Foto pública do imóvel",
+            ImovelMediaCategory.Document => "Documento",
+            ImovelMediaCategory.InspectionPhoto => "Foto de vistoria",
+            ImovelMediaCategory.MaintenancePhoto => "Foto de manutenção",
+            ImovelMediaCategory.Other => "Outro",
+            _ => category.ToString()
+        };
+
+    private static string GetImovelMediaSourceLabel(ImovelMediaSource source) =>
+        source switch
+        {
+            ImovelMediaSource.Windows => "Windows",
+            ImovelMediaSource.AndroidStaff => "Android equipe",
+            ImovelMediaSource.Website => "Site",
+            ImovelMediaSource.Import => "Importação",
+            _ => source.ToString()
+        };
+
+    private static string GetVistoriaTipoLabel(VistoriaTipo tipo) =>
+        tipo switch
+        {
+            VistoriaTipo.InicialProprietario => "Inicial do proprietário",
+            VistoriaTipo.Entrada => "Entrada da locação",
+            VistoriaTipo.Saida => "Saída da locação",
+            VistoriaTipo.Periodica => "Periódica",
+            VistoriaTipo.Manutencao => "Manutenção",
+            VistoriaTipo.Outros => "Outra",
+            _ => tipo.ToString()
+        };
+
+    private static string GetVistoriaStatusLabel(VistoriaStatus status) =>
+        status switch
+        {
+            VistoriaStatus.Draft => "Rascunho",
+            VistoriaStatus.InProgress => "Em andamento",
+            VistoriaStatus.ReadyToReview => "Pronta para revisão",
+            VistoriaStatus.Finished => "Finalizada",
+            VistoriaStatus.SignedPaper => "Assinada em papel",
+            VistoriaStatus.SignedDigitally => "Assinada digitalmente",
+            VistoriaStatus.Canceled => "Cancelada",
+            _ => status.ToString()
         };
 
     private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

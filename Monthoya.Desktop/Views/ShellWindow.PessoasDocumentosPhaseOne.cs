@@ -13,6 +13,7 @@ public partial class ShellWindow
 
     private static readonly IReadOnlyList<PessoaDocumentoDonoOption> PessoaDocumentoDonoFisicaPhaseOneOptions =
     [
+        new("", ""),
         new("Pessoa", "pessoa"),
         new("Trabalho da pessoa", "empresa_trabalho"),
         new("Cônjuge", "conjuge"),
@@ -22,6 +23,7 @@ public partial class ShellWindow
 
     private static readonly IReadOnlyList<PessoaDocumentoDonoOption> PessoaDocumentoDonoJuridicaPhaseOneOptions =
     [
+        new("", ""),
         new("Empresa", "empresa"),
         new("Responsável", "responsavel"),
         new("Cônjuge do responsável", "conjuge_responsavel"),
@@ -82,7 +84,7 @@ public partial class ShellWindow
             return;
         }
 
-        PessoaDocumentoDonoBox.SelectedValue = isJuridica ? "empresa" : "pessoa";
+        PessoaDocumentoDonoBox.SelectedValue = "";
     }
 
     private void EnsurePessoaResponsavelEstadoCivilInMainRow()

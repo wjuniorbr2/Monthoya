@@ -22,6 +22,10 @@ public partial class ShellWindow
         {
             tab.SelectedPessoaName = "Criar Novo";
         }
+        else if (page == ShellPage.Imoveis)
+        {
+            tab.SelectedImovelName = "Criar novo";
+        }
         _tabs.Add(tab);
         _activeTab = tab;
         RenderTabs();
@@ -44,6 +48,10 @@ public partial class ShellWindow
             {
                 _activeTab.SelectedPessoaName = "Criar Novo";
             }
+            else if (page == ShellPage.Imoveis && previousPage != ShellPage.Imoveis && string.IsNullOrWhiteSpace(_activeTab.SelectedImovelName))
+            {
+                _activeTab.SelectedImovelName = "Criar novo";
+            }
             RenderTabs();
         }
 
@@ -59,6 +67,10 @@ public partial class ShellWindow
         if (tab.Page == ShellPage.Pessoas && string.IsNullOrWhiteSpace(tab.SelectedPessoaName))
         {
             tab.SelectedPessoaName = "Criar Novo";
+        }
+        else if (tab.Page == ShellPage.Imoveis && string.IsNullOrWhiteSpace(tab.SelectedImovelName))
+        {
+            tab.SelectedImovelName = "Criar novo";
         }
         RenderTabs();
         await ShowPageAsync(tab.Page, true);
@@ -85,8 +97,8 @@ public partial class ShellWindow
                 FontSize = tab.Page == ShellPage.Financeiro ? 14 : 13
             });
 
-            // Title area: for Pessoas tabs show a stacked title + selected person name (smaller)
-            if (tab.Page == ShellPage.Pessoas)
+            // Title area: for detail-heavy tabs show a stacked title + current record name.
+            if (tab.Page is ShellPage.Pessoas or ShellPage.Imoveis)
             {
                 var titleStack = new StackPanel { Orientation = Orientation.Vertical };
                 titleStack.Children.Add(new TextBlock
@@ -162,6 +174,7 @@ public partial class ShellWindow
             ShellPage.Users => "\uE77B",
             ShellPage.Pessoas => "\uE716",
             ShellPage.Imoveis => "\uE80F",
+            ShellPage.Chaves => "\uE8D7",
             ShellPage.Locacoes => "\uE8A1",
             ShellPage.Financeiro => "$",
             ShellPage.Boletos => "\uE8C7",
@@ -272,6 +285,7 @@ public partial class ShellWindow
         UsersPanel.Visibility = page == ShellPage.Users ? Visibility.Visible : Visibility.Collapsed;
         PessoasPanel.Visibility = page == ShellPage.Pessoas ? Visibility.Visible : Visibility.Collapsed;
         ImoveisPanel.Visibility = page == ShellPage.Imoveis ? Visibility.Visible : Visibility.Collapsed;
+        ChavesPanel.Visibility = page == ShellPage.Chaves ? Visibility.Visible : Visibility.Collapsed;
         ModulePanel.Visibility = IsGenericModulePage(page) ? Visibility.Visible : Visibility.Collapsed;
         DiagnosticsPanel.Visibility = page == ShellPage.Diagnostics ? Visibility.Visible : Visibility.Collapsed;
 
@@ -280,6 +294,7 @@ public partial class ShellWindow
             ShellPage.Users => UsersNavButton,
             ShellPage.Pessoas => PessoasNavButton,
             ShellPage.Imoveis => ImoveisNavButton,
+            ShellPage.Chaves => ChavesNavButton,
             ShellPage.Locacoes => LocacoesNavButton,
             ShellPage.Financeiro => FinanceiroNavButton,
             ShellPage.Boletos => BoletosNavButton,
@@ -311,6 +326,10 @@ public partial class ShellWindow
             else if (page == ShellPage.Imoveis)
             {
                 await LoadImoveisAsync();
+            }
+            else if (page == ShellPage.Chaves)
+            {
+                await LoadChavesAsync();
             }
             else if (IsGenericModulePage(page))
             {
@@ -359,16 +378,21 @@ public partial class ShellWindow
     {
         try
         {
-            if (tab.Page != ShellPage.Pessoas)
+            if (tab.Page is not (ShellPage.Pessoas or ShellPage.Imoveis))
             {
                 return string.Empty;
             }
 
-            // Prefer per-tab stored name. If empty, fall back to the currently loaded selected pessoa for the active tab.
-            var fullName = tab.SelectedPessoaName;
-            if (string.IsNullOrWhiteSpace(fullName) && tab == _activeTab && _selectedPessoaDetails is not null)
+            var fullName = tab.Page == ShellPage.Pessoas
+                ? tab.SelectedPessoaName
+                : tab.SelectedImovelName;
+            if (string.IsNullOrWhiteSpace(fullName) && tab == _activeTab && tab.Page == ShellPage.Pessoas && _selectedPessoaDetails is not null)
             {
                 fullName = _selectedPessoaDetails.Summary.Nome;
+            }
+            else if (string.IsNullOrWhiteSpace(fullName) && tab == _activeTab && tab.Page == ShellPage.Imoveis && _selectedImovelDetails is not null)
+            {
+                fullName = _selectedImovelDetails.Summary.Endereco;
             }
 
             if (string.IsNullOrWhiteSpace(fullName))
@@ -428,6 +452,8 @@ public partial class ShellWindow
 
         // Store per-tab selected person name so each tab can show its own secondary text
         public string SelectedPessoaName { get; set; } = string.Empty;
+
+        public string SelectedImovelName { get; set; } = string.Empty;
     }
 
     private sealed class NoShellPageState : IShellPageState

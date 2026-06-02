@@ -116,6 +116,8 @@ public partial class ShellWindow
 
     private async Task LoadPessoaDocumentosAsync(Guid? pessoaId)
     {
+        PessoaDocumentosListErrorText.Text = string.Empty;
+
         if (!pessoaId.HasValue)
         {
             _pessoaDocumentos = [];
@@ -131,6 +133,8 @@ public partial class ShellWindow
 
     private void SetPessoaDocumentoSelection(PessoaSummary? pessoa)
     {
+        PessoaDocumentosListErrorText.Text = string.Empty;
+        PessoaDocumentoErrorText.Text = string.Empty;
         _selectedPessoaId = pessoa?.Id;
         PessoaDocumentoPessoaText.Text = pessoa is null ? "Nenhuma pessoa selecionada" : pessoa.Nome;
         PessoaProprietarioBox.IsChecked = pessoa?.IsProprietario == true;
@@ -277,7 +281,7 @@ public partial class ShellWindow
         return null;
     }
 
-    private string? GetPessoaPetQual() => _pessoaPetQualBox?.Text;
+    private string? GetPessoaPetQual() => GetPessoaPossuiPet() == true ? _pessoaPetQualBox?.Text : null;
 
     private bool? GetPessoaConjugePossuiTrabalho()
     {
@@ -775,7 +779,7 @@ public partial class ShellWindow
         {
             _selecionarPessoaDocumentoArquivoButton.IsEnabled = canEditDocuments;
             _selecionarPessoaDocumentoArquivoButton.ToolTip = canEditDocuments
-                ? "Escolha PNG, JPG, JPEG, BMP, TIF, TIFF ou TXT no computador."
+                ? "Escolha PDF, PNG, JPG, JPEG, BMP, TIF, TIFF ou TXT no computador."
                 : "Clique em Editar para selecionar arquivos.";
         }
 
@@ -994,7 +998,7 @@ public partial class ShellWindow
             _isPessoaEditing,
             _selectedPessoaId is null,
             PessoaDocumentoTipoBox.SelectedValue as string ?? "cpf",
-            PessoaDocumentoDonoBox.SelectedValue as string ?? "pessoa",
+            PessoaDocumentoDonoBox.SelectedValue as string ?? "",
             PessoaDocumentoNomeBox.Text,
             PessoaDocumentoArquivoBox.Text,
             ToDateOnly(PessoaDocumentoValidadeBox.SelectedDate),
@@ -1067,7 +1071,7 @@ public partial class ShellWindow
             true,
             true,
             "cpf",
-            "pessoa",
+            "",
             "",
             "",
             null,

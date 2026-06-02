@@ -14,6 +14,7 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
     public DbSet<PessoaJuridica> PessoasJuridicas => Set<PessoaJuridica>();
     public DbSet<Imovel> Imoveis => Set<Imovel>();
     public DbSet<ImovelImagem> ImovelImagens => Set<ImovelImagem>();
+    public DbSet<ImovelChaveMovimento> ImovelChaveMovimentos => Set<ImovelChaveMovimento>();
     public DbSet<Locacao> Locacoes => Set<Locacao>();
     public DbSet<LocacaoFiador> LocacaoFiadores => Set<LocacaoFiador>();
     public DbSet<IndiceReajuste> IndicesReajuste => Set<IndiceReajuste>();
@@ -28,6 +29,9 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
     public DbSet<DimobItem> DimobItens => Set<DimobItem>();
     public DbSet<ManutencaoImovel> ManutencoesImovel => Set<ManutencaoImovel>();
     public DbSet<Vistoria> Vistorias => Set<Vistoria>();
+    public DbSet<VistoriaAmbiente> VistoriaAmbientes => Set<VistoriaAmbiente>();
+    public DbSet<VistoriaItem> VistoriaItens => Set<VistoriaItem>();
+    public DbSet<VistoriaFoto> VistoriaFotos => Set<VistoriaFoto>();
     public DbSet<Rescisao> Rescisoes => Set<Rescisao>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -178,9 +182,39 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.Estado).HasMaxLength(2).IsRequired();
             entity.Property(x => x.ValorAluguel).HasPrecision(18, 2);
             entity.Property(x => x.ValorVenda).HasPrecision(18, 2);
+            entity.Property(x => x.ValorCondominio).HasPrecision(18, 2);
+            entity.Property(x => x.ValorIptu).HasPrecision(18, 2);
             entity.Property(x => x.Latitude).HasPrecision(9, 6);
             entity.Property(x => x.Longitude).HasPrecision(9, 6);
+            entity.Property(x => x.AreaConstruida).HasPrecision(12, 2);
+            entity.Property(x => x.AreaTerreno).HasPrecision(12, 2);
+            entity.Property(x => x.DescricaoInterna).HasMaxLength(4000);
+            entity.Property(x => x.DescricaoPublica).HasMaxLength(4000);
+            entity.Property(x => x.ChaveCodigo).HasMaxLength(80);
+            entity.Property(x => x.ChaveQuemTem).HasMaxLength(220);
+            entity.Property(x => x.ChaveTelefone).HasMaxLength(40);
+            entity.Property(x => x.ChaveContatoNome).HasMaxLength(220);
+            entity.Property(x => x.ChaveContatoDocumento).HasMaxLength(40);
+            entity.Property(x => x.ChaveLocalRetirada).HasMaxLength(500);
+            entity.Property(x => x.ChaveMelhorHorario).HasMaxLength(120);
+            entity.Property(x => x.ChaveObservacoes).HasMaxLength(2000);
             entity.HasOne(x => x.Proprietario).WithMany().HasForeignKey(x => x.ProprietarioId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ImovelChaveMovimento>(entity =>
+        {
+            entity.ToTable("imovel_chave_movimentos");
+            entity.Property(x => x.ChaveCodigo).HasMaxLength(80);
+            entity.Property(x => x.RetiradoPorNome).HasMaxLength(220);
+            entity.Property(x => x.RetiradoPorTelefone).HasMaxLength(40);
+            entity.Property(x => x.RetiradoPorDocumento).HasMaxLength(40);
+            entity.Property(x => x.RetiradoPorRelacao).HasMaxLength(120);
+            entity.Property(x => x.Motivo).HasMaxLength(120);
+            entity.Property(x => x.DevolvidoParaNome).HasMaxLength(220);
+            entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.HasOne(x => x.Imovel).WithMany(x => x.ChaveMovimentos).HasForeignKey(x => x.ImovelId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.ImovelId, x.Status });
+            entity.HasIndex(x => x.PrevisaoDevolucaoEm);
         });
 
         modelBuilder.Entity<ImovelImagem>(entity =>
@@ -189,8 +223,12 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.Property(x => x.FileName).HasMaxLength(260).IsRequired();
             entity.Property(x => x.StoragePath).HasMaxLength(1000).IsRequired();
             entity.Property(x => x.ContentType).HasMaxLength(100);
+            entity.Property(x => x.Caption).HasMaxLength(500);
+            entity.Property(x => x.MediaCategory).HasConversion<int>();
+            entity.Property(x => x.Source).HasConversion<int>();
             entity.HasOne(x => x.Imovel).WithMany(x => x.Imagens).HasForeignKey(x => x.ImovelId).OnDelete(DeleteBehavior.Cascade);
             entity.HasIndex(x => new { x.ImovelId, x.DisplayOrder });
+            entity.HasIndex(x => new { x.ImovelId, x.IsCover });
         });
 
         modelBuilder.Entity<Locacao>(entity =>
@@ -294,7 +332,67 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.ToTable("manutencoes_imovel");
             entity.Property(x => x.Valor).HasPrecision(18, 2);
         });
-        modelBuilder.Entity<Vistoria>(entity => entity.ToTable("vistorias"));
+        modelBuilder.Entity<Vistoria>(entity =>
+        {
+            entity.ToTable("vistorias");
+            entity.Property(x => x.StableId).HasDefaultValueSql("gen_random_uuid()").IsRequired();
+            entity.Property(x => x.WorkflowStatus).HasConversion<int>();
+            entity.Property(x => x.PdfPath).HasMaxLength(1000);
+            entity.Property(x => x.AiStatus).HasMaxLength(80);
+            entity.Property(x => x.AiErrorMessage).HasMaxLength(2000);
+            entity.HasOne(x => x.Imovel).WithMany().HasForeignKey(x => x.ImovelId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => x.StableId).IsUnique();
+            entity.HasIndex(x => new { x.ImovelId, x.DataVistoria });
+        });
+        modelBuilder.Entity<VistoriaAmbiente>(entity =>
+        {
+            entity.ToTable("vistoria_ambientes");
+            entity.Property(x => x.StableId).HasDefaultValueSql("gen_random_uuid()").IsRequired();
+            entity.Property(x => x.Nome).HasMaxLength(160).IsRequired();
+            entity.Property(x => x.TipoAmbiente).HasConversion<int>();
+            entity.Property(x => x.CondicaoGeral).HasMaxLength(120);
+            entity.Property(x => x.Observacoes).HasMaxLength(4000);
+            entity.HasOne(x => x.Vistoria).WithMany(x => x.Ambientes).HasForeignKey(x => x.VistoriaId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => x.StableId).IsUnique();
+            entity.HasIndex(x => new { x.VistoriaId, x.DisplayOrder });
+        });
+        modelBuilder.Entity<VistoriaItem>(entity =>
+        {
+            entity.ToTable("vistoria_itens");
+            entity.Property(x => x.StableId).HasDefaultValueSql("gen_random_uuid()").IsRequired();
+            entity.Property(x => x.Nome).HasMaxLength(160).IsRequired();
+            entity.Property(x => x.Categoria).HasConversion<int>();
+            entity.Property(x => x.Condicao).HasConversion<int>();
+            entity.Property(x => x.ResponsabilidadeSugerida).HasMaxLength(120);
+            entity.Property(x => x.AiConfidence).HasPrecision(5, 4);
+            entity.Property(x => x.AiStatus).HasMaxLength(80);
+            entity.Property(x => x.AiErrorMessage).HasMaxLength(2000);
+            entity.HasOne(x => x.Ambiente).WithMany(x => x.Itens).HasForeignKey(x => x.VistoriaAmbienteId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => x.StableId).IsUnique();
+            entity.HasIndex(x => x.VistoriaAmbienteId);
+        });
+        modelBuilder.Entity<VistoriaFoto>(entity =>
+        {
+            entity.ToTable("vistoria_fotos");
+            entity.Property(x => x.StableId).HasDefaultValueSql("gen_random_uuid()").IsRequired();
+            entity.Property(x => x.FileName).HasMaxLength(260).IsRequired();
+            entity.Property(x => x.LocalDevicePath).HasMaxLength(1000);
+            entity.Property(x => x.StoragePath).HasMaxLength(1000);
+            entity.Property(x => x.ContentType).HasMaxLength(100);
+            entity.Property(x => x.Caption).HasMaxLength(500);
+            entity.Property(x => x.UploadStatus).HasConversion<int>();
+            entity.Property(x => x.Source).HasConversion<int>();
+            entity.Property(x => x.AiConfidence).HasPrecision(5, 4);
+            entity.Property(x => x.AiStatus).HasMaxLength(80);
+            entity.Property(x => x.AiErrorMessage).HasMaxLength(2000);
+            entity.HasOne(x => x.Vistoria).WithMany(x => x.Fotos).HasForeignKey(x => x.VistoriaId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Ambiente).WithMany(x => x.Fotos).HasForeignKey(x => x.VistoriaAmbienteId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(x => x.Item).WithMany(x => x.Fotos).HasForeignKey(x => x.VistoriaItemId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(x => x.Imovel).WithMany().HasForeignKey(x => x.ImovelId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => x.StableId).IsUnique();
+            entity.HasIndex(x => new { x.VistoriaId, x.DisplayOrder });
+            entity.HasIndex(x => new { x.ImovelId, x.UploadStatus });
+        });
         modelBuilder.Entity<Rescisao>(entity =>
         {
             entity.ToTable("rescisoes");

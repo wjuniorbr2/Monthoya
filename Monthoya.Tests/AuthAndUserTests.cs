@@ -976,6 +976,9 @@ public sealed class AuthAndUserTests
             TimeSpan? expiresIn = null,
             CancellationToken cancellationToken = default) =>
             Task.FromResult(new FileStorageSignedUrl($"https://storage.test/signed/{storagePath}", DateTimeOffset.UtcNow.AddMinutes(15)));
+
+        public Task DeleteAsync(string storagePath, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 }
 

@@ -4,7 +4,13 @@ public enum TipoPessoa { Fisica = 0, Juridica = 1 }
 public enum PessoaRoleTipo { Proprietario = 0, Locatario = 1, Fiador = 2 }
 public enum RegistroStatus { Ativo = 0, Inativo = 1 }
 public enum ImovelFinalidade { Locacao = 0, Venda = 1, Ambos = 2 }
-public enum ImovelStatus { Disponivel = 0, Locado = 1, Vendido = 2, Inativo = 3 }
+public enum ImovelStatus { Disponivel = 0, Reservado = 1, Locado = 2, Vendido = 3, Inativo = 4 }
+public enum ImovelEnderecoPublicoModo { BairroCidade = 0, EnderecoAproximado = 1, EnderecoCompleto = 2 }
+public enum ImovelChavePosse { NaoCadastrada = 0, Imobiliaria = 1, Proprietario = 2, Locatario = 3, Terceiro = 4, Outro = 5 }
+public enum ImovelChaveMovimentoTipo { Retirada = 0, Devolucao = 1, Transferencia = 2, MarcadaPerdida = 3, Outro = 4 }
+public enum ImovelChaveMovimentoStatus { ComImobiliaria = 0, Retirada = 1, EmAtraso = 2, Perdida = 3, Inativa = 4 }
+public enum ImovelMediaCategory { PropertyPhoto = 0, Document = 1, InspectionPhoto = 2, MaintenancePhoto = 3, Other = 4 }
+public enum ImovelMediaSource { Windows = 0, AndroidStaff = 1, Website = 2, Import = 3 }
 public enum LocacaoStatus { Ativa = 0, Encerrada = 1, Cancelada = 2 }
 public enum ReajusteTipo { Oficial = 0, Custom = 1 }
 public enum ModeloTaxaAdministracao { FixaMensal = 0, PercentualAluguel = 1, PrimeiroAluguel = 2, TaxaContrato = 3, TaxaRenovacao = 4, SemTaxa = 5, Custom = 6 }
@@ -18,7 +24,12 @@ public enum DocumentoModeloStatusRevisao { Inicial = 0, PendenteRevisao = 1, Apr
 public enum DocumentoOcrStatus { NaoProcessado = 0, Processado = 1, Erro = 2 }
 public enum DimobStatus { Rascunho = 0, Conferida = 1, Exportada = 2, Entregue = 3, Retificada = 4 }
 public enum ManutencaoStatus { Solicitada = 0, EmAndamento = 1, Concluida = 2, Cancelada = 3 }
-public enum VistoriaTipo { Entrada = 0, Saida = 1, Periodica = 2, Outros = 3 }
+public enum VistoriaTipo { Entrada = 0, Saida = 1, Periodica = 2, Outros = 3, InicialProprietario = 4, Manutencao = 5 }
+public enum VistoriaStatus { Draft = 0, InProgress = 1, ReadyToReview = 2, Finished = 3, SignedPaper = 4, SignedDigitally = 5, Canceled = 6 }
+public enum VistoriaAmbienteTipo { Sala = 0, SalaTv = 1, Cozinha = 2, Banheiro = 3, Quarto = 4, Suite = 5, Garagem = 6, Lavanderia = 7, AreaExterna = 8, Quintal = 9, Corredor = 10, Sacada = 11, Outro = 12 }
+public enum VistoriaItemCategoria { Parede = 0, Piso = 1, Teto = 2, Porta = 3, Janela = 4, Pintura = 5, Tomada = 6, Interruptor = 7, Torneira = 8, Pia = 9, VasoSanitario = 10, Chuveiro = 11, Armario = 12, Outro = 13 }
+public enum VistoriaItemCondicao { Bom = 0, Regular = 1, Ruim = 2, Danificado = 3, Ausente = 4, NaoSeAplica = 5 }
+public enum VistoriaFotoUploadStatus { LocalOnly = 0, PendingUpload = 1, Uploaded = 2, Failed = 3 }
 
 public sealed class Pessoa : BaseEntity
 {
@@ -194,14 +205,62 @@ public sealed class Imovel : BaseEntity
     public string? IptuMatricula { get; set; }
     public string? TipoImovel { get; set; }
     public string? Descricao { get; set; }
+    public string? DescricaoInterna { get; set; }
+    public string? DescricaoPublica { get; set; }
     public decimal? ValorAluguel { get; set; }
     public decimal? ValorVenda { get; set; }
+    public decimal? ValorCondominio { get; set; }
+    public decimal? ValorIptu { get; set; }
     public ImovelFinalidade Finalidade { get; set; } = ImovelFinalidade.Locacao;
     public ImovelStatus Status { get; set; } = ImovelStatus.Disponivel;
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
+    public int? Quartos { get; set; }
+    public int? Suites { get; set; }
+    public int? Banheiros { get; set; }
+    public int? VagasGaragem { get; set; }
+    public decimal? AreaConstruida { get; set; }
+    public decimal? AreaTerreno { get; set; }
+    public bool? Mobiliado { get; set; }
+    public bool? AceitaPets { get; set; }
+    public bool PublicarNoSite { get; set; }
+    public bool PublicarNoApp { get; set; }
+    public bool Destaque { get; set; }
+    public bool MostrarEnderecoCompletoPublicamente { get; set; }
+    public ImovelEnderecoPublicoModo ModoExibicaoEnderecoPublico { get; set; } = ImovelEnderecoPublicoModo.BairroCidade;
+    public ImovelChavePosse ChavePosse { get; set; } = ImovelChavePosse.NaoCadastrada;
+    public string? ChaveCodigo { get; set; }
+    public string? ChaveQuemTem { get; set; }
+    public string? ChaveTelefone { get; set; }
+    public string? ChaveContatoNome { get; set; }
+    public string? ChaveContatoDocumento { get; set; }
+    public string? ChaveLocalRetirada { get; set; }
+    public string? ChaveMelhorHorario { get; set; }
+    public bool ChaveAutorizacaoNecessaria { get; set; }
+    public string? ChaveObservacoes { get; set; }
     public string? Observacoes { get; set; }
     public ICollection<ImovelImagem> Imagens { get; set; } = new List<ImovelImagem>();
+    public ICollection<ImovelChaveMovimento> ChaveMovimentos { get; set; } = new List<ImovelChaveMovimento>();
+}
+
+public sealed class ImovelChaveMovimento : BaseEntity
+{
+    public Guid ImovelId { get; set; }
+    public Imovel? Imovel { get; set; }
+    public string? ChaveCodigo { get; set; }
+    public ImovelChaveMovimentoTipo Tipo { get; set; } = ImovelChaveMovimentoTipo.Retirada;
+    public string? RetiradoPorNome { get; set; }
+    public string? RetiradoPorTelefone { get; set; }
+    public string? RetiradoPorDocumento { get; set; }
+    public string? RetiradoPorRelacao { get; set; }
+    public string? Motivo { get; set; }
+    public DateTimeOffset? RetiradoEm { get; set; }
+    public DateTimeOffset? PrevisaoDevolucaoEm { get; set; }
+    public DateTimeOffset? DevolvidoEm { get; set; }
+    public string? DevolvidoParaNome { get; set; }
+    public ImovelChaveMovimentoStatus Status { get; set; } = ImovelChaveMovimentoStatus.Retirada;
+    public string? Observacoes { get; set; }
+    public Guid? CreatedByUserId { get; set; }
 }
 
 public sealed class ImovelImagem : BaseEntity
@@ -212,6 +271,11 @@ public sealed class ImovelImagem : BaseEntity
     public string StoragePath { get; set; } = string.Empty;
     public string? ContentType { get; set; }
     public int DisplayOrder { get; set; }
+    public string? Caption { get; set; }
+    public bool IsCover { get; set; }
+    public bool IsPublic { get; set; }
+    public ImovelMediaCategory MediaCategory { get; set; } = ImovelMediaCategory.PropertyPhoto;
+    public ImovelMediaSource Source { get; set; } = ImovelMediaSource.Windows;
     public RegistroStatus Status { get; set; } = RegistroStatus.Ativo;
 }
 
@@ -419,14 +483,93 @@ public sealed class ManutencaoImovel : BaseEntity
 
 public sealed class Vistoria : BaseEntity
 {
+    public Guid StableId { get; set; } = Guid.NewGuid();
     public Guid ImovelId { get; set; }
+    public Imovel? Imovel { get; set; }
     public Guid? LocacaoId { get; set; }
     public VistoriaTipo Tipo { get; set; } = VistoriaTipo.Entrada;
     public DateOnly DataVistoria { get; set; }
     public string? Responsavel { get; set; }
     public string? Descricao { get; set; }
+    public string? DescricaoGeral { get; set; }
     public string? Status { get; set; }
+    public VistoriaStatus WorkflowStatus { get; set; } = VistoriaStatus.Draft;
     public string? Observacoes { get; set; }
+    public string? PdfPath { get; set; }
+    public string? AiSummary { get; set; }
+    public string? AiStatus { get; set; }
+    public DateTimeOffset? AiProcessedAt { get; set; }
+    public string? AiErrorMessage { get; set; }
+    public ICollection<VistoriaAmbiente> Ambientes { get; set; } = new List<VistoriaAmbiente>();
+    public ICollection<VistoriaFoto> Fotos { get; set; } = new List<VistoriaFoto>();
+}
+
+public sealed class VistoriaAmbiente : BaseEntity
+{
+    public Guid StableId { get; set; } = Guid.NewGuid();
+    public Guid VistoriaId { get; set; }
+    public Vistoria? Vistoria { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public VistoriaAmbienteTipo TipoAmbiente { get; set; } = VistoriaAmbienteTipo.Outro;
+    public int DisplayOrder { get; set; }
+    public string? Observacoes { get; set; }
+    public string? CondicaoGeral { get; set; }
+    public ICollection<VistoriaItem> Itens { get; set; } = new List<VistoriaItem>();
+    public ICollection<VistoriaFoto> Fotos { get; set; } = new List<VistoriaFoto>();
+}
+
+public sealed class VistoriaItem : BaseEntity
+{
+    public Guid StableId { get; set; } = Guid.NewGuid();
+    public Guid VistoriaAmbienteId { get; set; }
+    public VistoriaAmbiente? Ambiente { get; set; }
+    public string Nome { get; set; } = string.Empty;
+    public VistoriaItemCategoria Categoria { get; set; } = VistoriaItemCategoria.Outro;
+    public VistoriaItemCondicao Condicao { get; set; } = VistoriaItemCondicao.Bom;
+    public string? Descricao { get; set; }
+    public string? Observacoes { get; set; }
+    public string? ResponsabilidadeSugerida { get; set; }
+    public bool? AiDetectedDamage { get; set; }
+    public string? AiSuggestedDescription { get; set; }
+    public decimal? AiConfidence { get; set; }
+    public string? AiStatus { get; set; }
+    public DateTimeOffset? AiProcessedAt { get; set; }
+    public string? AiErrorMessage { get; set; }
+    public ICollection<VistoriaFoto> Fotos { get; set; } = new List<VistoriaFoto>();
+}
+
+public sealed class VistoriaFoto : BaseEntity
+{
+    public Guid StableId { get; set; } = Guid.NewGuid();
+    public Guid VistoriaId { get; set; }
+    public Vistoria? Vistoria { get; set; }
+    public Guid? VistoriaAmbienteId { get; set; }
+    public VistoriaAmbiente? Ambiente { get; set; }
+    public Guid? VistoriaItemId { get; set; }
+    public VistoriaItem? Item { get; set; }
+    public Guid ImovelId { get; set; }
+    public Imovel? Imovel { get; set; }
+    public Guid? LocacaoId { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public string? LocalDevicePath { get; set; }
+    public string? StoragePath { get; set; }
+    public string? ContentType { get; set; }
+    public int DisplayOrder { get; set; }
+    public string? Caption { get; set; }
+    public DateTimeOffset? TakenAt { get; set; }
+    public DateTimeOffset? UploadedAt { get; set; }
+    public VistoriaFotoUploadStatus UploadStatus { get; set; } = VistoriaFotoUploadStatus.LocalOnly;
+    public ImovelMediaSource Source { get; set; } = ImovelMediaSource.AndroidStaff;
+    public bool IsPublicWebsite { get; set; }
+    public bool? VisibleToClientApp { get; set; }
+    public string? AiDescription { get; set; }
+    public bool? AiDetectedDamage { get; set; }
+    public string? AiSuggestedCaption { get; set; }
+    public decimal? AiConfidence { get; set; }
+    public string? AiStatus { get; set; }
+    public DateTimeOffset? AiProcessedAt { get; set; }
+    public string? AiErrorMessage { get; set; }
+    public string? MetadataJson { get; set; }
 }
 
 public sealed class Rescisao : BaseEntity

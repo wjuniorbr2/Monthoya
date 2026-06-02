@@ -62,9 +62,10 @@ internal static class GeminiDocumentDataReader
         }
 
         var mimeType = GuessMimeType(filePath);
-        if (!mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        if (!mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase)
+            && !mimeType.Equals("application/pdf", StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException("Nesta etapa, o OCR inteligente aceita imagens JPG, PNG, BMP ou TIFF. Converta PDF em imagem antes de usar.");
+            throw new InvalidOperationException("Nesta etapa, o OCR inteligente aceita PDF e imagens JPG, PNG, BMP ou TIFF.");
         }
 
         var bytes = await File.ReadAllBytesAsync(filePath, cancellationToken);
@@ -222,6 +223,7 @@ internal static class GeminiDocumentDataReader
             ".png" => "image/png",
             ".bmp" => "image/bmp",
             ".tif" or ".tiff" => "image/tiff",
+            ".pdf" => "application/pdf",
             _ => "application/octet-stream"
         };
 

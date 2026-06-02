@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Monthoya.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Monthoya.Data.Migrations
 {
     [DbContext(typeof(MonthoyaDbContext))]
-    partial class MonthoyaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260601115306_AddImovelPhaseOneFields")]
+    partial class AddImovelPhaseOneFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -719,10 +722,6 @@ namespace Monthoya.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Caption")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<string>("ContentType")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -741,18 +740,6 @@ namespace Monthoya.Data.Migrations
                     b.Property<Guid>("ImovelId")
                         .HasColumnType("uuid");
 
-                    b.Property<bool>("IsCover")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsPublic")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("MediaCategory")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Source")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -767,8 +754,6 @@ namespace Monthoya.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ImovelId", "DisplayOrder");
-
-                    b.HasIndex("ImovelId", "IsCover");
 
                     b.ToTable("imovel_imagens", (string)null);
                 });
@@ -1796,20 +1781,6 @@ namespace Monthoya.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("AiErrorMessage")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTimeOffset?>("AiProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("AiStatus")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
-
-                    b.Property<string>("AiSummary")
-                        .HasColumnType("text");
-
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -1817,9 +1788,6 @@ namespace Monthoya.Data.Migrations
                         .HasColumnType("date");
 
                     b.Property<string>("Descricao")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DescricaoGeral")
                         .HasColumnType("text");
 
                     b.Property<Guid>("ImovelId")
@@ -1831,17 +1799,8 @@ namespace Monthoya.Data.Migrations
                     b.Property<string>("Observacoes")
                         .HasColumnType("text");
 
-                    b.Property<string>("PdfPath")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
                     b.Property<string>("Responsavel")
                         .HasColumnType("text");
-
-                    b.Property<Guid>("StableId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Status")
                         .HasColumnType("text");
@@ -1852,255 +1811,9 @@ namespace Monthoya.Data.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WorkflowStatus")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("StableId")
-                        .IsUnique();
-
-                    b.HasIndex("ImovelId", "DataVistoria");
 
                     b.ToTable("vistorias", (string)null);
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.VistoriaAmbiente", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("CondicaoGeral")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)");
-
-                    b.Property<string>("Observacoes")
-                        .HasMaxLength(4000)
-                        .HasColumnType("character varying(4000)");
-
-                    b.Property<Guid>("StableId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<int>("TipoAmbiente")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("VistoriaId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StableId")
-                        .IsUnique();
-
-                    b.HasIndex("VistoriaId", "DisplayOrder");
-
-                    b.ToTable("vistoria_ambientes", (string)null);
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.VistoriaFoto", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("AiConfidence")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
-
-                    b.Property<string>("AiDescription")
-                        .HasColumnType("text");
-
-                    b.Property<bool?>("AiDetectedDamage")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("AiErrorMessage")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTimeOffset?>("AiProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("AiStatus")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
-
-                    b.Property<string>("AiSuggestedCaption")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Caption")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("ContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("character varying(260)");
-
-                    b.Property<Guid>("ImovelId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsPublicWebsite")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("LocacaoId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("LocalDevicePath")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("MetadataJson")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Source")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("StableId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<string>("StoragePath")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTimeOffset?>("TakenAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("UploadStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset?>("UploadedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool?>("VisibleToClientApp")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid?>("VistoriaAmbienteId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("VistoriaId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("VistoriaItemId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StableId")
-                        .IsUnique();
-
-                    b.HasIndex("VistoriaAmbienteId");
-
-                    b.HasIndex("VistoriaItemId");
-
-                    b.HasIndex("ImovelId", "UploadStatus");
-
-                    b.HasIndex("VistoriaId", "DisplayOrder");
-
-                    b.ToTable("vistoria_fotos", (string)null);
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.VistoriaItem", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("AiConfidence")
-                        .HasPrecision(5, 4)
-                        .HasColumnType("numeric(5,4)");
-
-                    b.Property<bool?>("AiDetectedDamage")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("AiErrorMessage")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTimeOffset?>("AiProcessedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("AiStatus")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
-
-                    b.Property<string>("AiSuggestedDescription")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Categoria")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Condicao")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Descricao")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasMaxLength(160)
-                        .HasColumnType("character varying(160)");
-
-                    b.Property<string>("Observacoes")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ResponsabilidadeSugerida")
-                        .HasMaxLength(120)
-                        .HasColumnType("character varying(120)");
-
-                    b.Property<Guid>("StableId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("VistoriaAmbienteId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StableId")
-                        .IsUnique();
-
-                    b.HasIndex("VistoriaAmbienteId");
-
-                    b.ToTable("vistoria_itens", (string)null);
                 });
 
             modelBuilder.Entity("Monthoya.Core.Entities.Imovel", b =>
@@ -2233,72 +1946,6 @@ namespace Monthoya.Data.Migrations
                     b.Navigation("Pessoa");
                 });
 
-            modelBuilder.Entity("Monthoya.Core.Entities.Vistoria", b =>
-                {
-                    b.HasOne("Monthoya.Core.Entities.Imovel", "Imovel")
-                        .WithMany()
-                        .HasForeignKey("ImovelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Imovel");
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.VistoriaAmbiente", b =>
-                {
-                    b.HasOne("Monthoya.Core.Entities.Vistoria", "Vistoria")
-                        .WithMany("Ambientes")
-                        .HasForeignKey("VistoriaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Vistoria");
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.VistoriaFoto", b =>
-                {
-                    b.HasOne("Monthoya.Core.Entities.Imovel", "Imovel")
-                        .WithMany()
-                        .HasForeignKey("ImovelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Monthoya.Core.Entities.VistoriaAmbiente", "Ambiente")
-                        .WithMany("Fotos")
-                        .HasForeignKey("VistoriaAmbienteId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Monthoya.Core.Entities.Vistoria", "Vistoria")
-                        .WithMany("Fotos")
-                        .HasForeignKey("VistoriaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Monthoya.Core.Entities.VistoriaItem", "Item")
-                        .WithMany("Fotos")
-                        .HasForeignKey("VistoriaItemId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Ambiente");
-
-                    b.Navigation("Imovel");
-
-                    b.Navigation("Item");
-
-                    b.Navigation("Vistoria");
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.VistoriaItem", b =>
-                {
-                    b.HasOne("Monthoya.Core.Entities.VistoriaAmbiente", "Ambiente")
-                        .WithMany("Itens")
-                        .HasForeignKey("VistoriaAmbienteId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Ambiente");
-                });
-
             modelBuilder.Entity("Monthoya.Core.Entities.Imovel", b =>
                 {
                     b.Navigation("ChaveMovimentos");
@@ -2320,25 +1967,6 @@ namespace Monthoya.Data.Migrations
                     b.Navigation("PessoaJuridica");
 
                     b.Navigation("Roles");
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.Vistoria", b =>
-                {
-                    b.Navigation("Ambientes");
-
-                    b.Navigation("Fotos");
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.VistoriaAmbiente", b =>
-                {
-                    b.Navigation("Fotos");
-
-                    b.Navigation("Itens");
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.VistoriaItem", b =>
-                {
-                    b.Navigation("Fotos");
                 });
 #pragma warning restore 612, 618
         }
