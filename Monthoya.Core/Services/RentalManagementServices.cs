@@ -339,7 +339,7 @@ public sealed record NotaFiscalSummary(Guid Id, string Status, decimal ValorServ
 public sealed record DocumentoModeloSummary(Guid Id, string Tipo, string Nome, string StatusRevisao, string Ativo);
 public sealed record DimobDeclaracaoSummary(Guid Id, int AnoCalendario, string Status, string? Observacoes);
 public sealed record ManutencaoSummary(Guid Id, string Descricao, string Status, DateOnly DataSolicitacao, decimal? Valor);
-public sealed record VistoriaSummary(Guid Id, string Tipo, DateOnly DataVistoria, string? Responsavel, string? Status, string? Observacoes);
+public sealed record VistoriaSummary(Guid Id, Guid ImovelId, string Imovel, string Tipo, DateOnly DataVistoria, string? Responsavel, string? Status, string? Observacoes);
 
 public interface IBoletoProvider
 {
