@@ -1,5 +1,4 @@
 using System.IO;
-using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,10 +7,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using Microsoft.EntityFrameworkCore;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
-using Monthoya.Data;
+using Monthoya.Data.RentalManagement;
 
 namespace Monthoya.Desktop.Views;
 
@@ -394,35 +392,9 @@ public partial class ShellWindow
             return;
         }
 
-        await DeleteSavedImovelMediaRecordAsync(saved.Id);
+        await _rentalManagementService.DeleteImovelImagemRecordAsync(saved.Id);
         _imovelImagens = _imovelImagens.Where(x => x.Id != saved.Id).ToList();
         ImovelImagemErrorText.Text = "Mídia removida do cadastro.";
-    }
-
-    private async Task DeleteSavedImovelMediaRecordAsync(Guid imagemId)
-    {
-        var dbContext = TryGetRentalManagementDbContext()
-            ?? throw new InvalidOperationException("Não foi possível acessar o banco de dados para remover a mídia.");
-
-        var imagem = await dbContext.ImovelImagens.SingleOrDefaultAsync(x => x.Id == imagemId);
-        if (imagem is null)
-        {
-            return;
-        }
-
-        dbContext.ImovelImagens.Remove(imagem);
-        await dbContext.SaveChangesAsync();
-    }
-
-    private MonthoyaDbContext? TryGetRentalManagementDbContext()
-    {
-        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-        return _rentalManagementService
-            .GetType()
-            .GetFields(flags)
-            .Select(field => field.GetValue(_rentalManagementService))
-            .OfType<MonthoyaDbContext>()
-            .FirstOrDefault();
     }
 
     private void ShowImovelMediaPreviewWindow(ImovelMediaListItem media, string previewPath)
