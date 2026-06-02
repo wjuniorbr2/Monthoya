@@ -73,8 +73,10 @@ public partial class ShellWindow
         _imovelVistorias = [];
 
         ImoveisGrid.SelectedItem = null;
+        ImovelDetailsTabControl.SelectedIndex = 0;
         ClearImovelForm();
         SetImovelEditMode(true, isNew: true);
+        ImovelDetailsTabControl.SelectedIndex = 0;
         ImovelVistoriasGrid.ItemsSource = _imovelVistorias;
         RefreshImovelMediaGrid();
     }
