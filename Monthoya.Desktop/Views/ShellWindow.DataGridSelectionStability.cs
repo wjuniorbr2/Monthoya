@@ -43,12 +43,7 @@ public partial class ShellWindow
     {
         grid.SelectionMode = DataGridSelectionMode.Single;
         grid.SelectionUnit = DataGridSelectionUnit.FullRow;
-
-        // WPF normally paints a selected row gray when the DataGrid loses keyboard focus.
-        // For these master lists, that makes users think the item was deselected.
-        // Keep the selected row visually active even when focus moves to the detail form.
         grid.Resources[SystemColors.InactiveSelectionHighlightBrushKey] = SystemColors.HighlightBrush;
         grid.Resources[SystemColors.InactiveSelectionHighlightTextBrushKey] = SystemColors.HighlightTextBrush;
-        grid.Resources[SystemColors.ControlBrushKey] = SystemColors.HighlightBrush;
     }
 }
