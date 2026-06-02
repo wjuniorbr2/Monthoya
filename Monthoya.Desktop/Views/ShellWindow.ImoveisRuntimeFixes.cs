@@ -48,6 +48,14 @@ public partial class ShellWindow
         ImoveisGrid.SelectionChanged -= ImoveisGrid_SelectionChanged;
         ImoveisGrid.SelectionChanged += SafeImoveisGrid_SelectionChanged;
 
+        ImoveisPanel.IsVisibleChanged += (_, _) =>
+        {
+            if (ImoveisPanel.IsVisible)
+            {
+                Dispatcher.BeginInvoke(EnsureImoveisVisibleStateMatchesActiveTab, DispatcherPriority.ContextIdle);
+            }
+        };
+
         ImovelImagensGrid.ItemContainerGenerator.StatusChanged += (_, _) =>
         {
             if (ImovelImagensGrid.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
@@ -61,18 +69,49 @@ public partial class ShellWindow
         SaveImovelButton.Click += (_, _) => ScheduleApplyImovelMediaUi();
     }
 
+    private void EnsureImoveisVisibleStateMatchesActiveTab()
+    {
+        if (_activeTab?.Page != ShellPage.Imoveis)
+        {
+            return;
+        }
+
+        var selectedIdForThisTab = _activeTab.PageStates.TryGetValue(ShellPage.Imoveis, out var state)
+            && state is ImoveisPageState imoveisState
+                ? imoveisState.SelectedImovelId
+                : null;
+
+        if (selectedIdForThisTab.HasValue)
+        {
+            ScheduleApplyImovelMediaUi();
+            return;
+        }
+
+        _selectedImovelId = null;
+        _selectedImovelDetails = null;
+        ImoveisGrid.SelectedItem = null;
+        ClearImovelSelectionMediaAndVistorias();
+        ClearImovelForm();
+        SetImovelEditMode(true, isNew: true);
+        SetActiveImovelTabLabel("Criar novo");
+        RenderTabs();
+        ScheduleApplyImovelMediaUi();
+    }
+
     private async void SafeImoveisGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         var selectionVersion = Interlocked.Increment(ref _imoveisSelectionVersion);
 
         if (TryGetItemId(ImoveisGrid.SelectedItem) is not Guid imovelId)
         {
+            _selectedImovelId = null;
+            _selectedImovelDetails = null;
             ClearImovelSelectionMediaAndVistorias();
+            SetImovelEditMode(true, isNew: true);
+            SetActiveImovelTabLabel("Criar novo");
+
             if (!_isRestoringTabState)
             {
-                _selectedImovelId = null;
-                _selectedImovelDetails = null;
-                SetImovelEditMode(true, isNew: true);
                 SaveActiveTabState();
             }
 
