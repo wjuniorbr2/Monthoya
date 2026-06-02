@@ -95,7 +95,8 @@ public partial class ShellWindow
 
     private async void PessoasPanel_PreviewMouseLeftButtonDownForFastRefresh(object sender, MouseButtonEventArgs e)
     {
-        if (FindAncestor<Button>(e.OriginalSource as DependencyObject) is not { Content: string content } button
+        if (e.OriginalSource is not DependencyObject source
+            || FindAncestor<Button>(source) is not { Content: string content } button
             || !string.Equals(content, "Atualizar", StringComparison.OrdinalIgnoreCase))
         {
             return;
