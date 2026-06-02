@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,7 +8,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Microsoft.EntityFrameworkCore;
+using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
+using Monthoya.Data;
 
 namespace Monthoya.Desktop.Views;
 
@@ -55,6 +59,14 @@ public partial class ShellWindow
             if (ImoveisPanel.IsVisible)
             {
                 Dispatcher.BeginInvoke(EnsureImoveisVisibleStateMatchesActiveTab, DispatcherPriority.ContextIdle);
+            }
+        };
+
+        ImovelDetailsTabControl.SelectionChanged += (_, e) =>
+        {
+            if (ReferenceEquals(e.OriginalSource, ImovelDetailsTabControl))
+            {
+                ScheduleApplyImovelMediaUi();
             }
         };
 
@@ -327,7 +339,7 @@ public partial class ShellWindow
         ShowImovelMediaPreviewWindow(media, previewPath);
     }
 
-    private void RemoveImovelMediaButton_Click(object sender, RoutedEventArgs e)
+    private async void RemoveImovelMediaButton_Click(object sender, RoutedEventArgs e)
     {
         e.Handled = true;
         if (!_isImovelEditing)
@@ -352,12 +364,19 @@ public partial class ShellWindow
             return;
         }
 
-        RemoveImovelMediaFromCurrentList(media);
-        RefreshImovelMediaGrid();
-        ScheduleApplyImovelMediaUi();
+        try
+        {
+            await RemoveImovelMediaFromCurrentListAsync(media);
+            RefreshImovelMediaGrid();
+            ScheduleApplyImovelMediaUi();
+        }
+        catch (Exception ex)
+        {
+            ImovelImagemErrorText.Text = $"Não foi possível remover a mídia: {ex.Message}";
+        }
     }
 
-    private void RemoveImovelMediaFromCurrentList(ImovelMediaListItem media)
+    private async Task RemoveImovelMediaFromCurrentListAsync(ImovelMediaListItem media)
     {
         var removedPending = _pendingImovelMedia.RemoveAll(pending =>
             string.Equals(Path.GetFileName(pending.StoragePath), media.FileName, StringComparison.OrdinalIgnoreCase)) > 0;
@@ -368,10 +387,42 @@ public partial class ShellWindow
             return;
         }
 
-        _imovelImagens = _imovelImagens
-            .Where(saved => !string.Equals(saved.FileName, media.FileName, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        ImovelImagemErrorText.Text = "Mídia removida da lista nesta tela. A remoção permanente do banco/Storage será implementada na próxima etapa.";
+        var saved = _imovelImagens
+            .FirstOrDefault(saved => string.Equals(saved.FileName, media.FileName, StringComparison.OrdinalIgnoreCase));
+        if (saved is null)
+        {
+            return;
+        }
+
+        await DeleteSavedImovelMediaRecordAsync(saved.Id);
+        _imovelImagens = _imovelImagens.Where(x => x.Id != saved.Id).ToList();
+        ImovelImagemErrorText.Text = "Mídia removida do cadastro.";
+    }
+
+    private async Task DeleteSavedImovelMediaRecordAsync(Guid imagemId)
+    {
+        var dbContext = TryGetRentalManagementDbContext()
+            ?? throw new InvalidOperationException("Não foi possível acessar o banco de dados para remover a mídia.");
+
+        var imagem = await dbContext.ImovelImagens.SingleOrDefaultAsync(x => x.Id == imagemId);
+        if (imagem is null)
+        {
+            return;
+        }
+
+        dbContext.ImovelImagens.Remove(imagem);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private MonthoyaDbContext? TryGetRentalManagementDbContext()
+    {
+        const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        return _rentalManagementService
+            .GetType()
+            .GetFields(flags)
+            .Select(field => field.GetValue(_rentalManagementService))
+            .OfType<MonthoyaDbContext>()
+            .FirstOrDefault();
     }
 
     private void ShowImovelMediaPreviewWindow(ImovelMediaListItem media, string previewPath)
