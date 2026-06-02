@@ -52,13 +52,13 @@ public partial class ShellWindow
         {
             if (ImovelImagensGrid.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
             {
-                Dispatcher.BeginInvoke(() =>
-                {
-                    ApplyImovelMediaPreviews();
-                    ApplyImovelMediaCardActions();
-                }, DispatcherPriority.Background);
+                ScheduleApplyImovelMediaUi();
             }
         };
+
+        ImovelEditButton.Click += (_, _) => ScheduleApplyImovelMediaUi();
+        CancelImovelEditButton.Click += (_, _) => ScheduleApplyImovelMediaUi();
+        SaveImovelButton.Click += (_, _) => ScheduleApplyImovelMediaUi();
     }
 
     private async void SafeImoveisGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -76,6 +76,7 @@ public partial class ShellWindow
                 SaveActiveTabState();
             }
 
+            ScheduleApplyImovelMediaUi();
             return;
         }
 
@@ -87,11 +88,7 @@ public partial class ShellWindow
                 return;
             }
 
-            Dispatcher.BeginInvoke(() =>
-            {
-                ApplyImovelMediaPreviews();
-                ApplyImovelMediaCardActions();
-            }, DispatcherPriority.Background);
+            ScheduleApplyImovelMediaUi();
 
             if (!_isRestoringTabState)
             {
@@ -111,6 +108,18 @@ public partial class ShellWindow
         RefreshImovelMediaGrid();
         _imovelVistorias = [];
         ImovelVistoriasGrid.ItemsSource = _imovelVistorias;
+    }
+
+    private void ScheduleApplyImovelMediaUi()
+    {
+        Dispatcher.BeginInvoke(ApplyImovelMediaUi, DispatcherPriority.Background);
+        Dispatcher.BeginInvoke(ApplyImovelMediaUi, DispatcherPriority.ContextIdle);
+    }
+
+    private void ApplyImovelMediaUi()
+    {
+        ApplyImovelMediaPreviews();
+        ApplyImovelMediaCardActions();
     }
 
     private void ApplyImovelMediaPreviews()
@@ -149,8 +158,20 @@ public partial class ShellWindow
             }
 
             var previewGrid = FindAncestor<Grid>(image);
-            if (previewGrid is null || previewGrid.Children.OfType<Button>().Any(button => button.Tag as string == "RemoveImovelMediaButton"))
+            if (previewGrid is null)
             {
+                continue;
+            }
+
+            var existingRemoveButton = previewGrid.Children
+                .OfType<Button>()
+                .FirstOrDefault(button => button.Tag as string == "RemoveImovelMediaButton");
+
+            if (existingRemoveButton is not null)
+            {
+                existingRemoveButton.Visibility = _isImovelEditing ? Visibility.Visible : Visibility.Collapsed;
+                existingRemoveButton.IsEnabled = _isImovelEditing;
+                existingRemoveButton.DataContext = media;
                 continue;
             }
 
@@ -169,7 +190,9 @@ public partial class ShellWindow
                 Foreground = Brushes.DarkRed,
                 ToolTip = "Remover esta mídia",
                 Tag = "RemoveImovelMediaButton",
-                DataContext = media
+                DataContext = media,
+                Visibility = _isImovelEditing ? Visibility.Visible : Visibility.Collapsed,
+                IsEnabled = _isImovelEditing
             };
             removeButton.Click += RemoveImovelMediaButton_Click;
             previewGrid.Children.Add(removeButton);
@@ -201,6 +224,12 @@ public partial class ShellWindow
     private void RemoveImovelMediaButton_Click(object sender, RoutedEventArgs e)
     {
         e.Handled = true;
+        if (!_isImovelEditing)
+        {
+            MessageBox.Show(this, "Clique em Editar antes de remover fotos ou arquivos.", "Remover mídia", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
         if ((sender as FrameworkElement)?.DataContext is not ImovelMediaListItem media)
         {
             return;
@@ -219,11 +248,7 @@ public partial class ShellWindow
 
         RemoveImovelMediaFromCurrentList(media);
         RefreshImovelMediaGrid();
-        Dispatcher.BeginInvoke(() =>
-        {
-            ApplyImovelMediaPreviews();
-            ApplyImovelMediaCardActions();
-        }, DispatcherPriority.Background);
+        ScheduleApplyImovelMediaUi();
     }
 
     private void RemoveImovelMediaFromCurrentList(ImovelMediaListItem media)
@@ -245,12 +270,100 @@ public partial class ShellWindow
 
     private void ShowImovelMediaPreviewWindow(ImovelMediaListItem media, string previewPath)
     {
+        var scale = new ScaleTransform(1, 1);
         var image = new Image
         {
             Stretch = Stretch.Uniform,
-            Margin = new Thickness(12)
+            Margin = new Thickness(12),
+            LayoutTransform = scale
         };
         SetImageSourceIfPossible(image, previewPath);
+
+        var zoomText = new TextBlock
+        {
+            Text = "100%",
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(10, 0, 10, 0),
+            Foreground = Brushes.DimGray
+        };
+
+        void ApplyZoom(double newZoom)
+        {
+            newZoom = Math.Clamp(newZoom, 0.25, 5.0);
+            scale.ScaleX = newZoom;
+            scale.ScaleY = newZoom;
+            zoomText.Text = $"{newZoom * 100:0}%";
+        }
+
+        var zoomOutButton = new Button
+        {
+            Content = "−",
+            Width = 34,
+            Height = 30,
+            ToolTip = "Diminuir zoom"
+        };
+        zoomOutButton.Click += (_, _) => ApplyZoom(scale.ScaleX - 0.25);
+
+        var zoomInButton = new Button
+        {
+            Content = "+",
+            Width = 34,
+            Height = 30,
+            Margin = new Thickness(6, 0, 0, 0),
+            ToolTip = "Aumentar zoom"
+        };
+        zoomInButton.Click += (_, _) => ApplyZoom(scale.ScaleX + 0.25);
+
+        var resetButton = new Button
+        {
+            Content = "100%",
+            Height = 30,
+            Margin = new Thickness(6, 0, 0, 0),
+            Padding = new Thickness(10, 0, 10, 0),
+            ToolTip = "Restaurar zoom"
+        };
+        resetButton.Click += (_, _) => ApplyZoom(1);
+
+        var hintText = new TextBlock
+        {
+            Text = "Ctrl + roda do mouse também altera o zoom",
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = Brushes.DimGray,
+            Margin = new Thickness(12, 0, 0, 0)
+        };
+
+        var toolbar = new DockPanel
+        {
+            LastChildFill = false,
+            Margin = new Thickness(10)
+        };
+        toolbar.Children.Add(zoomOutButton);
+        toolbar.Children.Add(zoomInButton);
+        toolbar.Children.Add(resetButton);
+        toolbar.Children.Add(zoomText);
+        toolbar.Children.Add(hintText);
+
+        var scrollViewer = new ScrollViewer
+        {
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = image
+        };
+        scrollViewer.PreviewMouseWheel += (_, e) =>
+        {
+            if ((Keyboard.Modifiers & ModifierKeys.Control) != ModifierKeys.Control)
+            {
+                return;
+            }
+
+            e.Handled = true;
+            ApplyZoom(scale.ScaleX + (e.Delta > 0 ? 0.15 : -0.15));
+        };
+
+        var layout = new DockPanel();
+        DockPanel.SetDock(toolbar, Dock.Top);
+        layout.Children.Add(toolbar);
+        layout.Children.Add(scrollViewer);
 
         var window = new Window
         {
@@ -260,12 +373,7 @@ public partial class ShellWindow
             Height = 680,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             Background = Brushes.White,
-            Content = new ScrollViewer
-            {
-                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Content = image
-            }
+            Content = layout
         };
 
         window.ShowDialog();
