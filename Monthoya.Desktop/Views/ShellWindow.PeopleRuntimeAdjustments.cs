@@ -137,9 +137,19 @@ public partial class ShellWindow
     {
         if (_isRestoringTabState)
         {
+            _ = Dispatcher.BeginInvoke(async () =>
+            {
+                await Task.Delay(50);
+                await LoadCurrentPessoaSelectionAsync();
+            }, DispatcherPriority.ContextIdle);
             return;
         }
 
+        await LoadCurrentPessoaSelectionAsync();
+    }
+
+    private async Task LoadCurrentPessoaSelectionAsync()
+    {
         var selectionVersion = Interlocked.Increment(ref _pessoasSelectionVersion);
 
         await _pessoasSelectionSemaphore.WaitAsync();
@@ -159,6 +169,7 @@ public partial class ShellWindow
                 SaveActiveTabState();
                 return;
             }
+
             SetPessoaDocumentoSelection(pessoa);
             var pessoaId = pessoa.Id;
             var details = await _rentalManagementService.GetPessoaAsync(pessoaId);
@@ -175,7 +186,6 @@ public partial class ShellWindow
                 SetPessoaEditMode(false, isNew: false);
             }
 
-            // Store selected name on the active tab so the tab shows the correct secondary text.
             if (_activeTab is not null)
             {
                 _activeTab.SelectedPessoaName = pessoa.Nome ?? string.Empty;
