@@ -52,7 +52,7 @@ public partial class ShellWindow
     private static void EnableDragPan(ScrollViewer scrollViewer)
     {
         var isDragging = false;
-        var dragStart = new Point();
+        var dragStart = new System.Windows.Point();
         var horizontalStart = 0.0;
         var verticalStart = 0.0;
         var previousCursor = scrollViewer.Cursor;
