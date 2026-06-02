@@ -73,7 +73,7 @@ public partial class ShellWindow
         {
             _isOpeningImoveisFast = true;
             await UpdateActiveTabAsync(ShellPage.Imoveis, "Imóveis", loadData: false);
-            await LoadImoveisAsync();
+            await LoadImoveisFastOpenSafeAsync();
 
             // Do not call RestoreActiveTabStateAsync again here. The list is visible after load,
             // and a delayed restore can clear a house clicked immediately after opening.
@@ -81,6 +81,23 @@ public partial class ShellWindow
         finally
         {
             _isOpeningImoveisFast = false;
+        }
+    }
+
+    private async Task LoadImoveisFastOpenSafeAsync()
+    {
+        _imoveis = await _rentalManagementService.GetImoveisAsync();
+        ApplyImoveisFilter();
+
+        _pessoas = await _rentalManagementService.GetPessoasAsync();
+        RefreshImovelProprietarioOptions();
+        await UpdateImovelOverdueKeysIndicatorAsync();
+
+        var selectedImovelId = _selectedImovelId;
+        if (selectedImovelId.HasValue)
+        {
+            await LoadImovelImagensAsync(selectedImovelId.Value);
+            await LoadImovelVistoriasAsync(selectedImovelId.Value);
         }
     }
 }
