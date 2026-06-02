@@ -3,6 +3,8 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -50,7 +52,11 @@ public partial class ShellWindow
         {
             if (ImovelImagensGrid.ItemContainerGenerator.Status == GeneratorStatus.ContainersGenerated)
             {
-                Dispatcher.BeginInvoke(ApplyImovelMediaPreviews, DispatcherPriority.Background);
+                Dispatcher.BeginInvoke(() =>
+                {
+                    ApplyImovelMediaPreviews();
+                    ApplyImovelMediaCardActions();
+                }, DispatcherPriority.Background);
             }
         };
     }
@@ -81,7 +87,11 @@ public partial class ShellWindow
                 return;
             }
 
-            Dispatcher.BeginInvoke(ApplyImovelMediaPreviews, DispatcherPriority.Background);
+            Dispatcher.BeginInvoke(() =>
+            {
+                ApplyImovelMediaPreviews();
+                ApplyImovelMediaCardActions();
+            }, DispatcherPriority.Background);
 
             if (!_isRestoringTabState)
             {
@@ -112,27 +122,175 @@ public partial class ShellWindow
                 continue;
             }
 
-            if (!string.IsNullOrWhiteSpace(media.PreviewPath))
-            {
-                SetImageSourceIfPossible(image, media.PreviewPath);
-                continue;
-            }
-
-            if (!string.IsNullOrWhiteSpace(media.FileKind))
-            {
-                continue;
-            }
-
-            var storagePath = _imovelImagens
-                .FirstOrDefault(saved => string.Equals(saved.FileName, media.FileName, StringComparison.OrdinalIgnoreCase))
-                ?.StoragePath;
-
-            var previewPath = ResolveLocalImovelPreviewPath(storagePath);
+            var previewPath = ResolveMediaPreviewPath(media);
             if (!string.IsNullOrWhiteSpace(previewPath))
             {
                 SetImageSourceIfPossible(image, previewPath);
             }
         }
+    }
+
+    private void ApplyImovelMediaCardActions()
+    {
+        foreach (var image in FindVisualChildrenForPeopleRuntimeAdjustment<Image>(ImovelImagensGrid))
+        {
+            if (image.DataContext is not ImovelMediaListItem media)
+            {
+                continue;
+            }
+
+            var card = FindAncestorWithSize<Border>(image, 142, 156);
+            if (card is not null && card.Tag as string != "ImovelMediaCardReady")
+            {
+                card.Tag = "ImovelMediaCardReady";
+                card.Cursor = Cursors.Hand;
+                card.MouseLeftButtonUp += ImovelMediaCard_MouseLeftButtonUp;
+                card.ToolTip = "Clique para ampliar";
+            }
+
+            var previewGrid = FindAncestor<Grid>(image);
+            if (previewGrid is null || previewGrid.Children.OfType<Button>().Any(button => button.Tag as string == "RemoveImovelMediaButton"))
+            {
+                continue;
+            }
+
+            var removeButton = new Button
+            {
+                Content = "×",
+                Width = 22,
+                Height = 22,
+                Padding = new Thickness(0),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, 3, 3, 0),
+                FontWeight = FontWeights.Bold,
+                Background = Brushes.White,
+                BorderBrush = Brushes.LightGray,
+                Foreground = Brushes.DarkRed,
+                ToolTip = "Remover esta mídia",
+                Tag = "RemoveImovelMediaButton",
+                DataContext = media
+            };
+            removeButton.Click += RemoveImovelMediaButton_Click;
+            previewGrid.Children.Add(removeButton);
+        }
+    }
+
+    private void ImovelMediaCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject source && FindAncestor<Button>(source) is not null)
+        {
+            return;
+        }
+
+        if ((sender as FrameworkElement)?.DataContext is not ImovelMediaListItem media)
+        {
+            return;
+        }
+
+        var previewPath = ResolveMediaPreviewPath(media);
+        if (string.IsNullOrWhiteSpace(previewPath))
+        {
+            MessageBox.Show(this, "Pré-visualização disponível apenas para imagens locais salvas neste computador.", "Pré-visualização", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        ShowImovelMediaPreviewWindow(media, previewPath);
+    }
+
+    private void RemoveImovelMediaButton_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if ((sender as FrameworkElement)?.DataContext is not ImovelMediaListItem media)
+        {
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            this,
+            $"Remover '{media.FileName}' da lista de fotos e arquivos?",
+            "Remover mídia",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        RemoveImovelMediaFromCurrentList(media);
+        RefreshImovelMediaGrid();
+        Dispatcher.BeginInvoke(() =>
+        {
+            ApplyImovelMediaPreviews();
+            ApplyImovelMediaCardActions();
+        }, DispatcherPriority.Background);
+    }
+
+    private void RemoveImovelMediaFromCurrentList(ImovelMediaListItem media)
+    {
+        var removedPending = _pendingImovelMedia.RemoveAll(pending =>
+            string.Equals(Path.GetFileName(pending.StoragePath), media.FileName, StringComparison.OrdinalIgnoreCase)) > 0;
+
+        if (removedPending)
+        {
+            ImovelImagemErrorText.Text = "Mídia pendente removida.";
+            return;
+        }
+
+        _imovelImagens = _imovelImagens
+            .Where(saved => !string.Equals(saved.FileName, media.FileName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        ImovelImagemErrorText.Text = "Mídia removida da lista nesta tela. A remoção permanente do banco/Storage será implementada na próxima etapa.";
+    }
+
+    private void ShowImovelMediaPreviewWindow(ImovelMediaListItem media, string previewPath)
+    {
+        var image = new Image
+        {
+            Stretch = Stretch.Uniform,
+            Margin = new Thickness(12)
+        };
+        SetImageSourceIfPossible(image, previewPath);
+
+        var window = new Window
+        {
+            Title = media.Caption is { Length: > 0 } ? media.Caption : media.FileName,
+            Owner = this,
+            Width = 920,
+            Height = 680,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = Brushes.White,
+            Content = new ScrollViewer
+            {
+                HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                Content = image
+            }
+        };
+
+        window.ShowDialog();
+    }
+
+    private string? ResolveMediaPreviewPath(ImovelMediaListItem media)
+    {
+        if (!string.IsNullOrWhiteSpace(media.PreviewPath))
+        {
+            return media.PreviewPath;
+        }
+
+        var savedStoragePath = _imovelImagens
+            .FirstOrDefault(saved => string.Equals(saved.FileName, media.FileName, StringComparison.OrdinalIgnoreCase))
+            ?.StoragePath;
+        var savedPreviewPath = ResolveLocalImovelPreviewPath(savedStoragePath);
+        if (!string.IsNullOrWhiteSpace(savedPreviewPath))
+        {
+            return savedPreviewPath;
+        }
+
+        var pendingStoragePath = _pendingImovelMedia
+            .FirstOrDefault(pending => string.Equals(Path.GetFileName(pending.StoragePath), media.FileName, StringComparison.OrdinalIgnoreCase))
+            ?.StoragePath;
+        return ResolveLocalImovelPreviewPath(pendingStoragePath);
     }
 
     private static void SetImageSourceIfPossible(Image image, string path)
@@ -172,5 +330,39 @@ public partial class ShellWindow
             storagePath.Replace("/", Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal));
 
         return File.Exists(localStoragePath) ? localStoragePath : null;
+    }
+
+    private static T? FindAncestor<T>(DependencyObject child)
+        where T : DependencyObject
+    {
+        var current = child;
+        while (current is not null)
+        {
+            if (current is T typed)
+            {
+                return typed;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
+    }
+
+    private static T? FindAncestorWithSize<T>(DependencyObject child, double width, double height)
+        where T : FrameworkElement
+    {
+        var current = child;
+        while (current is not null)
+        {
+            if (current is T typed && Math.Abs(typed.Width - width) < 0.1 && Math.Abs(typed.Height - height) < 0.1)
+            {
+                return typed;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
     }
 }
