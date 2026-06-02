@@ -25,6 +25,7 @@ public interface IRentalManagementService
     Task<ImovelChaveMovimentoSummary> ReturnImovelChaveMovimentoAsync(ReturnImovelChaveMovimentoRequest request, CancellationToken cancellationToken = default);
     Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default);
+    Task DeleteImovelImagemAsync(Guid imagemId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<IndiceReajusteSummary>> GetIndicesReajusteAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FinanceiroSummary>> GetLancamentosFinanceirosAsync(CancellationToken cancellationToken = default);
@@ -339,7 +340,7 @@ public sealed record NotaFiscalSummary(Guid Id, string Status, decimal ValorServ
 public sealed record DocumentoModeloSummary(Guid Id, string Tipo, string Nome, string StatusRevisao, string Ativo);
 public sealed record DimobDeclaracaoSummary(Guid Id, int AnoCalendario, string Status, string? Observacoes);
 public sealed record ManutencaoSummary(Guid Id, string Descricao, string Status, DateOnly DataSolicitacao, decimal? Valor);
-public sealed record VistoriaSummary(Guid Id, Guid ImovelId, string Imovel, string Tipo, DateOnly DataVistoria, string? Responsavel, string? Status, string? Observacoes);
+public sealed record VistoriaSummary(Guid Id, string Tipo, DateOnly DataVistoria, string? Responsavel, string? Status, string? Observacoes);
 
 public interface IBoletoProvider
 {
