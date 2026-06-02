@@ -171,6 +171,17 @@ public partial class ShellWindow
             }
 
             SetPessoaDocumentoSelection(pessoa);
+            PessoaErrorText.Text = string.Empty;
+            PessoaFormTitleText.Text = $"Carregando {pessoa.Nome}...";
+            PessoaEditButton.IsEnabled = false;
+            PessoaDeactivateButton.IsEnabled = false;
+
+            if (_activeTab is not null)
+            {
+                _activeTab.SelectedPessoaName = pessoa.Nome ?? string.Empty;
+                RenderTabs();
+            }
+
             var pessoaId = pessoa.Id;
             var details = await _rentalManagementService.GetPessoaAsync(pessoaId);
 
@@ -184,12 +195,6 @@ public partial class ShellWindow
             {
                 PopulatePessoaForm(details);
                 SetPessoaEditMode(false, isNew: false);
-            }
-
-            if (_activeTab is not null)
-            {
-                _activeTab.SelectedPessoaName = pessoa.Nome ?? string.Empty;
-                RenderTabs();
             }
 
             await LoadPessoaDocumentosAsync(pessoaId);
