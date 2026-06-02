@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Monthoya.Core.Services;
 
 namespace Monthoya.Desktop.Views;
 
@@ -43,10 +44,11 @@ public partial class ShellWindow
 
         _imoveisRuntimeFixesApplied = true;
 
-        // Replace the original async-void handler. The original handler returns during tab-state
-        // restore, which leaves media/vistorias from the previous Imóveis tab visible in the new tab.
+        // Replace the original async-void handlers with tab-safe versions.
         ImoveisGrid.SelectionChanged -= ImoveisGrid_SelectionChanged;
         ImoveisGrid.SelectionChanged += SafeImoveisGrid_SelectionChanged;
+        SaveImovelButton.Click -= SaveImovelButton_Click;
+        SaveImovelButton.Click += SafeSaveImovelButton_Click;
 
         ImoveisPanel.IsVisibleChanged += (_, _) =>
         {
@@ -66,7 +68,6 @@ public partial class ShellWindow
 
         ImovelEditButton.Click += (_, _) => ScheduleApplyImovelMediaUi();
         CancelImovelEditButton.Click += (_, _) => ScheduleApplyImovelMediaUi();
-        SaveImovelButton.Click += (_, _) => ScheduleApplyImovelMediaUi();
     }
 
     private void EnsureImoveisVisibleStateMatchesActiveTab()
@@ -96,6 +97,34 @@ public partial class ShellWindow
         SetActiveImovelTabLabel("Criar novo");
         RenderTabs();
         ScheduleApplyImovelMediaUi();
+    }
+
+    private async void SafeSaveImovelButton_Click(object sender, RoutedEventArgs e)
+    {
+        ImovelErrorText.Text = string.Empty;
+
+        try
+        {
+            var request = BuildImovelRequestFromForm();
+            var saved = _selectedImovelId.HasValue
+                ? await _rentalManagementService.UpdateImovelAsync(new UpdateImovelRequest(_selectedImovelId.Value, request))
+                : await _rentalManagementService.CreateImovelAsync(request);
+
+            var savedImovelId = saved.Id;
+            await SavePendingImovelMediaAsync(savedImovelId);
+            _pendingImovelMedia.Clear();
+
+            _selectedImovelId = savedImovelId;
+            await LoadImoveisAsync();
+            RestoreDataGridSelection(ImoveisGrid, savedImovelId);
+            await LoadSelectedImovelAsync(savedImovelId);
+            SaveActiveTabState();
+            ScheduleApplyImovelMediaUi();
+        }
+        catch (Exception ex)
+        {
+            ImovelErrorText.Text = ex.Message;
+        }
     }
 
     private async void SafeImoveisGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -153,6 +182,14 @@ public partial class ShellWindow
     {
         Dispatcher.BeginInvoke(ApplyImovelMediaUi, DispatcherPriority.Background);
         Dispatcher.BeginInvoke(ApplyImovelMediaUi, DispatcherPriority.ContextIdle);
+        _ = ApplyImovelMediaUiAfterDelayAsync(150);
+        _ = ApplyImovelMediaUiAfterDelayAsync(450);
+    }
+
+    private async Task ApplyImovelMediaUiAfterDelayAsync(int milliseconds)
+    {
+        await Task.Delay(milliseconds);
+        await Dispatcher.InvokeAsync(ApplyImovelMediaUi, DispatcherPriority.ContextIdle);
     }
 
     private void ApplyImovelMediaUi()
@@ -196,6 +233,11 @@ public partial class ShellWindow
                 card.ToolTip = "Clique para ampliar";
             }
 
+            if (card?.Child is StackPanel stackPanel)
+            {
+                ApplyMediaCaptionToCard(stackPanel, media);
+            }
+
             var previewGrid = FindAncestor<Grid>(image);
             if (previewGrid is null)
             {
@@ -236,6 +278,31 @@ public partial class ShellWindow
             removeButton.Click += RemoveImovelMediaButton_Click;
             previewGrid.Children.Add(removeButton);
         }
+    }
+
+    private static void ApplyMediaCaptionToCard(StackPanel stackPanel, ImovelMediaListItem media)
+    {
+        var captionText = stackPanel.Children
+            .OfType<TextBlock>()
+            .FirstOrDefault(textBlock => textBlock.Tag as string == "ImovelMediaCaptionText");
+
+        if (captionText is null)
+        {
+            captionText = new TextBlock
+            {
+                Tag = "ImovelMediaCaptionText",
+                Foreground = Brushes.DimGray,
+                FontSize = 11,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Margin = new Thickness(0, 2, 0, 0)
+            };
+            stackPanel.Children.Insert(Math.Min(2, stackPanel.Children.Count), captionText);
+        }
+
+        captionText.Text = string.IsNullOrWhiteSpace(media.Caption)
+            ? "Sem legenda"
+            : media.Caption;
+        captionText.Visibility = Visibility.Visible;
     }
 
     private void ImovelMediaCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -382,6 +449,14 @@ public partial class ShellWindow
         toolbar.Children.Add(zoomText);
         toolbar.Children.Add(hintText);
 
+        var caption = new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(media.Caption) ? string.Empty : media.Caption,
+            Foreground = Brushes.DimGray,
+            Margin = new Thickness(12, 0, 12, 8),
+            TextWrapping = TextWrapping.Wrap
+        };
+
         var scrollViewer = new ScrollViewer
         {
             HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
@@ -401,7 +476,12 @@ public partial class ShellWindow
 
         var layout = new DockPanel();
         DockPanel.SetDock(toolbar, Dock.Top);
+        DockPanel.SetDock(caption, Dock.Top);
         layout.Children.Add(toolbar);
+        if (!string.IsNullOrWhiteSpace(media.Caption))
+        {
+            layout.Children.Add(caption);
+        }
         layout.Children.Add(scrollViewer);
 
         var window = new Window
