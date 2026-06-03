@@ -154,19 +154,20 @@ public partial class ShellWindow
 
     private async void SaveChaveRetiradaButton_Click(object sender, RoutedEventArgs e)
     {
-        ChavesErrorText.Text = string.Empty;
+        ShowChavesStatusMessage("Salvando retirada...");
+        SaveChaveRetiradaButton.IsEnabled = false;
         try
         {
             if (ChavesImovelBox.SelectedValue is not Guid imovelId || imovelId == Guid.Empty)
             {
-                ChavesErrorText.Text = "Selecione o imóvel na lista.";
+                ShowChavesErrorMessage("Selecione o imóvel na lista.");
                 return;
             }
 
             var previsao = ChavesPrevisaoBox.SelectedDate;
             if (!previsao.HasValue)
             {
-                ChavesErrorText.Text = "Informe a previsão de devolução.";
+                ShowChavesErrorMessage("Informe a previsão de devolução.");
                 return;
             }
 
@@ -190,24 +191,31 @@ public partial class ShellWindow
                     ChavesObservacoesBox.Text));
 
             ClearChavesRetiradaForm();
-            SetChavesMovimentoMode(isReturn: true);
             await LoadChavesAsync();
             RestoreChavesListSelection(movimento.Id);
+            await RefreshChavesDualListsAsync();
+            ShowChavesSuccessMessage("Retirada registrada com sucesso.");
         }
         catch (Exception ex)
         {
-            ChavesErrorText.Text = GetChavesExceptionMessage(ex);
+            ShowChavesErrorMessage(GetChavesExceptionMessage(ex));
+        }
+        finally
+        {
+            SaveChaveRetiradaButton.IsEnabled = true;
         }
     }
 
     private async void ReturnChaveButton_Click(object sender, RoutedEventArgs e)
     {
-        ChavesErrorText.Text = string.Empty;
+        ShowChavesStatusMessage("Salvando devolução...");
+        ReturnChaveButton.IsEnabled = false;
         try
         {
-            if (ChavesGrid.SelectedItem is not ChavesListItem item || !item.MovimentoId.HasValue)
+            var item = GetSelectedChavesReturnItem();
+            if (item is null || !item.MovimentoId.HasValue)
             {
-                ChavesErrorText.Text = "Selecione uma chave retirada na lista.";
+                ShowChavesErrorMessage("Selecione uma chave retirada na lista da direita.");
                 return;
             }
 
@@ -221,10 +229,16 @@ public partial class ShellWindow
             ChavesDevolucaoObservacoesBox.Clear();
             await LoadChavesAsync();
             RestoreChavesListSelection(returned.Id);
+            await RefreshChavesDualListsAsync();
+            ShowChavesSuccessMessage("Devolução registrada com sucesso.");
         }
         catch (Exception ex)
         {
-            ChavesErrorText.Text = GetChavesExceptionMessage(ex);
+            ShowChavesErrorMessage(GetChavesExceptionMessage(ex));
+        }
+        finally
+        {
+            ReturnChaveButton.IsEnabled = true;
         }
     }
 
@@ -251,9 +265,10 @@ public partial class ShellWindow
 
     private void UpdateSelectedChaveMovement()
     {
-        if (ChavesGrid.SelectedItem is not ChavesListItem item || !item.MovimentoId.HasValue)
+        var item = GetSelectedChavesReturnItem();
+        if (item is null || !item.MovimentoId.HasValue)
         {
-            ChavesSelectedMovimentoText.Text = "Selecione uma chave retirada na lista.";
+            ChavesSelectedMovimentoText.Text = "Selecione uma chave retirada na lista da direita.";
             ReturnChaveButton.IsEnabled = false;
             return;
         }
