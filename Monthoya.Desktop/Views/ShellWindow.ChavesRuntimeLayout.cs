@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Monthoya.Core.Services;
 
@@ -11,8 +12,11 @@ public partial class ShellWindow
     private bool _chavesRuntimeLayoutApplied;
     private ComboBox? _chavesMovimentoTipoBox;
     private TextBlock? _chavesActionTitleText;
+    private TextBlock? _chavesSelectedImovelText;
     private StackPanel? _chavesRetiradaFieldsPanel;
     private StackPanel? _chavesDevolucaoFieldsPanel;
+    private ComboBox? _chavesRelacaoComboBox;
+    private TextBox? _chavesPrevisaoHoraBox;
 
     private static bool RegisterChavesRuntimeLayout()
     {
@@ -43,7 +47,7 @@ public partial class ShellWindow
 
         ChavesImovelBox.Visibility = Visibility.Collapsed;
         HideLabelImmediatelyBefore(ChavesImovelBox);
-        RelabelTextBlockImmediatelyBefore(ChavesRetiradoPorRelacaoBox, "Tipo de pessoa");
+        RelabelTextBlockImmediatelyBefore(ChavesRetiradoPorRelacaoBox, "Relação");
 
         ConfigureChavesSingleList();
         RebuildChavesPageLayout();
@@ -58,16 +62,18 @@ public partial class ShellWindow
         ChavesGrid.SelectionMode = DataGridSelectionMode.Single;
         ChavesGrid.SelectionUnit = DataGridSelectionUnit.FullRow;
         ChavesGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+        ChavesGrid.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
 
         if (ChavesGrid.Columns.Count > 0)
         {
             ChavesGrid.Columns.Clear();
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Imóvel", Binding = new System.Windows.Data.Binding("Imovel"), Width = new DataGridLength(2, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Código", Binding = new System.Windows.Data.Binding("ChaveCodigo"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Código", Binding = new System.Windows.Data.Binding("ChaveCodigo"), Width = new DataGridLength(0.7, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Endereço", Binding = new System.Windows.Data.Binding("Imovel"), Width = new DataGridLength(2.1, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Proprietário", Binding = new System.Windows.Data.Binding("Proprietario"), Width = new DataGridLength(1.5, DataGridLengthUnitType.Star) });
             ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Situação", Binding = new System.Windows.Data.Binding("Status"), Width = new DataGridLength(1.2, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Retirado por", Binding = new System.Windows.Data.Binding("RetiradoPorNome"), Width = new DataGridLength(1.4, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Retirado por", Binding = new System.Windows.Data.Binding("RetiradoPorNome"), Width = new DataGridLength(1.3, DataGridLengthUnitType.Star) });
             ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Telefone", Binding = new System.Windows.Data.Binding("RetiradoPorTelefone"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Tipo de pessoa", Binding = new System.Windows.Data.Binding("TipoPessoa"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Relação", Binding = new System.Windows.Data.Binding("Relacao"), Width = new DataGridLength(0.9, DataGridLengthUnitType.Star) });
             ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Motivo", Binding = new System.Windows.Data.Binding("Motivo"), Width = new DataGridLength(1.2, DataGridLengthUnitType.Star) });
             ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Retirado em", Binding = new System.Windows.Data.Binding("RetiradoEm") { StringFormat = "dd/MM/yyyy HH:mm" }, Width = new DataGridLength(1.1, DataGridLengthUnitType.Star) });
             ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Previsão", Binding = new System.Windows.Data.Binding("PrevisaoDevolucaoEm") { StringFormat = "dd/MM/yyyy HH:mm" }, Width = new DataGridLength(1.1, DataGridLengthUnitType.Star) });
@@ -97,6 +103,16 @@ public partial class ShellWindow
         DetachFromParent(searchHost);
         DetachFromParent(listHost);
 
+        var searchSection = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
+        searchSection.Children.Add(new TextBlock
+        {
+            Text = "Pesquisar imóveis",
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+        searchSection.Children.Add(searchHost);
+
         var contentGrid = new Grid { Margin = new Thickness(0, 16, 0, 0) };
         contentGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -106,12 +122,8 @@ public partial class ShellWindow
         Grid.SetRow(formHost, 0);
         contentGrid.Children.Add(formHost);
 
-        if (searchHost is FrameworkElement searchElement)
-        {
-            searchElement.Margin = new Thickness(0, 0, 0, 12);
-        }
-        Grid.SetRow(searchHost, 1);
-        contentGrid.Children.Add(searchHost);
+        Grid.SetRow(searchSection, 1);
+        contentGrid.Children.Add(searchSection);
 
         listHost.Margin = new Thickness(0);
         Grid.SetRow(listHost, 2);
@@ -150,6 +162,8 @@ public partial class ShellWindow
             return;
         }
 
+        DetachChavesOriginalFields();
+
         var mainPanel = new StackPanel();
         var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
         _chavesActionTitleText = new TextBlock
@@ -175,25 +189,138 @@ public partial class ShellWindow
         header.Children.Add(_chavesActionTitleText);
         header.Children.Add(_chavesMovimentoTipoBox);
 
-        _chavesRetiradaFieldsPanel = new StackPanel();
-        _chavesRetiradaFieldsPanel.Children.Add(ExtractWrapPanel(originalPanel));
-        DetachFromParent(SaveChaveRetiradaButton);
-        _chavesRetiradaFieldsPanel.Children.Add(SaveChaveRetiradaButton);
+        _chavesSelectedImovelText = new TextBlock
+        {
+            Foreground = Brushes.DimGray,
+            Margin = new Thickness(0, 0, 0, 10),
+            TextWrapping = TextWrapping.Wrap
+        };
 
-        _chavesDevolucaoFieldsPanel = new StackPanel();
-        DetachFromParent(ChavesSelectedMovimentoText);
-        _chavesDevolucaoFieldsPanel.Children.Add(ChavesSelectedMovimentoText);
-        _chavesDevolucaoFieldsPanel.Children.Add(CreateLabeledField("Recebido por", ChavesDevolvidoParaBox, 260));
-        _chavesDevolucaoFieldsPanel.Children.Add(CreateLabeledField("Observações da devolução", ChavesDevolucaoObservacoesBox, 420));
-        DetachFromParent(ReturnChaveButton);
-        _chavesDevolucaoFieldsPanel.Children.Add(ReturnChaveButton);
+        _chavesRetiradaFieldsPanel = BuildChavesRetiradaPanel();
+        _chavesDevolucaoFieldsPanel = BuildChavesDevolucaoPanel();
 
         mainPanel.Children.Add(header);
+        mainPanel.Children.Add(_chavesSelectedImovelText);
         mainPanel.Children.Add(_chavesRetiradaFieldsPanel);
         mainPanel.Children.Add(_chavesDevolucaoFieldsPanel);
-        DetachFromParent(ChavesErrorText);
         mainPanel.Children.Add(ChavesErrorText);
         retiradaHost.Child = mainPanel;
+    }
+
+    private StackPanel BuildChavesRetiradaPanel()
+    {
+        var panel = new StackPanel();
+        var fields = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left };
+
+        fields.Children.Add(CreateLabeledField("Código", ChavesCodigoBox, 90));
+        fields.Children.Add(CreateLabeledField("Retirado por", ChavesRetiradoPorNomeBox, 210));
+        fields.Children.Add(CreateLabeledField("Telefone", ChavesRetiradoPorTelefoneBox, 135));
+        fields.Children.Add(CreateLabeledField("Documento", ChavesRetiradoPorDocumentoBox, 145));
+        fields.Children.Add(CreateRelacaoField());
+        fields.Children.Add(CreateLabeledField("Motivo", ChavesMotivoBox, 230));
+        fields.Children.Add(CreatePrevisaoField());
+        fields.Children.Add(CreateLabeledField("Observações", ChavesObservacoesBox, 300));
+
+        SaveChaveRetiradaButton.HorizontalAlignment = HorizontalAlignment.Left;
+        SaveChaveRetiradaButton.MinWidth = 0;
+        SaveChaveRetiradaButton.Width = double.NaN;
+        SaveChaveRetiradaButton.Padding = new Thickness(18, 8, 18, 8);
+        SaveChaveRetiradaButton.Background = new SolidColorBrush(Color.FromRgb(0, 109, 176));
+        SaveChaveRetiradaButton.Foreground = Brushes.White;
+
+        panel.Children.Add(fields);
+        panel.Children.Add(SaveChaveRetiradaButton);
+        return panel;
+    }
+
+    private StackPanel BuildChavesDevolucaoPanel()
+    {
+        var panel = new StackPanel { HorizontalAlignment = HorizontalAlignment.Left };
+        var fields = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Left };
+        fields.Children.Add(CreateLabeledField("Recebido por", ChavesDevolvidoParaBox, 260));
+        fields.Children.Add(CreateLabeledField("Observações da devolução", ChavesDevolucaoObservacoesBox, 420));
+
+        ReturnChaveButton.HorizontalAlignment = HorizontalAlignment.Left;
+        ReturnChaveButton.MinWidth = 0;
+        ReturnChaveButton.Width = double.NaN;
+        ReturnChaveButton.Padding = new Thickness(18, 8, 18, 8);
+        ReturnChaveButton.Background = new SolidColorBrush(Color.FromRgb(0, 109, 176));
+        ReturnChaveButton.Foreground = Brushes.White;
+
+        panel.Children.Add(ChavesSelectedMovimentoText);
+        panel.Children.Add(fields);
+        panel.Children.Add(ReturnChaveButton);
+        return panel;
+    }
+
+    private UIElement CreateRelacaoField()
+    {
+        _chavesRelacaoComboBox = new ComboBox
+        {
+            Width = 145,
+            Margin = new Thickness(0, 6, 0, 0),
+            IsEditable = true,
+            ItemsSource = new[]
+            {
+                "Interessado",
+                "Cliente",
+                "Locatário",
+                "Proprietário",
+                "Corretor",
+                "Prestador",
+                "Terceiro",
+                "Outro"
+            }
+        };
+        _chavesRelacaoComboBox.SelectionChanged += (_, _) =>
+            ChavesRetiradoPorRelacaoBox.Text = _chavesRelacaoComboBox.Text;
+        _chavesRelacaoComboBox.LostFocus += (_, _) =>
+            ChavesRetiradoPorRelacaoBox.Text = _chavesRelacaoComboBox.Text;
+
+        var panel = new StackPanel { Width = 145, Margin = new Thickness(0, 0, 14, 12) };
+        panel.Children.Add(new TextBlock { Text = "Relação", FontWeight = FontWeights.SemiBold });
+        panel.Children.Add(_chavesRelacaoComboBox);
+        return panel;
+    }
+
+    private UIElement CreatePrevisaoField()
+    {
+        ChavesPrevisaoBox.Width = 125;
+        ChavesPrevisaoBox.Margin = new Thickness(0, 6, 6, 0);
+        _chavesPrevisaoHoraBox = new TextBox
+        {
+            Width = 70,
+            Margin = new Thickness(0, 6, 0, 0),
+            Text = "18:00",
+            ToolTip = "Horário previsto de devolução"
+        };
+
+        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        row.Children.Add(ChavesPrevisaoBox);
+        row.Children.Add(_chavesPrevisaoHoraBox);
+
+        var panel = new StackPanel { Width = 210, Margin = new Thickness(0, 0, 14, 12) };
+        panel.Children.Add(new TextBlock { Text = "Previsão de devolução", FontWeight = FontWeights.SemiBold });
+        panel.Children.Add(row);
+        return panel;
+    }
+
+    private void DetachChavesOriginalFields()
+    {
+        DetachFromParent(ChavesCodigoBox);
+        DetachFromParent(ChavesRetiradoPorNomeBox);
+        DetachFromParent(ChavesRetiradoPorTelefoneBox);
+        DetachFromParent(ChavesRetiradoPorDocumentoBox);
+        DetachFromParent(ChavesRetiradoPorRelacaoBox);
+        DetachFromParent(ChavesPrevisaoBox);
+        DetachFromParent(ChavesMotivoBox);
+        DetachFromParent(ChavesObservacoesBox);
+        DetachFromParent(SaveChaveRetiradaButton);
+        DetachFromParent(ChavesSelectedMovimentoText);
+        DetachFromParent(ChavesDevolvidoParaBox);
+        DetachFromParent(ChavesDevolucaoObservacoesBox);
+        DetachFromParent(ReturnChaveButton);
+        DetachFromParent(ChavesErrorText);
     }
 
     private string? GetChavesSelectedMode()
@@ -207,21 +334,10 @@ public partial class ShellWindow
 
         var panel = new StackPanel { Width = width, Margin = new Thickness(0, 0, 14, 12) };
         panel.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold });
+        field.Width = width;
         field.Margin = new Thickness(0, 6, 0, 0);
         panel.Children.Add(field);
         return panel;
-    }
-
-    private static WrapPanel ExtractWrapPanel(StackPanel sourcePanel)
-    {
-        var wrap = sourcePanel.Children.OfType<WrapPanel>().FirstOrDefault();
-        if (wrap is not null)
-        {
-            sourcePanel.Children.Remove(wrap);
-            return wrap;
-        }
-
-        return new WrapPanel();
     }
 
     private void SetChavesMovimentoMode(bool isReturn, bool clearMode = false)
@@ -236,18 +352,61 @@ public partial class ShellWindow
             _chavesActionTitleText.Text = "Chaves dos imóveis disponíveis";
         }
 
+        var showFields = !clearMode;
+        if (_chavesSelectedImovelText is not null)
+        {
+            _chavesSelectedImovelText.Visibility = showFields ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         if (_chavesRetiradaFieldsPanel is not null)
         {
-            _chavesRetiradaFieldsPanel.Visibility = isReturn && !clearMode ? Visibility.Collapsed : Visibility.Visible;
+            _chavesRetiradaFieldsPanel.Visibility = showFields && !isReturn ? Visibility.Visible : Visibility.Collapsed;
         }
 
         if (_chavesDevolucaoFieldsPanel is not null)
         {
-            _chavesDevolucaoFieldsPanel.Visibility = isReturn && !clearMode ? Visibility.Visible : Visibility.Collapsed;
+            _chavesDevolucaoFieldsPanel.Visibility = showFields && isReturn ? Visibility.Visible : Visibility.Collapsed;
+        }
+    }
+
+    private void UpdateChavesSelectedImovelSummary(string? imovel, string? proprietario)
+    {
+        if (_chavesSelectedImovelText is null)
+        {
+            return;
         }
 
-        SaveChaveRetiradaButton.Visibility = isReturn && !clearMode ? Visibility.Collapsed : Visibility.Visible;
-        ReturnChaveButton.Visibility = isReturn && !clearMode ? Visibility.Visible : Visibility.Collapsed;
+        _chavesSelectedImovelText.Text = string.IsNullOrWhiteSpace(imovel)
+            ? string.Empty
+            : $"Imóvel: {imovel} | Proprietário: {proprietario ?? "-"}";
+    }
+
+    private void ClearChavesSelectedImovelSummary()
+    {
+        if (_chavesSelectedImovelText is not null)
+        {
+            _chavesSelectedImovelText.Text = string.Empty;
+        }
+    }
+
+    private void ResetChavesRelacaoDropdown()
+    {
+        if (_chavesRelacaoComboBox is not null)
+        {
+            _chavesRelacaoComboBox.SelectedIndex = -1;
+            _chavesRelacaoComboBox.Text = string.Empty;
+        }
+    }
+
+    private TimeSpan GetChavesPrevisaoHorario()
+    {
+        if (_chavesPrevisaoHoraBox is not null
+            && TimeSpan.TryParse(_chavesPrevisaoHoraBox.Text, CultureInfo.GetCultureInfo("pt-BR"), out var parsed))
+        {
+            return parsed;
+        }
+
+        return TimeSpan.FromHours(18);
     }
 
     private static void HideLabelImmediatelyBefore(FrameworkElement field)
