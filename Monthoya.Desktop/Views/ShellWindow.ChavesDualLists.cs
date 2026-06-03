@@ -73,7 +73,6 @@ public partial class ShellWindow
         };
 
         _ = RefreshChavesDualListsAsync();
-        _ = LoadChavesBoardCodesOnceAsync();
     }
 
     private void BuildChavesDualListLayout(Border originalListHost, UIElement originalSearchHost)
@@ -139,6 +138,7 @@ public partial class ShellWindow
                 _selectedChavesTakenItem = item;
                 ChavesGrid.SelectedItem = null;
                 SetChavesMovimentoMode(isReturn: true);
+                SetChavesReturnDateTimeToNow();
                 ChavesImovelBox.SelectedValue = item.ImovelId;
                 ChavesCodigoBox.Text = item.ChaveCodigo ?? string.Empty;
                 UpdateChavesSelectedImovelSummary(item.Imovel, item.Proprietario);
@@ -248,19 +248,6 @@ public partial class ShellWindow
         }
 
         _lastAllChavesItems = BuildAllChavesItemsFromCurrentData();
-        ApplyLoadedBoardCodesToCachedItems();
-        RefreshChavesDualListsFromCache();
-        await LoadChavesBoardCodesOnceAsync();
-    }
-
-    private async Task LoadChavesBoardCodesOnceAsync()
-    {
-        if (_chavesBoardCodeLoadStarted)
-        {
-            return;
-        }
-
-        _chavesBoardCodeLoadStarted = true;
         await LoadMissingChavesBoardCodesForCachedItemsAsync();
         ApplyLoadedBoardCodesToCachedItems();
         RefreshChavesDualListsFromCache();
@@ -270,7 +257,7 @@ public partial class ShellWindow
     {
         foreach (var item in _lastAllChavesItems)
         {
-            if (_chavesBoardCodeByImovelId.ContainsKey(item.ImovelId))
+            if (_chavesBoardCodeByImovelId.TryGetValue(item.ImovelId, out var code) && !string.IsNullOrWhiteSpace(code))
             {
                 continue;
             }
@@ -362,17 +349,18 @@ public partial class ShellWindow
             return;
         }
 
-        if (_chavesTakenGrid.Columns.Count == 5)
+        if (_chavesTakenGrid.Columns.Count == 6)
         {
             return;
         }
 
         _chavesTakenGrid.Columns.Clear();
-        AddGridColumn(_chavesTakenGrid, "Código", "ChaveCodigo", 0.45);
-        AddGridColumn(_chavesTakenGrid, "Endereço", "Imovel", 1.4);
-        AddGridColumn(_chavesTakenGrid, "Retirado por", "RetiradoPorNome", 1.0);
-        AddGridColumn(_chavesTakenGrid, "Telefone", "RetiradoPorTelefone", 0.8);
-        AddGridColumn(_chavesTakenGrid, "Previsão", "PrevisaoDevolucaoEm", 0.9, "dd/MM HH:mm");
+        AddGridColumn(_chavesTakenGrid, "Código", "ChaveCodigo", 0.4);
+        AddGridColumn(_chavesTakenGrid, "Endereço", "Imovel", 1.25);
+        AddGridColumn(_chavesTakenGrid, "Retirado por", "RetiradoPorNome", 0.9);
+        AddGridColumn(_chavesTakenGrid, "Telefone", "RetiradoPorTelefone", 0.75);
+        AddGridColumn(_chavesTakenGrid, "Retirado em", "RetiradoEm", 0.85, "dd/MM HH:mm");
+        AddGridColumn(_chavesTakenGrid, "Previsão", "PrevisaoDevolucaoEm", 0.85, "dd/MM HH:mm");
     }
 
     private static void AddGridColumn(DataGrid grid, string header, string binding, double width, string? stringFormat = null)
