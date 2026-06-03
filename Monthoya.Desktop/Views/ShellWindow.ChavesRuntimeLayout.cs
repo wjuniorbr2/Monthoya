@@ -2,7 +2,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Monthoya.Core.Services;
 
 namespace Monthoya.Desktop.Views;
 
@@ -49,89 +48,19 @@ public partial class ShellWindow
         HideLabelImmediatelyBefore(ChavesImovelBox);
         RelabelTextBlockImmediatelyBefore(ChavesRetiradoPorRelacaoBox, "Relação");
 
-        ConfigureChavesSingleList();
-        RebuildChavesPageLayout();
-
-        SetChavesMovimentoMode(isReturn: false, clearMode: true);
-        ApplyChavesFilter();
-    }
-
-    private void ConfigureChavesSingleList()
-    {
-        ChavesGrid.MaxHeight = double.PositiveInfinity;
-        ChavesGrid.SelectionMode = DataGridSelectionMode.Single;
-        ChavesGrid.SelectionUnit = DataGridSelectionUnit.FullRow;
-        ChavesGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-        ChavesGrid.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
-
-        if (ChavesGrid.Columns.Count > 0)
-        {
-            ChavesGrid.Columns.Clear();
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Código", Binding = new System.Windows.Data.Binding("ChaveCodigo"), Width = new DataGridLength(0.7, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Endereço", Binding = new System.Windows.Data.Binding("Imovel"), Width = new DataGridLength(2.1, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Proprietário", Binding = new System.Windows.Data.Binding("Proprietario"), Width = new DataGridLength(1.5, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Situação", Binding = new System.Windows.Data.Binding("Status"), Width = new DataGridLength(1.2, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Retirado por", Binding = new System.Windows.Data.Binding("RetiradoPorNome"), Width = new DataGridLength(1.3, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Telefone", Binding = new System.Windows.Data.Binding("RetiradoPorTelefone"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Relação", Binding = new System.Windows.Data.Binding("Relacao"), Width = new DataGridLength(0.9, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Motivo", Binding = new System.Windows.Data.Binding("Motivo"), Width = new DataGridLength(1.2, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Retirado em", Binding = new System.Windows.Data.Binding("RetiradoEm") { StringFormat = "dd/MM/yyyy HH:mm" }, Width = new DataGridLength(1.1, DataGridLengthUnitType.Star) });
-            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Previsão", Binding = new System.Windows.Data.Binding("PrevisaoDevolucaoEm") { StringFormat = "dd/MM/yyyy HH:mm" }, Width = new DataGridLength(1.1, DataGridLengthUnitType.Star) });
-        }
-    }
-
-    private void RebuildChavesPageLayout()
-    {
         var formHost = FindChavesFormHost();
         var returnHost = FindChavesReturnHost();
-        var listHost = FindChavesListHost();
-        var searchHost = ChavesSearchBox.Parent as UIElement;
-
-        if (formHost is null || listHost is null || searchHost is null)
-        {
-            return;
-        }
-
         if (returnHost is not null)
         {
             returnHost.Visibility = Visibility.Collapsed;
         }
 
-        BuildChavesTopUnifiedForm(formHost);
-
-        DetachFromParent(formHost);
-        DetachFromParent(searchHost);
-        DetachFromParent(listHost);
-
-        var searchSection = new StackPanel { Margin = new Thickness(0, 0, 0, 12) };
-        searchSection.Children.Add(new TextBlock
+        if (formHost is not null)
         {
-            Text = "Pesquisar imóveis",
-            FontSize = 16,
-            FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 8)
-        });
-        searchSection.Children.Add(searchHost);
+            BuildChavesTopUnifiedForm(formHost);
+        }
 
-        var contentGrid = new Grid { Margin = new Thickness(0, 16, 0, 0) };
-        contentGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        contentGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-
-        formHost.Margin = new Thickness(0, 0, 0, 12);
-        Grid.SetRow(formHost, 0);
-        contentGrid.Children.Add(formHost);
-
-        Grid.SetRow(searchSection, 1);
-        contentGrid.Children.Add(searchSection);
-
-        listHost.Margin = new Thickness(0);
-        Grid.SetRow(listHost, 2);
-        contentGrid.Children.Add(listHost);
-
-        Grid.SetRow(contentGrid, 1);
-        Grid.SetRowSpan(contentGrid, 3);
-        ChavesPanel.Children.Add(contentGrid);
+        SetChavesMovimentoMode(isReturn: false, clearMode: true);
     }
 
     private Border? FindChavesFormHost()
@@ -164,7 +93,7 @@ public partial class ShellWindow
         DetachChavesOriginalFields();
 
         var mainPanel = new StackPanel();
-        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 10) };
         _chavesActionTitleText = new TextBlock
         {
             Text = "Chaves dos imóveis disponíveis",
@@ -191,7 +120,7 @@ public partial class ShellWindow
         _chavesSelectedImovelText = new TextBlock
         {
             Foreground = Brushes.DimGray,
-            Margin = new Thickness(0, 0, 0, 10),
+            Margin = new Thickness(0, 0, 0, 8),
             TextWrapping = TextWrapping.Wrap
         };
 
@@ -216,7 +145,7 @@ public partial class ShellWindow
         fields.Children.Add(CreateLabeledField("Telefone", ChavesRetiradoPorTelefoneBox, 135));
         fields.Children.Add(CreateLabeledField("Documento", ChavesRetiradoPorDocumentoBox, 145));
         fields.Children.Add(CreateRelacaoField());
-        fields.Children.Add(CreateLabeledField("Motivo", ChavesMotivoBox, 230));
+        fields.Children.Add(CreateLabeledField("Motivo", ChavesMotivoBox, 180));
         fields.Children.Add(CreatePrevisaoField());
         fields.Children.Add(CreateLabeledField("Observações", ChavesObservacoesBox, 300));
 
@@ -226,6 +155,7 @@ public partial class ShellWindow
         SaveChaveRetiradaButton.Padding = new Thickness(18, 8, 18, 8);
         SaveChaveRetiradaButton.Background = new SolidColorBrush(Color.FromRgb(0, 109, 176));
         SaveChaveRetiradaButton.Foreground = Brushes.White;
+        SaveChaveRetiradaButton.Margin = new Thickness(0, 0, 0, 0);
 
         panel.Children.Add(fields);
         panel.Children.Add(SaveChaveRetiradaButton);
@@ -245,6 +175,7 @@ public partial class ShellWindow
         ReturnChaveButton.Padding = new Thickness(18, 8, 18, 8);
         ReturnChaveButton.Background = new SolidColorBrush(Color.FromRgb(0, 109, 176));
         ReturnChaveButton.Foreground = Brushes.White;
+        ReturnChaveButton.Margin = new Thickness(0, 0, 0, 0);
 
         panel.Children.Add(ChavesSelectedMovimentoText);
         panel.Children.Add(fields);
@@ -276,7 +207,7 @@ public partial class ShellWindow
         _chavesRelacaoComboBox.LostFocus += (_, _) =>
             ChavesRetiradoPorRelacaoBox.Text = _chavesRelacaoComboBox.Text;
 
-        var panel = new StackPanel { Width = 145, Margin = new Thickness(0, 0, 14, 12) };
+        var panel = new StackPanel { Width = 145, Margin = new Thickness(0, 0, 14, 8) };
         panel.Children.Add(new TextBlock { Text = "Relação", FontWeight = FontWeights.SemiBold });
         panel.Children.Add(_chavesRelacaoComboBox);
         return panel;
@@ -298,7 +229,7 @@ public partial class ShellWindow
         row.Children.Add(ChavesPrevisaoBox);
         row.Children.Add(_chavesPrevisaoHoraBox);
 
-        var panel = new StackPanel { Width = 210, Margin = new Thickness(0, 0, 14, 12) };
+        var panel = new StackPanel { Width = 210, Margin = new Thickness(0, 0, 14, 8) };
         panel.Children.Add(new TextBlock { Text = "Previsão de devolução", FontWeight = FontWeights.SemiBold });
         panel.Children.Add(row);
         return panel;
@@ -331,7 +262,7 @@ public partial class ShellWindow
     {
         DetachFromParent(field);
 
-        var panel = new StackPanel { Width = width, Margin = new Thickness(0, 0, 14, 12) };
+        var panel = new StackPanel { Width = width, Margin = new Thickness(0, 0, 14, 8) };
         panel.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold });
         field.Width = width;
         field.Margin = new Thickness(0, 6, 0, 0);
