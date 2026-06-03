@@ -196,7 +196,7 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ChavesErrorText.Text = ex.Message;
+            ChavesErrorText.Text = GetChavesExceptionMessage(ex);
         }
     }
 
@@ -224,8 +224,16 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ChavesErrorText.Text = ex.Message;
+            ChavesErrorText.Text = GetChavesExceptionMessage(ex);
         }
+    }
+
+    private static string GetChavesExceptionMessage(Exception ex)
+    {
+        var baseException = ex.GetBaseException();
+        return baseException is not null && !string.Equals(baseException.Message, ex.Message, StringComparison.Ordinal)
+            ? $"{ex.Message} Detalhe: {baseException.Message}"
+            : ex.Message;
     }
 
     private void RestoreChavesListSelection(Guid movimentoId)
