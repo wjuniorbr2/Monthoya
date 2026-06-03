@@ -7,11 +7,10 @@ namespace Monthoya.Desktop.Views;
 
 public partial class ShellWindow
 {
-    private const double ChavesListPanelMaxWidth = 760;
+    private const double ChavesListPanelMaxWidth = 800;
 
     private static readonly bool ChavesDualListsRegistered = RegisterChavesDualLists();
     private bool _chavesDualListsApplied;
-    private bool _chavesBoardCodeLoadStarted;
     private DataGrid? _chavesTakenGrid;
     private TextBox? _chavesTakenSearchBox;
     private ChavesListItem? _selectedChavesTakenItem;
@@ -98,7 +97,7 @@ public partial class ShellWindow
         ChavesGrid.HorizontalAlignment = HorizontalAlignment.Stretch;
         ChavesGrid.VerticalAlignment = VerticalAlignment.Stretch;
 
-        originalListHost.Margin = new Thickness(0, 8, 0, 0);
+        originalListHost.Margin = new Thickness(0, 6, 0, 0);
         originalListHost.Padding = new Thickness(8);
         originalListHost.HorizontalAlignment = HorizontalAlignment.Stretch;
         originalListHost.VerticalAlignment = VerticalAlignment.Stretch;
@@ -107,7 +106,8 @@ public partial class ShellWindow
         var leftPanel = CreateChavesDualListPanel(
             "Pesquisar imóveis disponíveis",
             ChavesSearchBox,
-            originalListHost);
+            originalListHost,
+            HorizontalAlignment.Stretch);
 
         _chavesTakenSearchBox = new TextBox
         {
@@ -153,7 +153,7 @@ public partial class ShellWindow
             BorderThickness = originalListHost.BorderThickness,
             CornerRadius = originalListHost.CornerRadius,
             Padding = new Thickness(8),
-            Margin = new Thickness(0, 8, 0, 0),
+            Margin = new Thickness(0, 6, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch,
             Child = _chavesTakenGrid
@@ -162,10 +162,11 @@ public partial class ShellWindow
         var rightPanel = CreateChavesDualListPanel(
             "Pesquisar chaves retiradas",
             _chavesTakenSearchBox,
-            rightListHost);
+            rightListHost,
+            HorizontalAlignment.Stretch);
 
-        var dualGrid = new Grid { Margin = new Thickness(0, 8, 0, 10) };
-        dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var dualGrid = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+        dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1.03, GridUnitType.Star) });
         dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
         dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         Grid.SetColumn(leftPanel, 0);
@@ -187,19 +188,19 @@ public partial class ShellWindow
         ChavesPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         ChavesPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
-        formHost.Margin = new Thickness(0, 0, 0, 12);
+        formHost.Margin = new Thickness(0, 0, 0, 6);
         Grid.SetRow(formHost, 0);
         Grid.SetRow(dualGrid, 1);
         ChavesPanel.Children.Add(formHost);
         ChavesPanel.Children.Add(dualGrid);
     }
 
-    private static Grid CreateChavesDualListPanel(string title, UIElement searchHost, Border listHost)
+    private static Grid CreateChavesDualListPanel(string title, UIElement searchHost, Border listHost, HorizontalAlignment alignment)
     {
         var panel = new Grid
         {
             MaxWidth = ChavesListPanelMaxWidth,
-            HorizontalAlignment = HorizontalAlignment.Stretch
+            HorizontalAlignment = alignment
         };
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
@@ -210,7 +211,7 @@ public partial class ShellWindow
             Text = title,
             FontSize = 16,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 8)
+            Margin = new Thickness(0, 0, 0, 6)
         };
 
         Grid.SetRow(titleBlock, 0);
