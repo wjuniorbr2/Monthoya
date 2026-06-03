@@ -105,6 +105,7 @@ public partial class ShellWindow
         {
             NormalizeChavesListForCurrentMode();
             ConfigureChavesColumnsForCurrentMode();
+            ConfigureChavesListCardBounds();
             UpdateChavesBoardCodeDisplayFromSelection();
             await RefreshChavesBoardCodesFromImoveisAsync();
         }
@@ -149,10 +150,16 @@ public partial class ShellWindow
             return;
         }
 
-        listHost.Margin = new Thickness(0, 8, 10, 0);
+        listHost.Margin = new Thickness(0, 14, 18, 12);
         listHost.HorizontalAlignment = HorizontalAlignment.Stretch;
-        listHost.Padding = new Thickness(0);
+        listHost.VerticalAlignment = VerticalAlignment.Stretch;
+        listHost.Padding = new Thickness(10);
+
         ChavesGrid.Margin = new Thickness(0);
+        ChavesGrid.HorizontalAlignment = HorizontalAlignment.Stretch;
+        ChavesGrid.VerticalAlignment = VerticalAlignment.Stretch;
+        ChavesGrid.MinHeight = 0;
+        ChavesGrid.MaxHeight = double.PositiveInfinity;
     }
 
     private void ReorderChavesRetiradaFields()
@@ -309,6 +316,7 @@ public partial class ShellWindow
                 : item)
             .ToList();
         ConfigureChavesColumnsForCurrentMode();
+        ConfigureChavesListCardBounds();
         UpdateChavesBoardCodeDisplayFromSelection();
     }
 
