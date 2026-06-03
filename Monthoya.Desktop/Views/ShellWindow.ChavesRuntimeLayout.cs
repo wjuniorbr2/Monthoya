@@ -157,7 +157,7 @@ public partial class ShellWindow
         SaveChaveRetiradaButton.Padding = new Thickness(18, 7, 18, 7);
         SaveChaveRetiradaButton.Background = new SolidColorBrush(Color.FromRgb(0, 109, 176));
         SaveChaveRetiradaButton.Foreground = Brushes.White;
-        SaveChaveRetiradaButton.Margin = new Thickness(0, -5, 0, 0);
+        SaveChaveRetiradaButton.Margin = new Thickness(0, 3, 0, 0);
 
         panel.Children.Add(fields);
         panel.Children.Add(SaveChaveRetiradaButton);
