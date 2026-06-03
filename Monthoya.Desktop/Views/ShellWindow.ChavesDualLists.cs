@@ -96,6 +96,7 @@ public partial class ShellWindow
         ChavesGrid.MaxHeight = double.PositiveInfinity;
         ChavesGrid.HorizontalAlignment = HorizontalAlignment.Stretch;
         ChavesGrid.VerticalAlignment = VerticalAlignment.Stretch;
+        ChavesGrid.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
 
         originalListHost.Margin = new Thickness(0, 6, 0, 0);
         originalListHost.Padding = new Thickness(8);
@@ -128,7 +129,7 @@ public partial class ShellWindow
             MinHeight = 0,
             MaxHeight = double.PositiveInfinity,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
         ConfigureTakenKeysGridColumns();
         _chavesTakenGrid.SelectionChanged += (_, _) =>
@@ -356,12 +357,12 @@ public partial class ShellWindow
         }
 
         _chavesTakenGrid.Columns.Clear();
-        AddGridColumn(_chavesTakenGrid, "Código", "ChaveCodigo", 0.4);
-        AddGridColumn(_chavesTakenGrid, "Endereço", "Imovel", 1.25);
-        AddGridColumn(_chavesTakenGrid, "Retirado por", "RetiradoPorNome", 0.9);
-        AddGridColumn(_chavesTakenGrid, "Telefone", "RetiradoPorTelefone", 0.75);
-        AddGridColumn(_chavesTakenGrid, "Retirado em", "RetiradoEm", 0.85, "dd/MM HH:mm");
-        AddGridColumn(_chavesTakenGrid, "Previsão", "PrevisaoDevolucaoEm", 0.85, "dd/MM HH:mm");
+        AddGridColumn(_chavesTakenGrid, "Código", "ChaveCodigo", 0.38);
+        AddGridColumn(_chavesTakenGrid, "Endereço", "Imovel", 1.22);
+        AddGridColumn(_chavesTakenGrid, "Retirado por", "RetiradoPorNome", 0.85);
+        AddGridColumn(_chavesTakenGrid, "Telefone", "RetiradoPorTelefone", 0.7);
+        AddGridColumn(_chavesTakenGrid, "Retirado em", "RetiradoEm", 0.78, "dd/MM HH:mm");
+        AddGridColumn(_chavesTakenGrid, "Previsão", "PrevisaoDevolucaoEm", 0.74, "dd/MM HH:mm");
     }
 
     private static void AddGridColumn(DataGrid grid, string header, string binding, double width, string? stringFormat = null)
