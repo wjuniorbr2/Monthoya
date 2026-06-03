@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -367,46 +366,6 @@ public partial class ShellWindow
         {
             _chavesDevolucaoFieldsPanel.Visibility = showFields && isReturn ? Visibility.Visible : Visibility.Collapsed;
         }
-    }
-
-    private void UpdateChavesSelectedImovelSummary(string? imovel, string? proprietario)
-    {
-        if (_chavesSelectedImovelText is null)
-        {
-            return;
-        }
-
-        _chavesSelectedImovelText.Text = string.IsNullOrWhiteSpace(imovel)
-            ? string.Empty
-            : $"Imóvel: {imovel} | Proprietário: {proprietario ?? "-"}";
-    }
-
-    private void ClearChavesSelectedImovelSummary()
-    {
-        if (_chavesSelectedImovelText is not null)
-        {
-            _chavesSelectedImovelText.Text = string.Empty;
-        }
-    }
-
-    private void ResetChavesRelacaoDropdown()
-    {
-        if (_chavesRelacaoComboBox is not null)
-        {
-            _chavesRelacaoComboBox.SelectedIndex = -1;
-            _chavesRelacaoComboBox.Text = string.Empty;
-        }
-    }
-
-    private TimeSpan GetChavesPrevisaoHorario()
-    {
-        if (_chavesPrevisaoHoraBox is not null
-            && TimeSpan.TryParse(_chavesPrevisaoHoraBox.Text, CultureInfo.GetCultureInfo("pt-BR"), out var parsed))
-        {
-            return parsed;
-        }
-
-        return TimeSpan.FromHours(18);
     }
 
     private static void HideLabelImmediatelyBefore(FrameworkElement field)
