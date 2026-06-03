@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -156,8 +157,7 @@ public partial class ShellWindow
 
     private void BuildChavesTopUnifiedForm(Border retiradaHost)
     {
-        var originalPanel = retiradaHost.Child as StackPanel;
-        if (originalPanel is null)
+        if (retiradaHost.Child is not StackPanel)
         {
             return;
         }
