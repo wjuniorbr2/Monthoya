@@ -74,22 +74,19 @@ public partial class ShellWindow
 
     private void BuildChavesDualListLayout(Border originalListHost, UIElement originalSearchHost)
     {
+        var formHost = FindChavesFormHost();
+
         HideOldChavesSearchSection(originalSearchHost);
         DetachFromParent(originalSearchHost);
         DetachFromParent(originalListHost);
+        if (formHost is not null)
+        {
+            DetachFromParent(formHost);
+        }
 
         ChavesSearchBox.Width = double.NaN;
         ChavesSearchBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-
-        var leftSearchSection = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
-        leftSearchSection.Children.Add(new TextBlock
-        {
-            Text = "Pesquisar imóveis disponíveis",
-            FontSize = 16,
-            FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 8)
-        });
-        leftSearchSection.Children.Add(originalSearchHost);
+        ChavesSearchBox.Margin = new Thickness(0);
 
         ConfigureAvailableKeysGridColumns();
         ChavesGrid.MinHeight = 0;
@@ -97,15 +94,16 @@ public partial class ShellWindow
         ChavesGrid.HorizontalAlignment = HorizontalAlignment.Stretch;
         ChavesGrid.VerticalAlignment = VerticalAlignment.Stretch;
 
-        var leftPanel = new Grid();
-        leftPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        leftPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        Grid.SetRow(leftSearchSection, 0);
-        Grid.SetRow(originalListHost, 1);
-        originalListHost.Margin = new Thickness(0);
+        originalListHost.Margin = new Thickness(0, 8, 0, 0);
         originalListHost.Padding = new Thickness(8);
-        leftPanel.Children.Add(leftSearchSection);
-        leftPanel.Children.Add(originalListHost);
+        originalListHost.HorizontalAlignment = HorizontalAlignment.Stretch;
+        originalListHost.VerticalAlignment = VerticalAlignment.Stretch;
+        originalListHost.Child = ChavesGrid;
+
+        var leftPanel = CreateChavesDualListPanel(
+            "Pesquisar imóveis disponíveis",
+            originalSearchHost,
+            originalListHost);
 
         _chavesTakenSearchBox = new TextBox
         {
@@ -114,16 +112,6 @@ public partial class ShellWindow
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         _chavesTakenSearchBox.TextChanged += async (_, _) => await RefreshChavesDualListsAsync();
-
-        var rightSearchSection = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
-        rightSearchSection.Children.Add(new TextBlock
-        {
-            Text = "Pesquisar chaves retiradas",
-            FontSize = 16,
-            FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 8)
-        });
-        rightSearchSection.Children.Add(_chavesTakenSearchBox);
 
         _chavesTakenGrid = new DataGrid
         {
@@ -134,7 +122,9 @@ public partial class ShellWindow
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch,
             MinHeight = 0,
-            MaxHeight = double.PositiveInfinity
+            MaxHeight = double.PositiveInfinity,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto
         };
         ConfigureTakenKeysGridColumns();
         _chavesTakenGrid.SelectionChanged += (_, _) =>
@@ -158,18 +148,18 @@ public partial class ShellWindow
             BorderThickness = originalListHost.BorderThickness,
             CornerRadius = originalListHost.CornerRadius,
             Padding = new Thickness(8),
+            Margin = new Thickness(0, 8, 0, 0),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            VerticalAlignment = VerticalAlignment.Stretch,
             Child = _chavesTakenGrid
         };
 
-        var rightPanel = new Grid();
-        rightPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        rightPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        Grid.SetRow(rightSearchSection, 0);
-        Grid.SetRow(rightListHost, 1);
-        rightPanel.Children.Add(rightSearchSection);
-        rightPanel.Children.Add(rightListHost);
+        var rightPanel = CreateChavesDualListPanel(
+            "Pesquisar chaves retiradas",
+            _chavesTakenSearchBox,
+            rightListHost);
 
-        var dualGrid = new Grid { Margin = new Thickness(0, 14, 0, 10) };
+        var dualGrid = new Grid { Margin = new Thickness(0, 0, 0, 10) };
         dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
         dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -178,9 +168,49 @@ public partial class ShellWindow
         dualGrid.Children.Add(leftPanel);
         dualGrid.Children.Add(rightPanel);
 
-        Grid.SetRow(dualGrid, 3);
-        Grid.SetColumnSpan(dualGrid, 2);
+        if (formHost is null)
+        {
+            Grid.SetRow(dualGrid, 3);
+            Grid.SetColumnSpan(dualGrid, 2);
+            ChavesPanel.Children.Add(dualGrid);
+            return;
+        }
+
+        ChavesPanel.Children.Clear();
+        ChavesPanel.RowDefinitions.Clear();
+        ChavesPanel.ColumnDefinitions.Clear();
+        ChavesPanel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        ChavesPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+        formHost.Margin = new Thickness(0, 0, 0, 12);
+        Grid.SetRow(formHost, 0);
+        Grid.SetRow(dualGrid, 1);
+        ChavesPanel.Children.Add(formHost);
         ChavesPanel.Children.Add(dualGrid);
+    }
+
+    private static Grid CreateChavesDualListPanel(string title, UIElement searchHost, Border listHost)
+    {
+        var panel = new Grid();
+        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+        var titleBlock = new TextBlock
+        {
+            Text = title,
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 8)
+        };
+
+        Grid.SetRow(titleBlock, 0);
+        Grid.SetRow(searchHost, 1);
+        Grid.SetRow(listHost, 2);
+        panel.Children.Add(titleBlock);
+        panel.Children.Add(searchHost);
+        panel.Children.Add(listHost);
+        return panel;
     }
 
     private void HideOldChavesSearchSection(UIElement searchHost)
@@ -238,6 +268,8 @@ public partial class ShellWindow
         _chavesTakenGrid.ItemsSource = taken;
         ConfigureAvailableKeysGridColumns();
         ConfigureTakenKeysGridColumns();
+        UpdateChavesBoardCodeDisplayFromSelection();
+        UpdateChavesWithdrawalButtonState();
     }
 
     private List<ChavesListItem> BuildAllChavesItemsFromCurrentData()
