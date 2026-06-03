@@ -67,6 +67,7 @@ public partial class ShellWindow
         if (item.MovimentoId.HasValue)
         {
             SetChavesMovimentoMode(isReturn: true);
+            SetChavesReturnDateTimeToNow();
         }
         else
         {
@@ -191,9 +192,10 @@ public partial class ShellWindow
             }
 
             var previsaoHora = GetChavesPrevisaoHorario();
+            var previsaoLocalDateTime = previsao.Value.Date.Add(previsaoHora);
             var previsaoDevolucao = new DateTimeOffset(
-                previsao.Value.Date.Add(previsaoHora),
-                TimeZoneInfo.Local.GetUtcOffset(previsao.Value.Date)).ToUniversalTime();
+                previsaoLocalDateTime,
+                TimeZoneInfo.Local.GetUtcOffset(previsaoLocalDateTime));
 
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             var movimento = await _rentalManagementService.CreateImovelChaveMovimentoAsync(
@@ -206,7 +208,7 @@ public partial class ShellWindow
                     ChavesRetiradoPorDocumentoBox.Text,
                     ChavesRetiradoPorRelacaoBox.Text,
                     ChavesMotivoBox.Text,
-                    DateTimeOffset.UtcNow,
+                    DateTimeOffset.Now,
                     previsaoDevolucao,
                     ChavesObservacoesBox.Text),
                 timeout.Token);
@@ -271,16 +273,25 @@ public partial class ShellWindow
                 return;
             }
 
+            var devolucao = GetChavesReturnDateTime();
+            if (item.RetiradoEm.HasValue && devolucao < item.RetiradoEm.Value)
+            {
+                ShowChavesErrorMessage("A data/hora da devolução não pode ser anterior à retirada da chave.");
+                return;
+            }
+
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             var returned = await _rentalManagementService.ReturnImovelChaveMovimentoAsync(
                 new ReturnImovelChaveMovimentoRequest(
                     item.MovimentoId.Value,
                     ChavesDevolvidoParaBox.Text,
-                    ChavesDevolucaoObservacoesBox.Text),
+                    ChavesDevolucaoObservacoesBox.Text,
+                    devolucao),
                 timeout.Token);
 
             ChavesDevolvidoParaBox.Clear();
             ChavesDevolucaoObservacoesBox.Clear();
+            SetChavesReturnDateTimeToNow();
             await LoadChavesAsync();
             RestoreChavesListSelection(returned.Id);
             await RefreshChavesDualListsAsync();
@@ -324,16 +335,7 @@ public partial class ShellWindow
     private void UpdateSelectedChaveMovement()
     {
         var item = GetSelectedChavesReturnItem();
-        if (item is null || !item.MovimentoId.HasValue)
-        {
-            ChavesSelectedMovimentoText.Text = "Selecione uma chave retirada na lista da direita.";
-            ReturnChaveButton.IsEnabled = false;
-            return;
-        }
-
-        var retirada = item.RetiradoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("pt-BR")) ?? "-";
-        ChavesSelectedMovimentoText.Text = $"{item.Imovel} | {item.RetiradoPorNome ?? "-"} | retirada em {retirada}";
-        ReturnChaveButton.IsEnabled = true;
+        ReturnChaveButton.IsEnabled = item is not null && item.MovimentoId.HasValue;
     }
 
     private void ClearChavesRetiradaForm()
