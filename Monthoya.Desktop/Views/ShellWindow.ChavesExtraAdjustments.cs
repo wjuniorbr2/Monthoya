@@ -1,5 +1,4 @@
-using System.ComponentModel;
-using System.Text;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,7 +11,6 @@ public partial class ShellWindow
     private static readonly bool ChavesExtraAdjustmentsRegistered = RegisterChavesExtraAdjustments();
     private bool _chavesExtraAdjustmentsApplied;
     private bool _isFormattingChavesTime;
-    private bool _isNormalizingChavesList;
     private readonly Dictionary<Guid, string?> _chavesBoardCodeByImovelId = [];
 
     private static bool RegisterChavesExtraAdjustments()
@@ -46,17 +44,18 @@ public partial class ShellWindow
         CollapseImmediateLabelBefore(ChavesStatusFilterBox);
         CollapseFieldContainer(ChavesCodigoBox);
 
-        ChavesSearchBox.Width = 360;
-        ChavesSearchBox.HorizontalAlignment = HorizontalAlignment.Left;
-
-        ChavesRetiradoPorTelefoneBox.Width = 108;
+        ChavesRetiradoPorTelefoneBox.Width = 130;
         ChavesRetiradoPorTelefoneBox.HorizontalAlignment = HorizontalAlignment.Left;
         ChavesMotivoBox.Width = 230;
         ChavesObservacoesBox.Width = 300;
 
-        ChavesGrid.SelectionChanged += (_, _) => UpdateChavesBoardCodeDisplayFromSelection();
-        DependencyPropertyDescriptor.FromProperty(ItemsControl.ItemsSourceProperty, typeof(DataGrid))
-            ?.AddValueChanged(ChavesGrid, (_, _) => Dispatcher.BeginInvoke(ApplyChavesListModeAndRefreshCodesAsync, DispatcherPriority.Background));
+        ChavesRetiradoPorNomeBox.TextChanged += (_, _) => UpdateChavesWithdrawalButtonState();
+        ChavesRetiradoPorTelefoneBox.TextChanged += (_, _) => UpdateChavesWithdrawalButtonState();
+        ChavesGrid.SelectionChanged += (_, _) =>
+        {
+            UpdateChavesBoardCodeDisplayFromSelection();
+            UpdateChavesWithdrawalButtonState();
+        };
 
         ChavesPanel.IsVisibleChanged += (_, _) =>
         {
@@ -69,76 +68,13 @@ public partial class ShellWindow
         Dispatcher.BeginInvoke(ApplyChavesExtraAdjustmentsAfterLayout, DispatcherPriority.ApplicationIdle);
     }
 
-    private async void ApplyChavesExtraAdjustmentsAfterLayout()
+    private void ApplyChavesExtraAdjustmentsAfterLayout()
     {
         ReorderChavesRetiradaFields();
         ConfigureChavesRelationAndTimeFields();
         ConfigureChavesListCardBounds();
-        HookChavesModeDropdown();
-        await ApplyChavesListModeAndRefreshCodesAsync();
-    }
-
-    private void HookChavesModeDropdown()
-    {
-        if (_chavesMovimentoTipoBox is null || _chavesMovimentoTipoBox.Tag as string == "ChavesExtraHooked")
-        {
-            return;
-        }
-
-        _chavesMovimentoTipoBox.Tag = "ChavesExtraHooked";
-        _chavesMovimentoTipoBox.SelectionChanged += async (_, _) =>
-        {
-            await Dispatcher.InvokeAsync(ConfigureChavesColumnsForCurrentMode, DispatcherPriority.Background);
-            await ApplyChavesListModeAndRefreshCodesAsync();
-        };
-    }
-
-    private async Task ApplyChavesListModeAndRefreshCodesAsync()
-    {
-        if (_isNormalizingChavesList)
-        {
-            return;
-        }
-
-        _isNormalizingChavesList = true;
-        try
-        {
-            NormalizeChavesListForCurrentMode();
-            ConfigureChavesColumnsForCurrentMode();
-            ConfigureChavesListCardBounds();
-            UpdateChavesBoardCodeDisplayFromSelection();
-            await RefreshChavesBoardCodesFromImoveisAsync();
-        }
-        finally
-        {
-            _isNormalizingChavesList = false;
-        }
-    }
-
-    private void NormalizeChavesListForCurrentMode()
-    {
-        if (ChavesGrid.ItemsSource is not IEnumerable<object> items)
-        {
-            return;
-        }
-
-        var mode = GetEffectiveChavesMode();
-        var current = items.OfType<ChavesListItem>().ToList();
-        if (current.Count == 0)
-        {
-            return;
-        }
-
-        var filtered = string.Equals(mode, "Devolução", StringComparison.OrdinalIgnoreCase)
-            ? current.Where(item => item.MovimentoId.HasValue).ToList()
-            : current.Where(item => !item.MovimentoId.HasValue).ToList();
-
-        if (filtered.Count == current.Count && filtered.SequenceEqual(current))
-        {
-            return;
-        }
-
-        ChavesGrid.ItemsSource = filtered;
+        UpdateChavesWithdrawalButtonState();
+        UpdateChavesBoardCodeDisplayFromSelection();
     }
 
     private void ConfigureChavesListCardBounds()
@@ -226,7 +162,7 @@ public partial class ShellWindow
 
         if (GetFieldContainer(ChavesRetiradoPorTelefoneBox) is FrameworkElement phoneContainer)
         {
-            phoneContainer.Width = 108;
+            phoneContainer.Width = 130;
         }
     }
 
@@ -277,92 +213,43 @@ public partial class ShellWindow
 
     private async Task RefreshChavesBoardCodesFromImoveisAsync()
     {
-        if (ChavesGrid.ItemsSource is not IEnumerable<object> items)
+        var items = GetAllVisibleChavesItems().ToList();
+        if (items.Count == 0)
         {
             return;
         }
 
-        var list = items.OfType<ChavesListItem>().ToList();
-        if (list.Count == 0)
+        foreach (var item in items)
         {
-            return;
-        }
-
-        var changed = false;
-        foreach (var item in list)
-        {
-            if (!_chavesBoardCodeByImovelId.TryGetValue(item.ImovelId, out var code))
+            if (_chavesBoardCodeByImovelId.ContainsKey(item.ImovelId))
             {
-                var details = await _rentalManagementService.GetImovelAsync(item.ImovelId);
-                code = details?.Dados.ChaveCodigo;
-                _chavesBoardCodeByImovelId[item.ImovelId] = code;
+                continue;
             }
 
-            if (!string.IsNullOrWhiteSpace(code) && !string.Equals(item.ChaveCodigo, code, StringComparison.Ordinal))
-            {
-                changed = true;
-            }
+            var details = await _rentalManagementService.GetImovelAsync(item.ImovelId);
+            _chavesBoardCodeByImovelId[item.ImovelId] = details?.Dados.ChaveCodigo;
         }
 
-        if (!changed)
-        {
-            UpdateChavesBoardCodeDisplayFromSelection();
-            return;
-        }
-
-        ChavesGrid.ItemsSource = list
-            .Select(item => _chavesBoardCodeByImovelId.TryGetValue(item.ImovelId, out var code) && !string.IsNullOrWhiteSpace(code)
-                ? item with { ChaveCodigo = code }
-                : item)
-            .ToList();
-        ConfigureChavesColumnsForCurrentMode();
-        ConfigureChavesListCardBounds();
         UpdateChavesBoardCodeDisplayFromSelection();
     }
 
-    private void ConfigureChavesColumnsForCurrentMode()
+    private IEnumerable<ChavesListItem> GetAllVisibleChavesItems()
     {
-        var mode = GetEffectiveChavesMode();
-        ChavesGrid.Columns.Clear();
-
-        AddChavesColumn("Código", "ChaveCodigo", 0.65);
-        AddChavesColumn("Endereço", "Imovel", 2.2);
-        AddChavesColumn("Proprietário", "Proprietario", 1.6);
-        AddChavesColumn("Situação", "Status", 1.1);
-
-        if (!string.Equals(mode, "Devolução", StringComparison.OrdinalIgnoreCase))
+        if (ChavesGrid.ItemsSource is IEnumerable<object> leftItems)
         {
-            return;
+            foreach (var item in leftItems.OfType<ChavesListItem>())
+            {
+                yield return item;
+            }
         }
 
-        AddChavesColumn("Retirado por", "RetiradoPorNome", 1.3);
-        AddChavesColumn("Telefone", "RetiradoPorTelefone", 0.9);
-        AddChavesColumn("Relação", "Relacao", 0.8);
-        AddChavesColumn("Motivo", "Motivo", 1.1);
-        AddChavesColumn("Retirado em", "RetiradoEm", 1.0, "dd/MM/yyyy HH:mm");
-        AddChavesColumn("Previsão", "PrevisaoDevolucaoEm", 1.0, "dd/MM/yyyy HH:mm");
-    }
-
-    private string GetEffectiveChavesMode()
-    {
-        var selected = _chavesMovimentoTipoBox?.SelectedItem as string;
-        return string.IsNullOrWhiteSpace(selected) ? "Retirada" : selected;
-    }
-
-    private void AddChavesColumn(string header, string binding, double width, string? stringFormat = null)
-    {
-        var columnBinding = new System.Windows.Data.Binding(binding);
-        if (!string.IsNullOrWhiteSpace(stringFormat))
+        if (_chavesTakenGrid?.ItemsSource is IEnumerable<object> rightItems)
         {
-            columnBinding.StringFormat = stringFormat;
+            foreach (var item in rightItems.OfType<ChavesListItem>())
+            {
+                yield return item;
+            }
         }
-
-        ChavesGrid.Columns.Add(new DataGridTextColumn
-        {
-            Header = header,
-            Binding = columnBinding,
-            Width = new DataGridLength(width, DataGridLengthUnitType.Star)
-        });
     }
 
     private void UpdateChavesBoardCodeDisplayFromSelection()
@@ -372,7 +259,10 @@ public partial class ShellWindow
             return;
         }
 
-        if (ChavesGrid.SelectedItem is not ChavesListItem item)
+        var item = ChavesGrid.SelectedItem as ChavesListItem
+            ?? _chavesTakenGrid?.SelectedItem as ChavesListItem;
+
+        if (item is null)
         {
             _chavesSelectedImovelText.Text = string.Empty;
             return;
@@ -386,6 +276,65 @@ public partial class ShellWindow
 
         codigo = string.IsNullOrWhiteSpace(codigo) ? "-" : codigo;
         _chavesSelectedImovelText.Text = $"Código: {codigo} | Imóvel: {item.Imovel} | Proprietário: {item.Proprietario}";
+    }
+
+    private void UpdateChavesSelectedImovelSummary(string? imovel, string? proprietario)
+    {
+        if (_chavesSelectedImovelText is null)
+        {
+            return;
+        }
+
+        var selectedItem = ChavesGrid.SelectedItem as ChavesListItem
+            ?? _chavesTakenGrid?.SelectedItem as ChavesListItem;
+        var codigo = selectedItem?.ChaveCodigo;
+        if (selectedItem is not null
+            && string.IsNullOrWhiteSpace(codigo)
+            && _chavesBoardCodeByImovelId.TryGetValue(selectedItem.ImovelId, out var loadedCode))
+        {
+            codigo = loadedCode;
+        }
+
+        codigo = string.IsNullOrWhiteSpace(codigo) ? "-" : codigo;
+        _chavesSelectedImovelText.Text = string.IsNullOrWhiteSpace(imovel)
+            ? string.Empty
+            : $"Código: {codigo} | Imóvel: {imovel} | Proprietário: {proprietario ?? "-"}";
+    }
+
+    private void ClearChavesSelectedImovelSummary()
+    {
+        if (_chavesSelectedImovelText is not null)
+        {
+            _chavesSelectedImovelText.Text = string.Empty;
+        }
+    }
+
+    private void ResetChavesRelacaoDropdown()
+    {
+        if (_chavesRelacaoComboBox is not null)
+        {
+            _chavesRelacaoComboBox.SelectedIndex = -1;
+            _chavesRelacaoComboBox.Text = string.Empty;
+        }
+    }
+
+    private TimeSpan GetChavesPrevisaoHorario()
+    {
+        if (_chavesPrevisaoHoraBox is not null
+            && TimeSpan.TryParse(_chavesPrevisaoHoraBox.Text, CultureInfo.GetCultureInfo("pt-BR"), out var parsed))
+        {
+            return parsed;
+        }
+
+        return TimeSpan.FromHours(18);
+    }
+
+    private void UpdateChavesWithdrawalButtonState()
+    {
+        var hasSelectedAvailableProperty = ChavesGrid.SelectedItem is ChavesListItem item && !item.MovimentoId.HasValue;
+        var hasName = !string.IsNullOrWhiteSpace(ChavesRetiradoPorNomeBox.Text);
+        var hasPhone = !string.IsNullOrWhiteSpace(ChavesRetiradoPorTelefoneBox.Text);
+        SaveChaveRetiradaButton.IsEnabled = hasSelectedAvailableProperty && hasName && hasPhone;
     }
 
     private static FrameworkElement? GetFieldContainer(FrameworkElement field)
