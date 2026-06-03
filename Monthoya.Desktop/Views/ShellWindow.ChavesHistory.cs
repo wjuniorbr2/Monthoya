@@ -67,7 +67,7 @@ public partial class ShellWindow
             MinHeight = 0,
             MaxHeight = double.PositiveInfinity,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
         ConfigureChavesHistoryGridColumns();
         ConfigureChavesHistoryContextMenu();
@@ -119,19 +119,20 @@ public partial class ShellWindow
             return;
         }
 
-        AddGridColumn(_chavesHistoryGrid, "Código", "ChaveCodigo", 0.45);
-        AddGridColumn(_chavesHistoryGrid, "Endereço", "Imovel", 1.4);
-        AddGridColumn(_chavesHistoryGrid, "Proprietário", "Proprietario", 1.1);
-        AddGridColumn(_chavesHistoryGrid, "Situação", "Situacao", 0.75);
-        AddGridColumn(_chavesHistoryGrid, "Retirado por", "RetiradoPorNome", 0.9);
-        AddGridColumn(_chavesHistoryGrid, "Telefone", "RetiradoPorTelefone", 0.75);
-        AddGridColumn(_chavesHistoryGrid, "Retirado em", "RetiradoEm", 0.8, "dd/MM HH:mm");
-        AddGridColumn(_chavesHistoryGrid, "Previsão", "PrevisaoDevolucaoEm", 0.8, "dd/MM HH:mm");
-        AddGridColumn(_chavesHistoryGrid, "Devolvido em", "DevolvidoEm", 0.8, "dd/MM HH:mm");
-        AddGridColumn(_chavesHistoryGrid, "Relação", "Relacao", 0.7);
-        AddGridColumn(_chavesHistoryGrid, "Documento", "Documento", 0.8);
-        AddGridColumn(_chavesHistoryGrid, "Motivo", "Motivo", 1.0);
-        AddGridColumn(_chavesHistoryGrid, "Observações", "Observacoes", 1.2);
+        AddGridColumn(_chavesHistoryGrid, "Código", "ChaveCodigo", 0.27);
+        AddGridColumn(_chavesHistoryGrid, "Endereço", "Imovel", 1.12);
+        AddGridColumn(_chavesHistoryGrid, "Proprietário", "Proprietario", 1.05);
+        AddGridColumn(_chavesHistoryGrid, "Situação", "Situacao", 0.52);
+        AddGridColumn(_chavesHistoryGrid, "Retirado por", "RetiradoPorNome", 0.72);
+        AddGridColumn(_chavesHistoryGrid, "Telefone", "RetiradoPorTelefone", 0.62);
+        AddGridColumn(_chavesHistoryGrid, "Retirado em", "RetiradoEm", 0.72, "dd/MM HH:mm");
+        AddGridColumn(_chavesHistoryGrid, "Previsão", "PrevisaoDevolucaoEm", 0.72, "dd/MM HH:mm");
+        AddGridColumn(_chavesHistoryGrid, "Devolvido em", "DevolvidoEm", 0.72, "dd/MM HH:mm");
+        AddGridColumn(_chavesHistoryGrid, "Relação", "Relacao", 0.66);
+        AddGridColumn(_chavesHistoryGrid, "Documento", "Documento", 0.56);
+        AddGridColumn(_chavesHistoryGrid, "Motivo", "Motivo", 0.9);
+        AddGridColumn(_chavesHistoryGrid, "Obs. retirada", "ObservacoesRetirada", 1.1);
+        AddGridColumn(_chavesHistoryGrid, "Obs. devolução", "ObservacoesDevolucao", 1.1);
     }
 
     private void ConfigureChavesHistoryContextMenu()
@@ -173,6 +174,8 @@ public partial class ShellWindow
                     ? "Devolvida"
                     : movimento.Status;
 
+                var (observacoesRetirada, observacoesDevolucao) = SplitHistoryObservations(movimento.Observacoes);
+
                 return new ChavesHistoryItem(
                     movimento.Id,
                     chaveCodigo,
@@ -187,7 +190,8 @@ public partial class ShellWindow
                     movimento.RetiradoPorRelacao,
                     movimento.RetiradoPorDocumento,
                     movimento.Motivo,
-                    movimento.Observacoes);
+                    observacoesRetirada,
+                    observacoesDevolucao);
             })
             .Where(item => ContainsSearch(
                 query,
@@ -200,11 +204,33 @@ public partial class ShellWindow
                 item.Relacao,
                 item.Documento,
                 item.Motivo,
-                item.Observacoes))
+                item.ObservacoesRetirada,
+                item.ObservacoesDevolucao))
             .OrderByDescending(item => item.RetiradoEm)
             .ToList();
 
         _chavesHistoryGrid.ItemsSource = rows;
+    }
+
+    private static (string? retirada, string? devolucao) SplitHistoryObservations(string? observations)
+    {
+        if (string.IsNullOrWhiteSpace(observations))
+        {
+            return (null, null);
+        }
+
+        var parts = observations
+            .Split(Environment.NewLine, StringSplitOptions.None)
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToList();
+
+        if (parts.Count <= 1)
+        {
+            return (observations, null);
+        }
+
+        return (parts[0], string.Join(Environment.NewLine, parts.Skip(1)));
     }
 
     private async Task RemoveSelectedChavesHistoryEntryAsync()
@@ -259,5 +285,6 @@ public partial class ShellWindow
         string? Relacao,
         string? Documento,
         string? Motivo,
-        string? Observacoes);
+        string? ObservacoesRetirada,
+        string? ObservacoesDevolucao);
 }
