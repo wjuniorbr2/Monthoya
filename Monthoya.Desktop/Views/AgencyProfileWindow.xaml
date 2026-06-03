@@ -1,0 +1,179 @@
+<Window x:Class="Monthoya.Desktop.Views.AgencyProfileWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Dados da imobiliária"
+        Width="980"
+        Height="720"
+        MinWidth="860"
+        MinHeight="620"
+        WindowStartupLocation="CenterOwner">
+    <Grid Background="#F5F8FF">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="330" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border Background="#05163A" Padding="30">
+            <StackPanel VerticalAlignment="Center">
+                <Image Source="/Assets/Logo_icon2.png"
+                       Width="96"
+                       Height="96"
+                       Stretch="Uniform"
+                       HorizontalAlignment="Left"
+                       Margin="0,0,0,24" />
+                <TextBlock Text="Dados da imobiliária"
+                           Foreground="White"
+                           FontSize="26"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="Essas informações serão usadas automaticamente em contratos, recibos, relatórios, boletos, notas fiscais e documentos gerados pelo sistema."
+                           Foreground="#D9E7FF"
+                           FontSize="14"
+                           LineHeight="21"
+                           TextWrapping="Wrap"
+                           Margin="0,14,0,0" />
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Column="1" Margin="34" Style="{StaticResource CardBorder}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0">
+                    <TextBlock x:Name="TitleText"
+                               Text="Cadastro da imobiliária"
+                               FontSize="24"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="Preencha agora os dados que serão reaproveitados nos documentos. Você poderá alterar depois em Configurações."
+                               Foreground="{StaticResource MutedBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,16" />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Identificação" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,10" />
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="Razão social / nome da imobiliária *" FontWeight="SemiBold" />
+                                <TextBox x:Name="RazaoSocialBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="Nome fantasia" FontWeight="SemiBold" />
+                                <TextBox x:Name="NomeFantasiaBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="CNPJ" FontWeight="SemiBold" />
+                                <TextBox x:Name="CnpjBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="CRECI" FontWeight="SemiBold" />
+                                <TextBox x:Name="CreciBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="Inscrição municipal" FontWeight="SemiBold" />
+                                <TextBox x:Name="InscricaoMunicipalBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="Inscrição estadual" FontWeight="SemiBold" />
+                                <TextBox x:Name="InscricaoEstadualBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <TextBlock Text="Responsável legal" FontSize="17" FontWeight="SemiBold" Margin="0,8,0,10" />
+                        <UniformGrid Columns="3">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="Nome" FontWeight="SemiBold" />
+                                <TextBox x:Name="ResponsavelNomeBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,10,10">
+                                <TextBlock Text="CPF" FontWeight="SemiBold" />
+                                <TextBox x:Name="ResponsavelCpfBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="Cargo/função" FontWeight="SemiBold" />
+                                <TextBox x:Name="ResponsavelCargoBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <TextBlock Text="Contato" FontSize="17" FontWeight="SemiBold" Margin="0,8,0,10" />
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="E-mail" FontWeight="SemiBold" />
+                                <TextBox x:Name="EmailBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="Site" FontWeight="SemiBold" />
+                                <TextBox x:Name="SiteBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="Telefone" FontWeight="SemiBold" />
+                                <TextBox x:Name="TelefoneBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="WhatsApp" FontWeight="SemiBold" />
+                                <TextBox x:Name="WhatsAppBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <TextBlock Text="Endereço" FontSize="17" FontWeight="SemiBold" Margin="0,8,0,10" />
+                        <UniformGrid Columns="3">
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="Rua" FontWeight="SemiBold" />
+                                <TextBox x:Name="RuaBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,10,10">
+                                <TextBlock Text="Número" FontWeight="SemiBold" />
+                                <TextBox x:Name="NumeroBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="Complemento" FontWeight="SemiBold" />
+                                <TextBox x:Name="ComplementoBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,10,10">
+                                <TextBlock Text="Bairro" FontWeight="SemiBold" />
+                                <TextBox x:Name="BairroBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,10,10">
+                                <TextBlock Text="Cidade" FontWeight="SemiBold" />
+                                <TextBox x:Name="CidadeBox" Margin="0,6,0,0" />
+                            </StackPanel>
+                            <StackPanel Margin="10,0,0,10">
+                                <TextBlock Text="UF / CEP" FontWeight="SemiBold" />
+                                <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                    <TextBox x:Name="EstadoBox" Width="48" MaxLength="2" />
+                                    <TextBox x:Name="CepBox" Width="120" Margin="8,0,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                        </UniformGrid>
+
+                        <TextBlock Text="Dados para documentos" FontSize="17" FontWeight="SemiBold" Margin="0,8,0,10" />
+                        <TextBlock Text="Dados bancários" FontWeight="SemiBold" />
+                        <TextBox x:Name="DadosBancariosBox" Height="62" AcceptsReturn="True" TextWrapping="Wrap" Margin="0,6,0,10" />
+                        <TextBlock Text="Texto padrão de rodapé / assinatura" FontWeight="SemiBold" />
+                        <TextBox x:Name="TextoPadraoRodapeBox" Height="62" AcceptsReturn="True" TextWrapping="Wrap" Margin="0,6,0,10" />
+                        <TextBlock Text="Observações internas" FontWeight="SemiBold" />
+                        <TextBox x:Name="ObservacoesBox" Height="62" AcceptsReturn="True" TextWrapping="Wrap" Margin="0,6,0,0" />
+                    </StackPanel>
+                </ScrollViewer>
+
+                <TextBlock x:Name="ErrorText"
+                           Grid.Row="2"
+                           Foreground="#B42318"
+                           TextWrapping="Wrap"
+                           MinHeight="26"
+                           Margin="0,10,0,0" />
+
+                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                    <Button x:Name="CancelButton" Style="{StaticResource SecondaryButton}" Content="Cancelar" Margin="0,0,10,0" Click="CancelButton_Click" />
+                    <Button Style="{StaticResource PrimaryButton}" Content="Salvar dados da imobiliária" Click="SaveButton_Click" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
