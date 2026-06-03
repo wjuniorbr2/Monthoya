@@ -26,7 +26,7 @@ public partial class ShellWindow
     {
         if (sender is ShellWindow window)
         {
-            window.Dispatcher.BeginInvoke(window.ApplyChavesHistoryPanel, DispatcherPriority.ContextIdle);
+            window.Dispatcher.BeginInvoke(window.ApplyChavesHistoryPanel, DispatcherPriority.ApplicationIdle);
         }
     }
 
@@ -37,21 +37,21 @@ public partial class ShellWindow
             return;
         }
 
-        if (!_chavesDualListsApplied || ChavesPanel.RowDefinitions.Count < 2)
+        if (!_chavesDualListsApplied || ChavesPanel.RowDefinitions.Count < 2 || ChavesPanel.Children.Count < 2)
         {
-            Dispatcher.BeginInvoke(ApplyChavesHistoryPanel, DispatcherPriority.ContextIdle);
+            Dispatcher.BeginInvoke(ApplyChavesHistoryPanel, DispatcherPriority.ApplicationIdle);
             return;
         }
 
         _chavesHistoryApplied = true;
 
-        ChavesPanel.RowDefinitions[1].Height = new GridLength(0.56, GridUnitType.Star);
-        ChavesPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0.44, GridUnitType.Star) });
+        ChavesPanel.RowDefinitions[1].Height = new GridLength(0.72, GridUnitType.Star);
+        ChavesPanel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0.28, GridUnitType.Star) });
 
         _chavesHistorySearchBox = new TextBox
         {
             Height = ChavesSearchBox.Height,
-            Margin = new Thickness(0, 0, 0, 8),
+            Margin = new Thickness(0, 0, 0, 6),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
         _chavesHistorySearchBox.TextChanged += (_, _) => RefreshChavesHistoryFromCurrentData();
@@ -87,7 +87,7 @@ public partial class ShellWindow
             Child = _chavesHistoryGrid
         };
 
-        var panel = new Grid { Margin = new Thickness(0, 8, 0, 10) };
+        var panel = new Grid { Margin = new Thickness(0, 6, 0, 8) };
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
@@ -97,7 +97,7 @@ public partial class ShellWindow
             Text = "Histórico de chaves",
             FontSize = 16,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 8)
+            Margin = new Thickness(0, 0, 0, 6)
         };
 
         Grid.SetRow(title, 0);
