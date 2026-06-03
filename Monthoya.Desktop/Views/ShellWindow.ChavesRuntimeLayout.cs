@@ -46,12 +46,7 @@ public partial class ShellWindow
         RelabelTextBlockImmediatelyBefore(ChavesRetiradoPorRelacaoBox, "Tipo de pessoa");
 
         ConfigureChavesSingleList();
-
-        var formHost = FindChavesFormHost();
-        if (formHost is not null)
-        {
-            BuildChavesTopUnifiedForm(formHost);
-        }
+        RebuildChavesPageLayout();
 
         SetChavesMovimentoMode(isReturn: false, clearMode: true);
         ApplyChavesFilter();
@@ -59,7 +54,7 @@ public partial class ShellWindow
 
     private void ConfigureChavesSingleList()
     {
-        ChavesGrid.MaxHeight = 280;
+        ChavesGrid.MaxHeight = double.PositiveInfinity;
         ChavesGrid.SelectionMode = DataGridSelectionMode.Single;
         ChavesGrid.SelectionUnit = DataGridSelectionUnit.FullRow;
         ChavesGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
@@ -79,11 +74,72 @@ public partial class ShellWindow
         }
     }
 
+    private void RebuildChavesPageLayout()
+    {
+        var formHost = FindChavesFormHost();
+        var returnHost = FindChavesReturnHost();
+        var listHost = FindChavesListHost();
+        var searchHost = ChavesSearchBox.Parent as UIElement;
+
+        if (formHost is null || listHost is null || searchHost is null)
+        {
+            return;
+        }
+
+        if (returnHost is not null)
+        {
+            returnHost.Visibility = Visibility.Collapsed;
+        }
+
+        BuildChavesTopUnifiedForm(formHost);
+
+        DetachFromParent(formHost);
+        DetachFromParent(searchHost);
+        DetachFromParent(listHost);
+
+        var contentGrid = new Grid { Margin = new Thickness(0, 16, 0, 0) };
+        contentGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        contentGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        contentGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+        formHost.Margin = new Thickness(0, 0, 0, 12);
+        Grid.SetRow(formHost, 0);
+        contentGrid.Children.Add(formHost);
+
+        if (searchHost is FrameworkElement searchElement)
+        {
+            searchElement.Margin = new Thickness(0, 0, 0, 12);
+        }
+        Grid.SetRow(searchHost, 1);
+        contentGrid.Children.Add(searchHost);
+
+        listHost.Margin = new Thickness(0);
+        Grid.SetRow(listHost, 2);
+        contentGrid.Children.Add(listHost);
+
+        Grid.SetRow(contentGrid, 1);
+        Grid.SetRowSpan(contentGrid, 3);
+        ChavesPanel.Children.Add(contentGrid);
+    }
+
     private Border? FindChavesFormHost()
     {
         return FindVisualChildrenForPeopleRuntimeAdjustment<Border>(ChavesPanel)
             .FirstOrDefault(border => FindVisualChildrenForPeopleRuntimeAdjustment<Button>(border)
                 .Any(button => ReferenceEquals(button, SaveChaveRetiradaButton)));
+    }
+
+    private Border? FindChavesReturnHost()
+    {
+        return FindVisualChildrenForPeopleRuntimeAdjustment<Border>(ChavesPanel)
+            .FirstOrDefault(border => FindVisualChildrenForPeopleRuntimeAdjustment<Button>(border)
+                .Any(button => ReferenceEquals(button, ReturnChaveButton)));
+    }
+
+    private Border? FindChavesListHost()
+    {
+        return FindVisualChildrenForPeopleRuntimeAdjustment<Border>(ChavesPanel)
+            .FirstOrDefault(border => border.Child == ChavesGrid);
     }
 
     private void BuildChavesTopUnifiedForm(Border retiradaHost)
@@ -94,33 +150,11 @@ public partial class ShellWindow
             return;
         }
 
-        var devolucaoHost = FindVisualChildrenForPeopleRuntimeAdjustment<Border>(ChavesPanel)
-            .FirstOrDefault(border => FindVisualChildrenForPeopleRuntimeAdjustment<Button>(border)
-                .Any(button => ReferenceEquals(button, ReturnChaveButton)));
-
-        if (devolucaoHost is not null)
-        {
-            devolucaoHost.Visibility = Visibility.Collapsed;
-        }
-
-        retiradaHost.Margin = new Thickness(0, 0, 0, 12);
-        Grid.SetRow(retiradaHost, 2);
-        Grid.SetColumn(retiradaHost, 0);
-        Grid.SetColumnSpan(retiradaHost, 2);
-
-        var listsHost = FindVisualChildrenForPeopleRuntimeAdjustment<Border>(ChavesPanel)
-            .FirstOrDefault(border => border.Child == ChavesGrid);
-        if (listsHost is not null)
-        {
-            Grid.SetRow(listsHost, 3);
-            listsHost.Margin = new Thickness(0, 0, 0, 0);
-        }
-
         var mainPanel = new StackPanel();
         var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
         _chavesActionTitleText = new TextBlock
         {
-            Text = "Retirada de chaves",
+            Text = "Chaves dos imóveis disponíveis",
             FontSize = 18,
             FontWeight = FontWeights.SemiBold,
             VerticalAlignment = VerticalAlignment.Center
@@ -199,9 +233,7 @@ public partial class ShellWindow
 
         if (_chavesActionTitleText is not null)
         {
-            _chavesActionTitleText.Text = clearMode
-                ? "Retirada de chaves"
-                : isReturn ? "Devolução de chaves" : "Retirada de chaves";
+            _chavesActionTitleText.Text = "Chaves dos imóveis disponíveis";
         }
 
         if (_chavesRetiradaFieldsPanel is not null)
