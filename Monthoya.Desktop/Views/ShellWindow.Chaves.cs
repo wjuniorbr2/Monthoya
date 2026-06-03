@@ -41,27 +41,27 @@ public partial class ShellWindow
 
     private void ChavesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (ChavesGrid.SelectedItem is ImovelChaveMovimentoSummary movimento)
+        if (ChavesGrid.SelectedItem is ChavesListItem item)
         {
-            ChavesImovelBox.SelectedValue = movimento.ImovelId;
-            SetChavesMovimentoMode(isReturn: true);
+            SelectChavesListItem(item);
         }
 
         UpdateSelectedChaveMovement();
     }
 
-    private void SelectChavesAvailableImovel(ImovelSummary? imovel)
+    private void SelectChavesListItem(ChavesListItem item)
     {
-        if (imovel is null)
-        {
-            return;
-        }
+        ChavesImovelBox.SelectedValue = item.ImovelId;
+        ChavesCodigoBox.Text = item.ChaveCodigo ?? string.Empty;
 
-        ChavesGrid.SelectedItem = null;
-        ChavesImovelBox.SelectedValue = imovel.Id;
-        ChavesCodigoBox.Text = imovel.Chaves;
-        SetChavesMovimentoMode(isReturn: false);
-        UpdateSelectedChaveMovement();
+        if (item.MovimentoId.HasValue)
+        {
+            SetChavesMovimentoMode(isReturn: true);
+        }
+        else
+        {
+            SetChavesMovimentoMode(isReturn: false);
+        }
     }
 
     private void ApplyChavesFilter()
@@ -71,47 +71,81 @@ public partial class ShellWindow
             return;
         }
 
-        RefreshChavesAvailableImoveisGrid();
-        RefreshChavesTakenKeysGrid();
+        var query = ChavesSearchBox.Text;
+        var mode = GetChavesSelectedMode();
+        var activeMovementsByImovelId = _chaveMovimentos
+            .Where(x => !x.DevolvidoEm.HasValue)
+            .GroupBy(x => x.ImovelId)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(x => x.RetiradoEm).First());
+
+        IEnumerable<ChavesListItem> rows = _imoveis
+            .Where(x => !string.Equals(x.Status, "Inativo", StringComparison.OrdinalIgnoreCase))
+            .Select(imovel =>
+            {
+                activeMovementsByImovelId.TryGetValue(imovel.Id, out var movimento);
+                return CreateChavesListItem(imovel, movimento);
+            });
+
+        rows = mode switch
+        {
+            "Retirada" => rows.Where(x => !x.MovimentoId.HasValue),
+            "Devolução" => rows.Where(x => x.MovimentoId.HasValue),
+            _ => rows
+        };
+
+        rows = rows
+            .Where(x => ContainsSearch(
+                query,
+                x.Imovel,
+                x.ChaveCodigo,
+                x.Status,
+                x.RetiradoPorNome,
+                x.RetiradoPorTelefone,
+                x.RetiradoPorDocumento,
+                x.TipoPessoa,
+                x.Motivo,
+                x.Observacoes))
+            .OrderByDescending(x => x.MovimentoId.HasValue)
+            .ThenBy(x => x.Imovel)
+            .ToList();
+
+        ChavesGrid.ItemsSource = rows;
     }
 
-    private void RefreshChavesAvailableImoveisGrid()
+    private static ChavesListItem CreateChavesListItem(ImovelSummary imovel, ImovelChaveMovimentoSummary? movimento)
     {
-        if (_chavesAvailableImoveisGrid is null)
+        if (movimento is null)
         {
-            return;
+            return new ChavesListItem(
+                imovel.Id,
+                null,
+                imovel.Endereco,
+                imovel.Chaves,
+                "Disponível para retirada",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
         }
 
-        var query = ChavesSearchBox.Text;
-        var activeMovementImovelIds = _chaveMovimentos
-            .Where(x => !x.DevolvidoEm.HasValue)
-            .Select(x => x.ImovelId)
-            .ToHashSet();
-
-        _chavesAvailableImoveisGrid.ItemsSource = _imoveis
-            .Where(x => !string.Equals(x.Status, "Inativo", StringComparison.OrdinalIgnoreCase))
-            .Where(x => !activeMovementImovelIds.Contains(x.Id))
-            .Where(x => ContainsSearch(query, x.Endereco, x.Bairro, x.Proprietario, x.TipoImovel, x.Status, x.Chaves))
-            .OrderBy(x => x.Endereco)
-            .ToList();
-    }
-
-    private void RefreshChavesTakenKeysGrid()
-    {
-        var status = ChavesStatusFilterBox.SelectedValue as string ?? "ativas";
-        var filtered = _chaveMovimentos
-            .Where(x => status switch
-            {
-                "atraso" => string.Equals(x.Status, "Em atraso", StringComparison.OrdinalIgnoreCase),
-                "devolvidas" => x.DevolvidoEm.HasValue,
-                "todos" => true,
-                _ => !x.DevolvidoEm.HasValue
-            })
-            .OrderByDescending(x => x.DevolvidoEm is null)
-            .ThenByDescending(x => x.RetiradoEm)
-            .ToList();
-
-        ChavesGrid.ItemsSource = filtered;
+        return new ChavesListItem(
+            imovel.Id,
+            movimento.Id,
+            imovel.Endereco,
+            movimento.ChaveCodigo,
+            movimento.Status,
+            movimento.RetiradoPorNome,
+            movimento.RetiradoPorTelefone,
+            movimento.RetiradoPorDocumento,
+            movimento.RetiradoPorRelacao,
+            movimento.Motivo,
+            movimento.RetiradoEm,
+            movimento.PrevisaoDevolucaoEm,
+            movimento.Observacoes);
     }
 
     private async void SaveChaveRetiradaButton_Click(object sender, RoutedEventArgs e)
@@ -121,7 +155,7 @@ public partial class ShellWindow
         {
             if (ChavesImovelBox.SelectedValue is not Guid imovelId || imovelId == Guid.Empty)
             {
-                ChavesErrorText.Text = "Selecione o imóvel na lista de imóveis disponíveis.";
+                ChavesErrorText.Text = "Selecione o imóvel na lista.";
                 return;
             }
 
@@ -151,9 +185,9 @@ public partial class ShellWindow
                     ChavesObservacoesBox.Text));
 
             ClearChavesRetiradaForm();
-            await LoadChavesAsync();
-            RestoreDataGridSelection(ChavesGrid, movimento.Id);
             SetChavesMovimentoMode(isReturn: true);
+            await LoadChavesAsync();
+            RestoreChavesListSelection(movimento.Id);
         }
         catch (Exception ex)
         {
@@ -166,29 +200,22 @@ public partial class ShellWindow
         ChavesErrorText.Text = string.Empty;
         try
         {
-            if (ChavesGrid.SelectedItem is not ImovelChaveMovimentoSummary movimento)
+            if (ChavesGrid.SelectedItem is not ChavesListItem item || !item.MovimentoId.HasValue)
             {
-                ChavesErrorText.Text = "Selecione uma chave retirada na lista da direita.";
-                return;
-            }
-
-            if (movimento.DevolvidoEm.HasValue)
-            {
-                ChavesErrorText.Text = "Esta chave já foi devolvida.";
+                ChavesErrorText.Text = "Selecione uma chave retirada na lista.";
                 return;
             }
 
             var returned = await _rentalManagementService.ReturnImovelChaveMovimentoAsync(
                 new ReturnImovelChaveMovimentoRequest(
-                    movimento.Id,
+                    item.MovimentoId.Value,
                     ChavesDevolvidoParaBox.Text,
                     ChavesDevolucaoObservacoesBox.Text));
 
             ChavesDevolvidoParaBox.Clear();
             ChavesDevolucaoObservacoesBox.Clear();
             await LoadChavesAsync();
-            RestoreDataGridSelection(ChavesGrid, returned.Id);
-            SetChavesMovimentoMode(isReturn: true);
+            RestoreChavesListSelection(returned.Id);
         }
         catch (Exception ex)
         {
@@ -196,18 +223,31 @@ public partial class ShellWindow
         }
     }
 
+    private void RestoreChavesListSelection(Guid movimentoId)
+    {
+        foreach (var item in ChavesGrid.ItemsSource?.Cast<object>() ?? [])
+        {
+            if (item is ChavesListItem chaveItem && chaveItem.MovimentoId == movimentoId)
+            {
+                ChavesGrid.SelectedItem = item;
+                ChavesGrid.ScrollIntoView(item);
+                return;
+            }
+        }
+    }
+
     private void UpdateSelectedChaveMovement()
     {
-        if (ChavesGrid.SelectedItem is not ImovelChaveMovimentoSummary movimento)
+        if (ChavesGrid.SelectedItem is not ChavesListItem item || !item.MovimentoId.HasValue)
         {
-            ChavesSelectedMovimentoText.Text = "Selecione uma chave retirada na lista da direita.";
+            ChavesSelectedMovimentoText.Text = "Selecione uma chave retirada na lista.";
             ReturnChaveButton.IsEnabled = false;
             return;
         }
 
-        var retirada = movimento.RetiradoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("pt-BR")) ?? "-";
-        ChavesSelectedMovimentoText.Text = $"{movimento.Imovel} | {movimento.RetiradoPorNome ?? "-"} | retirada em {retirada}";
-        ReturnChaveButton.IsEnabled = !movimento.DevolvidoEm.HasValue;
+        var retirada = item.RetiradoEm?.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.GetCultureInfo("pt-BR")) ?? "-";
+        ChavesSelectedMovimentoText.Text = $"{item.Imovel} | {item.RetiradoPorNome ?? "-"} | retirada em {retirada}";
+        ReturnChaveButton.IsEnabled = true;
     }
 
     private void ClearChavesRetiradaForm()
@@ -222,4 +262,19 @@ public partial class ShellWindow
         ChavesObservacoesBox.Clear();
         ChavesPrevisaoBox.SelectedDate = DateTime.Today;
     }
+
+    private sealed record ChavesListItem(
+        Guid ImovelId,
+        Guid? MovimentoId,
+        string Imovel,
+        string? ChaveCodigo,
+        string Status,
+        string? RetiradoPorNome,
+        string? RetiradoPorTelefone,
+        string? RetiradoPorDocumento,
+        string? TipoPessoa,
+        string? Motivo,
+        DateTimeOffset? RetiradoEm,
+        DateTimeOffset? PrevisaoDevolucaoEm,
+        string? Observacoes);
 }
