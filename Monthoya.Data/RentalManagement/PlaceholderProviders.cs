@@ -8,41 +8,51 @@ public sealed class LocalBoletoProvider : IBoletoProvider
     private const string NotConfigured = "Integração bancária ainda não configurada.";
 
     public Task<BoletoProviderResult> GenerateBoletoAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new BoletoProviderResult(false, NotConfigured));
+        Task.FromResult(Failed());
 
     public Task<BoletoProviderResult> RegisterBoletoAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new BoletoProviderResult(false, NotConfigured));
+        Task.FromResult(Failed());
 
+    public Task<BoletoProviderResult> QueryStatusAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Failed());
+
+    public Task<BoletoProviderResult> CancelAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Failed());
+
+    // Backward-compatible aliases used by older call sites.
     public Task<BoletoProviderResult> CancelBoletoAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new BoletoProviderResult(false, NotConfigured));
+        CancelAsync(boleto, cancellationToken);
 
     public Task<BoletoProviderResult> GetBoletoStatusAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new BoletoProviderResult(false, NotConfigured));
+        QueryStatusAsync(boleto, cancellationToken);
 
     public Task<BoletoProviderResult> DownloadBoletoPdfAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new BoletoProviderResult(false, NotConfigured));
+        Task.FromResult(Failed());
+
+    private static BoletoProviderResult Failed() =>
+        new(false, null, null, NotConfigured);
 }
 
 public sealed class ManualPortalNfseProvider : INfseProvider
 {
     private const string NotConfigured = "Integração automática com NFS-e ainda não configurada. Use o fluxo manual/semi-manual.";
 
-    public Task<NfseProviderResult> IssueNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new NfseProviderResult(false, NotConfigured));
+    public Task<NfseProviderResult> IssueAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Failed());
 
-    public Task<NfseProviderResult> CancelNotaFiscalAsync(NotaFiscal notaFiscal, string motivo, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new NfseProviderResult(false, NotConfigured));
-
-    public Task<NfseProviderResult> DownloadNotaFiscalPdfAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
-        Task.FromResult(new NfseProviderResult(false, NotConfigured));
+    public Task<NfseProviderResult> CancelAsync(NotaFiscal notaFiscal, string reason, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Failed());
 
     // Backward-compatible aliases used by existing tests/older call sites.
     public Task<NfseProviderResult> EmitirNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
-        IssueNotaFiscalAsync(notaFiscal, cancellationToken);
+        IssueAsync(notaFiscal, cancellationToken);
 
     public Task<NfseProviderResult> CancelarNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
-        CancelNotaFiscalAsync(notaFiscal, string.Empty, cancellationToken);
+        CancelAsync(notaFiscal, string.Empty, cancellationToken);
 
     public Task<NfseProviderResult> BaixarPdfNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default) =>
-        DownloadNotaFiscalPdfAsync(notaFiscal, cancellationToken);
+        Task.FromResult(Failed());
+
+    private static NfseProviderResult Failed() =>
+        new(false, null, null, null, NotConfigured);
 }
