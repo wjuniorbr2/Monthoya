@@ -7,7 +7,7 @@ namespace Monthoya.Desktop.Views;
 
 public partial class ShellWindow
 {
-    private const double ChavesListPanelMaxWidth = 820;
+    private const double ChavesListPanelMaxWidth = 800;
 
     private static readonly bool ChavesDualListsRegistered = RegisterChavesDualLists();
     private bool _chavesDualListsApplied;
@@ -88,24 +88,16 @@ public partial class ShellWindow
         }
 
         ChavesSearchBox.Width = double.NaN;
-        ChavesSearchBox.MinWidth = 0;
-        ChavesSearchBox.MaxWidth = double.PositiveInfinity;
         ChavesSearchBox.HorizontalAlignment = HorizontalAlignment.Stretch;
         ChavesSearchBox.Margin = new Thickness(0);
 
         ConfigureAvailableKeysGridColumns();
-        ChavesGrid.Width = double.NaN;
-        ChavesGrid.MinWidth = 0;
-        ChavesGrid.MaxWidth = double.PositiveInfinity;
         ChavesGrid.MinHeight = 0;
         ChavesGrid.MaxHeight = double.PositiveInfinity;
         ChavesGrid.HorizontalAlignment = HorizontalAlignment.Stretch;
         ChavesGrid.VerticalAlignment = VerticalAlignment.Stretch;
         ChavesGrid.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
 
-        originalListHost.Width = double.NaN;
-        originalListHost.MinWidth = 0;
-        originalListHost.MaxWidth = double.PositiveInfinity;
         originalListHost.Margin = new Thickness(0, 6, 0, 0);
         originalListHost.Padding = new Thickness(8);
         originalListHost.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -121,9 +113,6 @@ public partial class ShellWindow
         _chavesTakenSearchBox = new TextBox
         {
             Height = ChavesSearchBox.Height,
-            Width = double.NaN,
-            MinWidth = 0,
-            MaxWidth = double.PositiveInfinity,
             Margin = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
@@ -135,9 +124,6 @@ public partial class ShellWindow
             IsReadOnly = true,
             SelectionMode = DataGridSelectionMode.Single,
             SelectionUnit = DataGridSelectionUnit.FullRow,
-            Width = double.NaN,
-            MinWidth = 0,
-            MaxWidth = double.PositiveInfinity,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             VerticalAlignment = VerticalAlignment.Stretch,
             MinHeight = 0,
@@ -167,9 +153,6 @@ public partial class ShellWindow
             BorderBrush = originalListHost.BorderBrush,
             BorderThickness = originalListHost.BorderThickness,
             CornerRadius = originalListHost.CornerRadius,
-            Width = double.NaN,
-            MinWidth = 0,
-            MaxWidth = double.PositiveInfinity,
             Padding = new Thickness(8),
             Margin = new Thickness(0, 6, 0, 0),
             HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -217,8 +200,6 @@ public partial class ShellWindow
     {
         var panel = new Grid
         {
-            Width = double.NaN,
-            MinWidth = 0,
             MaxWidth = ChavesListPanelMaxWidth,
             HorizontalAlignment = alignment
         };
@@ -259,5 +240,169 @@ public partial class ShellWindow
 
             oldSearchSection.Margin = new Thickness(0);
         }
+    }
+
+    private async Task RefreshChavesDualListsAsync()
+    {
+        if (_chavesTakenGrid is null)
+        {
+            return;
+        }
+
+        _lastAllChavesItems = BuildAllChavesItemsFromCurrentData();
+        await LoadMissingChavesBoardCodesForCachedItemsAsync();
+        ApplyLoadedBoardCodesToCachedItems();
+        RefreshChavesDualListsFromCache();
+    }
+
+    private async Task LoadMissingChavesBoardCodesForCachedItemsAsync()
+    {
+        foreach (var item in _lastAllChavesItems)
+        {
+            if (_chavesBoardCodeByImovelId.TryGetValue(item.ImovelId, out var code) && !string.IsNullOrWhiteSpace(code))
+            {
+                continue;
+            }
+
+            var details = await _rentalManagementService.GetImovelAsync(item.ImovelId);
+            _chavesBoardCodeByImovelId[item.ImovelId] = details?.Dados.ChaveCodigo;
+        }
+    }
+
+    private void RefreshChavesDualListsFromCache()
+    {
+        if (_chavesTakenGrid is null)
+        {
+            return;
+        }
+
+        if (_lastAllChavesItems.Count == 0)
+        {
+            ChavesGrid.ItemsSource = Array.Empty<ChavesListItem>();
+            _chavesTakenGrid.ItemsSource = Array.Empty<ChavesListItem>();
+            return;
+        }
+
+        var availableQuery = ChavesSearchBox.Text;
+        var takenQuery = _chavesTakenSearchBox?.Text ?? string.Empty;
+
+        var available = _lastAllChavesItems
+            .Where(item => !item.MovimentoId.HasValue)
+            .Where(item => ContainsSearch(availableQuery, item.ChaveCodigo, item.Imovel, item.Proprietario, item.Status))
+            .OrderBy(item => item.Imovel)
+            .ToList();
+
+        var taken = _lastAllChavesItems
+            .Where(item => item.MovimentoId.HasValue)
+            .Where(item => ContainsSearch(takenQuery, item.ChaveCodigo, item.Imovel, item.Proprietario, item.Status, item.RetiradoPorNome, item.RetiradoPorTelefone, item.Relacao, item.Motivo))
+            .OrderByDescending(item => item.RetiradoEm)
+            .ToList();
+
+        ChavesGrid.ItemsSource = available;
+        _chavesTakenGrid.ItemsSource = taken;
+        UpdateChavesBoardCodeDisplayFromSelection();
+        UpdateChavesWithdrawalButtonState();
+    }
+
+    private List<ChavesListItem> BuildAllChavesItemsFromCurrentData()
+    {
+        var activeMovementsByImovelId = _chaveMovimentos
+            .Where(x => !x.DevolvidoEm.HasValue)
+            .GroupBy(x => x.ImovelId)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(x => x.RetiradoEm).First());
+
+        return _imoveis
+            .Where(x => !string.Equals(x.Status, "Inativo", StringComparison.OrdinalIgnoreCase))
+            .Select(imovel =>
+            {
+                activeMovementsByImovelId.TryGetValue(imovel.Id, out var movimento);
+                return CreateChavesListItem(imovel, movimento);
+            })
+            .ToList();
+    }
+
+    private void ApplyLoadedBoardCodesToCachedItems()
+    {
+        _lastAllChavesItems = _lastAllChavesItems
+            .Select(item => _chavesBoardCodeByImovelId.TryGetValue(item.ImovelId, out var code) && !string.IsNullOrWhiteSpace(code)
+                ? item with { ChaveCodigo = code }
+                : item)
+            .ToList();
+    }
+
+    private void ConfigureAvailableKeysGridColumns()
+    {
+        if (ChavesGrid.Columns.Count == 4)
+        {
+            return;
+        }
+
+        ChavesGrid.Columns.Clear();
+        AddGridColumn(ChavesGrid, "Código", "ChaveCodigo", 0.55);
+        AddGridColumn(ChavesGrid, "Endereço", "Imovel", 1.7);
+        AddGridColumn(ChavesGrid, "Proprietário", "Proprietario", 1.2);
+        AddGridColumn(ChavesGrid, "Situação", "Status", 0.8);
+    }
+
+    private void ConfigureTakenKeysGridColumns()
+    {
+        if (_chavesTakenGrid is null)
+        {
+            return;
+        }
+
+        if (_chavesTakenGrid.Columns.Count == 6)
+        {
+            return;
+        }
+
+        _chavesTakenGrid.Columns.Clear();
+        AddGridColumn(_chavesTakenGrid, "Código", "ChaveCodigo", 0.38);
+        AddGridColumn(_chavesTakenGrid, "Endereço", "Imovel", 1.22);
+        AddGridColumn(_chavesTakenGrid, "Retirado por", "RetiradoPorNome", 0.85);
+        AddGridColumn(_chavesTakenGrid, "Telefone", "RetiradoPorTelefone", 0.7);
+        AddGridColumn(_chavesTakenGrid, "Retirado em", "RetiradoEm", 0.78, "dd/MM HH:mm");
+        AddGridColumn(_chavesTakenGrid, "Previsão", "PrevisaoDevolucaoEm", 0.74, "dd/MM HH:mm");
+    }
+
+    private static void AddGridColumn(DataGrid grid, string header, string binding, double width, string? stringFormat = null)
+    {
+        var columnBinding = new System.Windows.Data.Binding(binding);
+        if (!string.IsNullOrWhiteSpace(stringFormat))
+        {
+            columnBinding.StringFormat = stringFormat;
+        }
+
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = header,
+            Binding = columnBinding,
+            Width = new DataGridLength(width, DataGridLengthUnitType.Star)
+        });
+    }
+
+    private ChavesListItem? GetSelectedChavesReturnItem()
+    {
+        return _selectedChavesTakenItem
+            ?? _chavesTakenGrid?.SelectedItem as ChavesListItem
+            ?? ChavesGrid.SelectedItem as ChavesListItem;
+    }
+
+    private void ShowChavesStatusMessage(string message)
+    {
+        ChavesErrorText.Foreground = Brushes.DimGray;
+        ChavesErrorText.Text = message;
+    }
+
+    private void ShowChavesSuccessMessage(string message)
+    {
+        ChavesErrorText.Foreground = Brushes.ForestGreen;
+        ChavesErrorText.Text = message;
+    }
+
+    private void ShowChavesErrorMessage(string message)
+    {
+        ChavesErrorText.Foreground = Brushes.Red;
+        ChavesErrorText.Text = message;
     }
 }
