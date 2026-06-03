@@ -22,8 +22,8 @@ public sealed class ChavesSafeRentalManagementService(
     public Task<IReadOnlyList<ImovelSummary>> GetImoveisAsync(CancellationToken cancellationToken = default) => inner.GetImoveisAsync(cancellationToken);
     public Task<ImovelDetails?> GetImovelAsync(Guid imovelId, CancellationToken cancellationToken = default) => inner.GetImovelAsync(imovelId, cancellationToken);
     public Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default) => inner.CreateImovelAsync(request, cancellationToken);
-    public Task<ImovelSummary> UpdateImovelAsync(UpdateImovelRequest request, CancellationToken cancellationToken = default) => inner.UpdateImovelAsync(request, cancellationToken);
-    public Task SetImovelActiveAsync(Guid imovelId, bool isActive, CancellationToken cancellationToken = default) => inner.SetImovelActiveAsync(imovelId, cancellationToken);
+    public Task<ImovelSummary> UpdateImovelAsync(UpdateImovelRequest request, CancellationToken cancellationToken = default) => ((IRentalManagementService)inner).UpdateImovelAsync(request, cancellationToken);
+    public Task SetImovelActiveAsync(Guid imovelId, bool isActive, CancellationToken cancellationToken = default) => inner.SetImovelActiveAsync(imovelId, isActive, cancellationToken);
     public Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default) => inner.CreateImovelImagemAsync(request, cancellationToken);
     public Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default) => inner.GetImovelImagensAsync(imovelId, cancellationToken);
     public Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default) => inner.GetLocacoesAsync(cancellationToken);
