@@ -173,7 +173,7 @@ public partial class ShellWindow
             var previsaoHora = GetChavesPrevisaoHorario();
             var previsaoDevolucao = new DateTimeOffset(
                 previsao.Value.Date.Add(previsaoHora),
-                TimeZoneInfo.Local.GetUtcOffset(previsao.Value.Date));
+                TimeZoneInfo.Local.GetUtcOffset(previsao.Value.Date)).ToUniversalTime();
 
             var movimento = await _rentalManagementService.CreateImovelChaveMovimentoAsync(
                 new CreateImovelChaveMovimentoRequest(
@@ -185,7 +185,7 @@ public partial class ShellWindow
                     ChavesRetiradoPorDocumentoBox.Text,
                     ChavesRetiradoPorRelacaoBox.Text,
                     ChavesMotivoBox.Text,
-                    DateTimeOffset.Now,
+                    DateTimeOffset.UtcNow,
                     previsaoDevolucao,
                     ChavesObservacoesBox.Text));
 
