@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -66,11 +65,9 @@ public partial class ShellWindow
                 ChavesImovelBox.SelectedValue = item.ImovelId;
                 ChavesCodigoBox.Text = item.ChaveCodigo ?? string.Empty;
                 UpdateChavesSelectedImovelSummary(item.Imovel, item.Proprietario);
+                UpdateChavesWithdrawalButtonState();
             }
         };
-
-        DependencyPropertyDescriptor.FromProperty(ItemsControl.ItemsSourceProperty, typeof(DataGrid))
-            ?.AddValueChanged(ChavesGrid, (_, _) => Dispatcher.BeginInvoke(async () => await RefreshChavesDualListsAsync(), DispatcherPriority.Background));
 
         _ = RefreshChavesDualListsAsync();
     }
@@ -180,13 +177,9 @@ public partial class ShellWindow
         dualGrid.Children.Add(leftPanel);
         dualGrid.Children.Add(rightPanel);
 
-        var parentGrid = new Grid();
-        parentGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        parentGrid.Children.Add(dualGrid);
-
-        Grid.SetRow(parentGrid, 3);
-        Grid.SetColumnSpan(parentGrid, 2);
-        ChavesPanel.Children.Add(parentGrid);
+        Grid.SetRow(dualGrid, 3);
+        Grid.SetColumnSpan(dualGrid, 2);
+        ChavesPanel.Children.Add(dualGrid);
     }
 
     private async Task RefreshChavesDualListsAsync()
