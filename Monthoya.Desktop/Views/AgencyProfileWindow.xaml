@@ -9,30 +9,73 @@
         WindowStartupLocation="CenterOwner">
     <Grid Background="#F5F8FF">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="330" />
+            <ColumnDefinition Width="420" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Background="#05163A" Padding="30">
-            <StackPanel VerticalAlignment="Center">
-                <Image Source="/Assets/Logo_icon2.png"
-                       Width="96"
-                       Height="96"
-                       Stretch="Uniform"
-                       HorizontalAlignment="Left"
-                       Margin="0,0,0,24" />
-                <TextBlock Text="Dados da imobiliária"
-                           Foreground="White"
-                           FontSize="26"
-                           FontWeight="SemiBold"
-                           TextWrapping="Wrap" />
-                <TextBlock Text="Essas informações serão usadas automaticamente em contratos, recibos, relatórios, boletos, notas fiscais e documentos gerados pelo sistema."
-                           Foreground="#D9E7FF"
-                           FontSize="14"
-                           LineHeight="21"
-                           TextWrapping="Wrap"
-                           Margin="0,14,0,0" />
-            </StackPanel>
+        <Border>
+            <Border.Background>
+                <ImageBrush ImageSource="/Assets/Login_image.jpg" Stretch="UniformToFill" />
+            </Border.Background>
+            <Grid>
+                <Rectangle>
+                    <Rectangle.Fill>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                            <GradientStop Color="#3A06142E" Offset="0" />
+                            <GradientStop Color="#D8051028" Offset="1" />
+                        </LinearGradientBrush>
+                    </Rectangle.Fill>
+                </Rectangle>
+
+                <Grid Margin="34">
+                    <StackPanel VerticalAlignment="Bottom"
+                                Margin="0,0,0,84"
+                                TextElement.Foreground="White">
+                        <TextBlock Text="Dados da imobiliária"
+                                   Foreground="White"
+                                   FontSize="23"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="Essas informações serão usadas automaticamente em contratos, recibos, relatórios, boletos, notas fiscais e documentos gerados pelo sistema."
+                                   Foreground="#E7F0FF"
+                                   FontSize="14"
+                                   LineHeight="20"
+                                   TextWrapping="Wrap"
+                                   Margin="0,12,0,34" />
+
+                        <TextBlock Text="Monthoya Consultoria Imobiliária"
+                                   Foreground="White"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="Rua Getúlio Vargas, 668 - Centro"
+                                   Foreground="#D9E7FF"
+                                   Margin="0,6,0,0" />
+                        <TextBlock Text="Paranavaí - Paraná — 87702-000"
+                                   Foreground="#D9E7FF"
+                                   Margin="0,4,0,0" />
+                    </StackPanel>
+
+                    <StackPanel VerticalAlignment="Bottom"
+                                HorizontalAlignment="Right"
+                                TextElement.Foreground="#C8DAF8">
+                        <TextBlock Text="Designed and coded by"
+                                   FontFamily="Cascadia Code, Consolas"
+                                   FontSize="10"
+                                   TextAlignment="Right" />
+                        <TextBlock Text="Waldomiro S C Jr"
+                                   FontFamily="Cascadia Code, Consolas"
+                                   FontSize="10"
+                                   FontWeight="SemiBold"
+                                   TextAlignment="Right"
+                                   Margin="0,3,0,0" />
+                        <TextBlock Text="wjuniorbr@hotmail.com"
+                                   FontFamily="Cascadia Code, Consolas"
+                                   FontSize="10"
+                                   TextAlignment="Right"
+                                   Margin="0,3,0,0" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
         </Border>
 
         <Border Grid.Column="1" Margin="34" Style="{StaticResource CardBorder}">
