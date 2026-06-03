@@ -74,6 +74,7 @@ public partial class ShellWindow
 
     private void BuildChavesDualListLayout(Border originalListHost, UIElement originalSearchHost)
     {
+        HideOldChavesSearchSection(originalSearchHost);
         DetachFromParent(originalSearchHost);
         DetachFromParent(originalListHost);
 
@@ -182,6 +183,24 @@ public partial class ShellWindow
         ChavesPanel.Children.Add(dualGrid);
     }
 
+    private void HideOldChavesSearchSection(UIElement searchHost)
+    {
+        if (searchHost is not FrameworkElement searchElement)
+        {
+            return;
+        }
+
+        if (searchElement.Parent is StackPanel oldSearchSection)
+        {
+            foreach (var textBlock in oldSearchSection.Children.OfType<TextBlock>())
+            {
+                textBlock.Visibility = Visibility.Collapsed;
+            }
+
+            oldSearchSection.Margin = new Thickness(0);
+        }
+    }
+
     private async Task RefreshChavesDualListsAsync()
     {
         if (_chavesTakenGrid is null)
@@ -189,18 +208,16 @@ public partial class ShellWindow
             return;
         }
 
-        var items = ChavesGrid.ItemsSource?.Cast<object>().OfType<ChavesListItem>().ToList() ?? [];
-        if (items.Count > 0)
-        {
-            _lastAllChavesItems = MergeChavesItems(_lastAllChavesItems, items);
-        }
-
+        _lastAllChavesItems = BuildAllChavesItemsFromCurrentData();
         if (_lastAllChavesItems.Count == 0)
         {
+            ChavesGrid.ItemsSource = Array.Empty<ChavesListItem>();
+            _chavesTakenGrid.ItemsSource = Array.Empty<ChavesListItem>();
             return;
         }
 
         await RefreshChavesBoardCodesFromImoveisAsync();
+        ApplyLoadedBoardCodesToCachedItems();
 
         var availableQuery = ChavesSearchBox.Text;
         var takenQuery = _chavesTakenSearchBox?.Text ?? string.Empty;
@@ -223,15 +240,30 @@ public partial class ShellWindow
         ConfigureTakenKeysGridColumns();
     }
 
-    private static List<ChavesListItem> MergeChavesItems(List<ChavesListItem> previous, List<ChavesListItem> current)
+    private List<ChavesListItem> BuildAllChavesItemsFromCurrentData()
     {
-        var byKey = previous.ToDictionary(item => item.MovimentoId ?? item.ImovelId, item => item);
-        foreach (var item in current)
-        {
-            byKey[item.MovimentoId ?? item.ImovelId] = item;
-        }
+        var activeMovementsByImovelId = _chaveMovimentos
+            .Where(x => !x.DevolvidoEm.HasValue)
+            .GroupBy(x => x.ImovelId)
+            .ToDictionary(group => group.Key, group => group.OrderByDescending(x => x.RetiradoEm).First());
 
-        return byKey.Values.ToList();
+        return _imoveis
+            .Where(x => !string.Equals(x.Status, "Inativo", StringComparison.OrdinalIgnoreCase))
+            .Select(imovel =>
+            {
+                activeMovementsByImovelId.TryGetValue(imovel.Id, out var movimento);
+                return CreateChavesListItem(imovel, movimento);
+            })
+            .ToList();
+    }
+
+    private void ApplyLoadedBoardCodesToCachedItems()
+    {
+        _lastAllChavesItems = _lastAllChavesItems
+            .Select(item => _chavesBoardCodeByImovelId.TryGetValue(item.ImovelId, out var code) && !string.IsNullOrWhiteSpace(code)
+                ? item with { ChaveCodigo = code }
+                : item)
+            .ToList();
     }
 
     private void ConfigureAvailableKeysGridColumns()
