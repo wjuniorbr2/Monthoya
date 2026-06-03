@@ -59,7 +59,7 @@ public partial class ShellWindow
         {
             formHost.MinHeight = 0;
             formHost.Height = double.NaN;
-            formHost.Padding = new Thickness(18, 12, 18, 12);
+            formHost.Padding = new Thickness(18, 8, 18, 5);
             BuildChavesTopUnifiedForm(formHost);
         }
 
@@ -96,7 +96,7 @@ public partial class ShellWindow
         DetachChavesOriginalFields();
 
         var mainPanel = new StackPanel();
-        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 6) };
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 3) };
         _chavesActionTitleText = new TextBlock
         {
             Text = "Chaves dos imóveis disponíveis",
@@ -123,7 +123,7 @@ public partial class ShellWindow
         _chavesSelectedImovelText = new TextBlock
         {
             Foreground = Brushes.DimGray,
-            Margin = new Thickness(0, 0, 0, 4),
+            Margin = new Thickness(0, 0, 0, 2),
             TextWrapping = TextWrapping.Wrap
         };
 
@@ -147,17 +147,17 @@ public partial class ShellWindow
         fields.Children.Add(CreateRelacaoField());
         fields.Children.Add(CreateLabeledField("Telefone", ChavesRetiradoPorTelefoneBox, 135));
         fields.Children.Add(CreateLabeledField("Documento", ChavesRetiradoPorDocumentoBox, 145));
-        fields.Children.Add(CreateLabeledField("Motivo", ChavesMotivoBox, 175));
+        fields.Children.Add(CreateLabeledField("Motivo", ChavesMotivoBox, 155));
         fields.Children.Add(CreatePrevisaoField());
-        fields.Children.Add(CreateLabeledField("Observações", ChavesObservacoesBox, 300));
+        fields.Children.Add(CreateLabeledField("Observações", ChavesObservacoesBox, 330));
 
         SaveChaveRetiradaButton.HorizontalAlignment = HorizontalAlignment.Left;
         SaveChaveRetiradaButton.MinWidth = 0;
         SaveChaveRetiradaButton.Width = double.NaN;
-        SaveChaveRetiradaButton.Padding = new Thickness(18, 8, 18, 8);
+        SaveChaveRetiradaButton.Padding = new Thickness(18, 7, 18, 7);
         SaveChaveRetiradaButton.Background = new SolidColorBrush(Color.FromRgb(0, 109, 176));
         SaveChaveRetiradaButton.Foreground = Brushes.White;
-        SaveChaveRetiradaButton.Margin = new Thickness(0, -2, 0, 0);
+        SaveChaveRetiradaButton.Margin = new Thickness(0, -5, 0, 0);
 
         panel.Children.Add(fields);
         panel.Children.Add(SaveChaveRetiradaButton);
@@ -171,14 +171,14 @@ public partial class ShellWindow
         fields.Children.Add(CreateLabeledField("Recebido por", ChavesDevolvidoParaBox, 260));
         fields.Children.Add(CreateLabeledField("Observações da devolução", ChavesDevolucaoObservacoesBox, 420));
 
-        ChavesSelectedMovimentoText.Margin = new Thickness(0, 0, 0, 4);
+        ChavesSelectedMovimentoText.Margin = new Thickness(0, 0, 0, 2);
         ReturnChaveButton.HorizontalAlignment = HorizontalAlignment.Left;
         ReturnChaveButton.MinWidth = 0;
         ReturnChaveButton.Width = double.NaN;
-        ReturnChaveButton.Padding = new Thickness(18, 8, 18, 8);
+        ReturnChaveButton.Padding = new Thickness(18, 7, 18, 7);
         ReturnChaveButton.Background = new SolidColorBrush(Color.FromRgb(0, 109, 176));
         ReturnChaveButton.Foreground = Brushes.White;
-        ReturnChaveButton.Margin = new Thickness(0, -2, 0, 0);
+        ReturnChaveButton.Margin = new Thickness(0, -5, 0, 0);
 
         panel.Children.Add(ChavesSelectedMovimentoText);
         panel.Children.Add(fields);
@@ -191,7 +191,7 @@ public partial class ShellWindow
         _chavesRelacaoComboBox = new ComboBox
         {
             Width = 110,
-            Margin = new Thickness(0, 4, 0, 0),
+            Margin = new Thickness(0, 3, 0, 0),
             IsEditable = true,
             ItemsSource = new[]
             {
@@ -210,7 +210,7 @@ public partial class ShellWindow
         _chavesRelacaoComboBox.LostFocus += (_, _) =>
             ChavesRetiradoPorRelacaoBox.Text = _chavesRelacaoComboBox.Text;
 
-        var panel = new StackPanel { Width = 110, Margin = new Thickness(0, 0, 14, 5) };
+        var panel = new StackPanel { Width = 110, Margin = new Thickness(0, 0, 14, 3) };
         panel.Children.Add(new TextBlock { Text = "Relação", FontWeight = FontWeights.SemiBold });
         panel.Children.Add(_chavesRelacaoComboBox);
         return panel;
@@ -219,11 +219,11 @@ public partial class ShellWindow
     private UIElement CreatePrevisaoField()
     {
         ChavesPrevisaoBox.Width = 125;
-        ChavesPrevisaoBox.Margin = new Thickness(0, 4, 6, 0);
+        ChavesPrevisaoBox.Margin = new Thickness(0, 3, 6, 0);
         _chavesPrevisaoHoraBox = new TextBox
         {
             Width = 70,
-            Margin = new Thickness(0, 4, 0, 0),
+            Margin = new Thickness(0, 3, 0, 0),
             Text = "18:00",
             ToolTip = "Horário previsto de devolução"
         };
@@ -232,7 +232,7 @@ public partial class ShellWindow
         row.Children.Add(ChavesPrevisaoBox);
         row.Children.Add(_chavesPrevisaoHoraBox);
 
-        var panel = new StackPanel { Width = 210, Margin = new Thickness(0, 0, 14, 5) };
+        var panel = new StackPanel { Width = 210, Margin = new Thickness(12, 0, 14, 3) };
         panel.Children.Add(new TextBlock { Text = "Previsão de devolução", FontWeight = FontWeights.SemiBold });
         panel.Children.Add(row);
         return panel;
@@ -265,10 +265,10 @@ public partial class ShellWindow
     {
         DetachFromParent(field);
 
-        var panel = new StackPanel { Width = width, Margin = new Thickness(0, 0, 14, 5) };
+        var panel = new StackPanel { Width = width, Margin = new Thickness(0, 0, 14, 3) };
         panel.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold });
         field.Width = width;
-        field.Margin = new Thickness(0, 4, 0, 0);
+        field.Margin = new Thickness(0, 3, 0, 0);
         panel.Children.Add(field);
         return panel;
     }
