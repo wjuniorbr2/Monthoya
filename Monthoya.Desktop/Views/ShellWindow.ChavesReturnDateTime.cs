@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -58,11 +59,12 @@ public partial class ShellWindow
             Margin = new Thickness(0, 6, 0, 0),
             IsEditable = true,
             ItemsSource = Enumerable.Range(0, 24).Select(hour => $"{hour:00}:00").ToList(),
-            Text = DateTime.Now.ToString("HH:00"),
             ToolTip = "Digite o horário ou escolha uma hora da lista"
         };
         _chavesDevolucaoHoraBox.PreviewTextInput += (_, input) => input.Handled = input.Text.Any(ch => !char.IsDigit(ch));
         _chavesDevolucaoHoraBox.LostFocus += (_, _) => NormalizeReturnTimeDropdown();
+
+        SetChavesReturnDateTimeToNow();
 
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(_chavesDevolucaoDataBox);
@@ -84,6 +86,33 @@ public partial class ShellWindow
         wrap.Children.Insert(insertIndex, container);
     }
 
+    private void SetChavesReturnDateTimeToNow()
+    {
+        var now = DateTime.Now;
+        if (_chavesDevolucaoDataBox is not null)
+        {
+            _chavesDevolucaoDataBox.SelectedDate = now.Date;
+        }
+
+        if (_chavesDevolucaoHoraBox is not null)
+        {
+            _chavesDevolucaoHoraBox.Text = now.ToString("HH:mm", CultureInfo.GetCultureInfo("pt-BR"));
+        }
+    }
+
+    private DateTimeOffset GetChavesReturnDateTime()
+    {
+        var date = _chavesDevolucaoDataBox?.SelectedDate ?? DateTime.Today;
+        var timeText = _chavesDevolucaoHoraBox?.Text ?? DateTime.Now.ToString("HH:mm", CultureInfo.GetCultureInfo("pt-BR"));
+        if (!TimeSpan.TryParse(timeText, CultureInfo.GetCultureInfo("pt-BR"), out var time))
+        {
+            time = DateTime.Now.TimeOfDay;
+        }
+
+        var localDateTime = date.Date.Add(time);
+        return new DateTimeOffset(localDateTime, TimeZoneInfo.Local.GetUtcOffset(localDateTime));
+    }
+
     private void NormalizeReturnTimeDropdown()
     {
         if (_chavesDevolucaoHoraBox is null)
@@ -94,7 +123,7 @@ public partial class ShellWindow
         var digits = new string((_chavesDevolucaoHoraBox.Text ?? string.Empty).Where(char.IsDigit).Take(4).ToArray());
         if (digits.Length == 0)
         {
-            _chavesDevolucaoHoraBox.Text = DateTime.Now.ToString("HH:00");
+            _chavesDevolucaoHoraBox.Text = DateTime.Now.ToString("HH:mm", CultureInfo.GetCultureInfo("pt-BR"));
             return;
         }
 
