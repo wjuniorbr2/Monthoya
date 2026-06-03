@@ -18,6 +18,7 @@ public partial class ShellWindow
 
         _chaveMovimentos = await _rentalManagementService.GetImovelChaveMovimentosAsync();
         ApplyChavesFilter();
+        await RefreshChavesDualListsAsync();
         UpdateSelectedChaveMovement();
         if (!ChavesPrevisaoBox.SelectedDate.HasValue)
         {
@@ -80,6 +81,12 @@ public partial class ShellWindow
             return;
         }
 
+        if (_chavesDualListsApplied)
+        {
+            _ = RefreshChavesDualListsAsync();
+            return;
+        }
+
         var query = ChavesSearchBox.Text;
         var mode = GetChavesSelectedMode();
         var activeMovementsByImovelId = _chaveMovimentos
@@ -131,7 +138,7 @@ public partial class ShellWindow
                 null,
                 imovel.Endereco,
                 imovel.Proprietario,
-                null,
+                imovel.ChaveCodigo,
                 imovel.Chaves,
                 null,
                 null,
@@ -148,7 +155,7 @@ public partial class ShellWindow
             movimento.Id,
             imovel.Endereco,
             imovel.Proprietario,
-            movimento.ChaveCodigo,
+            movimento.ChaveCodigo ?? imovel.ChaveCodigo,
             movimento.Status,
             movimento.RetiradoPorNome,
             movimento.RetiradoPorTelefone,
