@@ -34,7 +34,8 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IDashboardService, DashboardService>();
-        services.AddScoped<IRentalManagementService, RentalManagementService>();
+        services.AddScoped<RentalManagementService>();
+        services.AddScoped<IRentalManagementService, ChavesSafeRentalManagementService>();
         services.AddScoped<IFileStorageService, ConfiguredFileStorageService>();
         services.AddScoped<IDocumentOcrService, LocalDocumentOcrService>();
         services.AddScoped<IBoletoProvider, LocalBoletoProvider>();
