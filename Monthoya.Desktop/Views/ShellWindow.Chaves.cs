@@ -31,6 +31,7 @@ public partial class ShellWindow
     {
         ApplyChavesFilter();
         SaveActiveTabState();
+        _ = RefreshChavesDualListsAsync();
     }
 
     private void ChavesStatusFilterBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -41,6 +42,13 @@ public partial class ShellWindow
 
     private void ChavesGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (_chavesDualListsApplied)
+        {
+            UpdateChavesWithdrawalButtonState();
+            UpdateChavesBoardCodeDisplayFromSelection();
+            return;
+        }
+
         if (ChavesGrid.SelectedItem is ChavesListItem item)
         {
             SelectChavesListItem(item);
@@ -202,7 +210,7 @@ public partial class ShellWindow
         }
         finally
         {
-            SaveChaveRetiradaButton.IsEnabled = true;
+            UpdateChavesWithdrawalButtonState();
         }
     }
 
