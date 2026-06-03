@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -11,6 +12,7 @@ public partial class ShellWindow
     private static readonly bool ChavesExtraAdjustmentsRegistered = RegisterChavesExtraAdjustments();
     private bool _chavesExtraAdjustmentsApplied;
     private bool _isFormattingChavesTime;
+    private bool _isNormalizingChavesList;
     private readonly Dictionary<Guid, string?> _chavesBoardCodeByImovelId = [];
 
     private static bool RegisterChavesExtraAdjustments()
@@ -53,6 +55,9 @@ public partial class ShellWindow
         ChavesObservacoesBox.Width = 300;
 
         ChavesGrid.SelectionChanged += (_, _) => UpdateChavesBoardCodeDisplayFromSelection();
+        DependencyPropertyDescriptor.FromProperty(ItemsControl.ItemsSourceProperty, typeof(DataGrid))
+            ?.AddValueChanged(ChavesGrid, (_, _) => Dispatcher.BeginInvoke(ApplyChavesListModeAndRefreshCodesAsync, DispatcherPriority.Background));
+
         ChavesPanel.IsVisibleChanged += (_, _) =>
         {
             if (ChavesPanel.IsVisible)
@@ -68,9 +73,86 @@ public partial class ShellWindow
     {
         ReorderChavesRetiradaFields();
         ConfigureChavesRelationAndTimeFields();
-        ConfigureChavesColumnsForCurrentMode();
-        UpdateChavesBoardCodeDisplayFromSelection();
-        await RefreshChavesBoardCodesFromImoveisAsync();
+        ConfigureChavesListCardBounds();
+        HookChavesModeDropdown();
+        await ApplyChavesListModeAndRefreshCodesAsync();
+    }
+
+    private void HookChavesModeDropdown()
+    {
+        if (_chavesMovimentoTipoBox is null || _chavesMovimentoTipoBox.Tag as string == "ChavesExtraHooked")
+        {
+            return;
+        }
+
+        _chavesMovimentoTipoBox.Tag = "ChavesExtraHooked";
+        _chavesMovimentoTipoBox.SelectionChanged += async (_, _) =>
+        {
+            await Dispatcher.InvokeAsync(ConfigureChavesColumnsForCurrentMode, DispatcherPriority.Background);
+            await ApplyChavesListModeAndRefreshCodesAsync();
+        };
+    }
+
+    private async Task ApplyChavesListModeAndRefreshCodesAsync()
+    {
+        if (_isNormalizingChavesList)
+        {
+            return;
+        }
+
+        _isNormalizingChavesList = true;
+        try
+        {
+            NormalizeChavesListForCurrentMode();
+            ConfigureChavesColumnsForCurrentMode();
+            UpdateChavesBoardCodeDisplayFromSelection();
+            await RefreshChavesBoardCodesFromImoveisAsync();
+        }
+        finally
+        {
+            _isNormalizingChavesList = false;
+        }
+    }
+
+    private void NormalizeChavesListForCurrentMode()
+    {
+        if (ChavesGrid.ItemsSource is not IEnumerable<object> items)
+        {
+            return;
+        }
+
+        var mode = GetEffectiveChavesMode();
+        var current = items.OfType<ChavesListItem>().ToList();
+        if (current.Count == 0)
+        {
+            return;
+        }
+
+        var filtered = string.Equals(mode, "Devolução", StringComparison.OrdinalIgnoreCase)
+            ? current.Where(item => item.MovimentoId.HasValue).ToList()
+            : current.Where(item => !item.MovimentoId.HasValue).ToList();
+
+        if (filtered.Count == current.Count && filtered.SequenceEqual(current))
+        {
+            return;
+        }
+
+        ChavesGrid.ItemsSource = filtered;
+    }
+
+    private void ConfigureChavesListCardBounds()
+    {
+        var listHost = FindVisualChildrenForPeopleRuntimeAdjustment<Border>(ChavesPanel)
+            .FirstOrDefault(border => border.Child == ChavesGrid);
+        if (listHost is null)
+        {
+            return;
+        }
+
+        listHost.Margin = new Thickness(0, 8, 10, 0);
+        listHost.HorizontalAlignment = HorizontalAlignment.Stretch;
+        listHost.Padding = new Thickness(0);
+        ChavesGrid.Margin = new Thickness(0);
     }
 
     private void ReorderChavesRetiradaFields()
@@ -232,7 +314,7 @@ public partial class ShellWindow
 
     private void ConfigureChavesColumnsForCurrentMode()
     {
-        var mode = _chavesMovimentoTipoBox?.SelectedItem as string;
+        var mode = GetEffectiveChavesMode();
         ChavesGrid.Columns.Clear();
 
         AddChavesColumn("Código", "ChaveCodigo", 0.65);
@@ -240,7 +322,7 @@ public partial class ShellWindow
         AddChavesColumn("Proprietário", "Proprietario", 1.6);
         AddChavesColumn("Situação", "Status", 1.1);
 
-        if (string.Equals(mode, "Retirada", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(mode, "Devolução", StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -251,6 +333,12 @@ public partial class ShellWindow
         AddChavesColumn("Motivo", "Motivo", 1.1);
         AddChavesColumn("Retirado em", "RetiradoEm", 1.0, "dd/MM/yyyy HH:mm");
         AddChavesColumn("Previsão", "PrevisaoDevolucaoEm", 1.0, "dd/MM/yyyy HH:mm");
+    }
+
+    private string GetEffectiveChavesMode()
+    {
+        var selected = _chavesMovimentoTipoBox?.SelectedItem as string;
+        return string.IsNullOrWhiteSpace(selected) ? "Retirada" : selected;
     }
 
     private void AddChavesColumn(string header, string binding, double width, string? stringFormat = null)
