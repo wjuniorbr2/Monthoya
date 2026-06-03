@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using Microsoft.EntityFrameworkCore;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
