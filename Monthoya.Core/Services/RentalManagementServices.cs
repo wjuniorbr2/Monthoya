@@ -239,7 +239,8 @@ public sealed record CreateImovelChaveMovimentoRequest(
 public sealed record ReturnImovelChaveMovimentoRequest(
     Guid MovimentoId,
     string? DevolvidoParaNome,
-    string? Observacoes);
+    string? Observacoes,
+    DateTimeOffset? DevolvidoEm = null);
 
 public sealed record CreateVistoriaRequest(
     Guid ImovelId,
@@ -346,18 +347,17 @@ public interface IBoletoProvider
 {
     Task<BoletoProviderResult> GenerateBoletoAsync(Boleto boleto, CancellationToken cancellationToken = default);
     Task<BoletoProviderResult> RegisterBoletoAsync(Boleto boleto, CancellationToken cancellationToken = default);
-    Task<BoletoProviderResult> CancelBoletoAsync(Boleto boleto, CancellationToken cancellationToken = default);
-    Task<BoletoProviderResult> GetBoletoStatusAsync(Boleto boleto, CancellationToken cancellationToken = default);
-    Task<BoletoProviderResult> DownloadBoletoPdfAsync(Boleto boleto, CancellationToken cancellationToken = default);
+    Task<BoletoProviderStatusResult> QueryStatusAsync(Boleto boleto, CancellationToken cancellationToken = default);
+    Task<BoletoProviderResult> CancelAsync(Boleto boleto, CancellationToken cancellationToken = default);
 }
 
-public sealed record BoletoProviderResult(bool Succeeded, string Message, string? ExternalId = null, string? PdfUrl = null);
+public sealed record BoletoProviderResult(bool Success, string? ProviderId, string? PayloadJson, string? ErrorMessage = null);
+public sealed record BoletoProviderStatusResult(BoletoStatus Status, DateOnly? PaidAt = null, string? ErrorMessage = null);
 
 public interface INfseProvider
 {
-    Task<NfseProviderResult> IssueNotaFiscalAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
-    Task<NfseProviderResult> CancelNotaFiscalAsync(NotaFiscal notaFiscal, string motivo, CancellationToken cancellationToken = default);
-    Task<NfseProviderResult> DownloadNotaFiscalPdfAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
+    Task<NfseProviderResult> IssueAsync(NotaFiscal nota, CancellationToken cancellationToken = default);
+    Task<NfseProviderResult> CancelAsync(NotaFiscal nota, string reason, CancellationToken cancellationToken = default);
 }
 
-public sealed record NfseProviderResult(bool Succeeded, string Message, string? ExternalId = null, string? PdfUrl = null);
+public sealed record NfseProviderResult(bool Success, string? Numero, string? CodigoVerificacao, string? PayloadJson, string? ErrorMessage = null);
