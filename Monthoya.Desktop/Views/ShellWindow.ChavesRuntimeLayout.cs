@@ -143,17 +143,21 @@ public partial class ShellWindow
 
         _chavesRetiradaFieldsPanel = new StackPanel();
         _chavesRetiradaFieldsPanel.Children.Add(ExtractWrapPanel(originalPanel));
+        DetachFromParent(SaveChaveRetiradaButton);
         _chavesRetiradaFieldsPanel.Children.Add(SaveChaveRetiradaButton);
 
         _chavesDevolucaoFieldsPanel = new StackPanel();
+        DetachFromParent(ChavesSelectedMovimentoText);
         _chavesDevolucaoFieldsPanel.Children.Add(ChavesSelectedMovimentoText);
         _chavesDevolucaoFieldsPanel.Children.Add(CreateLabeledField("Recebido por", ChavesDevolvidoParaBox, 260));
         _chavesDevolucaoFieldsPanel.Children.Add(CreateLabeledField("Observações da devolução", ChavesDevolucaoObservacoesBox, 420));
+        DetachFromParent(ReturnChaveButton);
         _chavesDevolucaoFieldsPanel.Children.Add(ReturnChaveButton);
 
         mainPanel.Children.Add(header);
         mainPanel.Children.Add(_chavesRetiradaFieldsPanel);
         mainPanel.Children.Add(_chavesDevolucaoFieldsPanel);
+        DetachFromParent(ChavesErrorText);
         mainPanel.Children.Add(ChavesErrorText);
         retiradaHost.Child = mainPanel;
     }
@@ -165,10 +169,7 @@ public partial class ShellWindow
 
     private static UIElement CreateLabeledField(string label, FrameworkElement field, double width)
     {
-        if (field.Parent is Panel oldParent)
-        {
-            oldParent.Children.Remove(field);
-        }
+        DetachFromParent(field);
 
         var panel = new StackPanel { Width = width, Margin = new Thickness(0, 0, 14, 12) };
         panel.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold });
@@ -242,6 +243,22 @@ public partial class ShellWindow
         if (index > 0 && panel.Children[index - 1] is TextBlock label)
         {
             label.Text = newLabel;
+        }
+    }
+
+    private static void DetachFromParent(UIElement element)
+    {
+        if (element.Parent is Panel panel)
+        {
+            panel.Children.Remove(element);
+        }
+        else if (element.Parent is Decorator decorator)
+        {
+            decorator.Child = null;
+        }
+        else if (element.Parent is ContentControl contentControl)
+        {
+            contentControl.Content = null;
         }
     }
 }
