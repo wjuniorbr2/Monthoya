@@ -46,50 +46,26 @@ public sealed class ChavesSafeRentalManagementService(
     public async Task<ImovelChaveMovimentoSummary> CreateImovelChaveMovimentoAsync(CreateImovelChaveMovimentoRequest request, CancellationToken cancellationToken = default)
     {
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
-
-        if (request.ImovelId == Guid.Empty)
-        {
-            throw new InvalidOperationException("Selecione o imóvel da chave.");
-        }
+        if (request.ImovelId == Guid.Empty) throw new InvalidOperationException("Selecione o imóvel da chave.");
 
         var imovel = await dbContext.Imoveis.SingleOrDefaultAsync(x => x.Id == request.ImovelId, cancellationToken)
             ?? throw new InvalidOperationException("Imóvel não encontrado.");
 
-        var alreadyTaken = await dbContext.ImovelChaveMovimentos
-            .AnyAsync(x => x.ImovelId == request.ImovelId && !x.DevolvidoEm.HasValue, cancellationToken);
-        if (alreadyTaken)
-        {
-            throw new InvalidOperationException("Esta chave já está retirada.");
-        }
+        var alreadyTaken = await dbContext.ImovelChaveMovimentos.AnyAsync(x => x.ImovelId == request.ImovelId && !x.DevolvidoEm.HasValue, cancellationToken);
+        if (alreadyTaken) throw new InvalidOperationException("Esta chave já está retirada.");
 
-        if (request.Tipo == ImovelChaveMovimentoTipo.Retirada)
-        {
-            if (string.IsNullOrWhiteSpace(request.RetiradoPorNome))
-            {
-                throw new InvalidOperationException("Informe quem retirou a chave.");
-            }
-
-            if (!request.PrevisaoDevolucaoEm.HasValue)
-            {
-                throw new InvalidOperationException("Informe a previsão de devolução da chave.");
-            }
-        }
+        if (string.IsNullOrWhiteSpace(request.RetiradoPorNome)) throw new InvalidOperationException("Informe quem retirou a chave.");
+        if (!request.PrevisaoDevolucaoEm.HasValue) throw new InvalidOperationException("Informe a previsão de devolução da chave.");
 
         var retiradoEm = ToUtc(request.RetiradoEm ?? DateTimeOffset.UtcNow);
-        var previsaoDevolucaoEm = request.PrevisaoDevolucaoEm.HasValue
-            ? ToUtc(request.PrevisaoDevolucaoEm.Value)
-            : (DateTimeOffset?)null;
-
-        if (previsaoDevolucaoEm.HasValue && previsaoDevolucaoEm.Value < retiradoEm)
-        {
-            throw new InvalidOperationException("A previsão de devolução não pode ser anterior à retirada da chave.");
-        }
+        var previsaoDevolucaoEm = ToUtc(request.PrevisaoDevolucaoEm.Value);
+        if (previsaoDevolucaoEm < retiradoEm) throw new InvalidOperationException("A previsão de devolução não pode ser anterior à retirada da chave.");
 
         var movimento = new ImovelChaveMovimento
         {
             ImovelId = request.ImovelId,
             ChaveCodigo = TrimOrNull(request.ChaveCodigo) ?? imovel.ChaveCodigo,
-            Tipo = request.Tipo,
+            Tipo = ImovelChaveMovimentoTipo.Retirada,
             RetiradoPorNome = TrimOrNull(request.RetiradoPorNome),
             RetiradoPorTelefone = DigitsOrNull(request.RetiradoPorTelefone),
             RetiradoPorDocumento = TrimOrNull(request.RetiradoPorDocumento),
@@ -103,29 +79,20 @@ public sealed class ChavesSafeRentalManagementService(
 
         dbContext.ImovelChaveMovimentos.Add(movimento);
         await dbContext.SaveChangesAsync(cancellationToken);
-
         return (await GetImovelChaveMovimentosCoreAsync(request.ImovelId, cancellationToken)).Single(x => x.Id == movimento.Id);
     }
 
     public async Task<ImovelChaveMovimentoSummary> ReturnImovelChaveMovimentoAsync(ReturnImovelChaveMovimentoRequest request, CancellationToken cancellationToken = default)
     {
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        if (request.MovimentoId == Guid.Empty) throw new InvalidOperationException("Selecione a retirada de chave.");
 
-        if (request.MovimentoId == Guid.Empty)
-        {
-            throw new InvalidOperationException("Selecione a retirada de chave.");
-        }
-
-        var movimento = await dbContext.ImovelChaveMovimentos
-            .SingleOrDefaultAsync(x => x.Id == request.MovimentoId, cancellationToken)
+        var movimento = await dbContext.ImovelChaveMovimentos.SingleOrDefaultAsync(x => x.Id == request.MovimentoId, cancellationToken)
             ?? throw new InvalidOperationException("Movimentação de chave não encontrada.");
 
-        if (movimento.DevolvidoEm.HasValue)
-        {
-            throw new InvalidOperationException("Esta chave já foi devolvida.");
-        }
+        if (movimento.DevolvidoEm.HasValue) throw new InvalidOperationException("Esta chave já foi devolvida.");
 
-        var devolvidoEm = DateTimeOffset.UtcNow;
+        var devolvidoEm = ToUtc(request.DevolvidoEm ?? DateTimeOffset.UtcNow);
         if (movimento.RetiradoEm.HasValue && devolvidoEm < ToUtc(movimento.RetiradoEm.Value))
         {
             throw new InvalidOperationException("A data de devolução não pode ser anterior à retirada da chave.");
@@ -138,35 +105,22 @@ public sealed class ChavesSafeRentalManagementService(
         movimento.Observacoes = MergeNotes(movimento.Observacoes, request.Observacoes);
         movimento.UpdatedAtUtc = DateTimeOffset.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken);
-
         return (await GetImovelChaveMovimentosCoreAsync(movimento.ImovelId, cancellationToken)).Single(x => x.Id == movimento.Id);
     }
 
     private async Task<IReadOnlyList<ImovelChaveMovimentoSummary>> GetImovelChaveMovimentosCoreAsync(Guid? imovelId, CancellationToken cancellationToken)
     {
-        var query = dbContext.ImovelChaveMovimentos
-            .AsNoTracking()
-            .Include(x => x.Imovel)
-            .AsQueryable();
-
-        if (imovelId.HasValue)
-        {
-            query = query.Where(x => x.ImovelId == imovelId.Value);
-        }
+        var query = dbContext.ImovelChaveMovimentos.AsNoTracking().Include(x => x.Imovel).AsQueryable();
+        if (imovelId.HasValue) query = query.Where(x => x.ImovelId == imovelId.Value);
 
         var now = DateTimeOffset.UtcNow;
-        var movimentos = await query
-            .OrderByDescending(x => x.CreatedAtUtc)
-            .ToListAsync(cancellationToken);
+        var movimentos = await query.OrderByDescending(x => x.CreatedAtUtc).ToListAsync(cancellationToken);
 
         return movimentos.Select(x =>
         {
-            var status = x.Status == ImovelChaveMovimentoStatus.Retirada
-                && x.PrevisaoDevolucaoEm.HasValue
-                && x.PrevisaoDevolucaoEm.Value < now
-                && !x.DevolvidoEm.HasValue
-                    ? "Em atraso"
-                    : GetChavesStatusLabel(x.Status);
+            var status = x.Status == ImovelChaveMovimentoStatus.Retirada && x.PrevisaoDevolucaoEm.HasValue && x.PrevisaoDevolucaoEm.Value < now && !x.DevolvidoEm.HasValue
+                ? "Em atraso"
+                : GetChavesStatusLabel(x.Status);
 
             return new ImovelChaveMovimentoSummary(
                 x.Id,
@@ -180,25 +134,20 @@ public sealed class ChavesSafeRentalManagementService(
                 x.RetiradoPorDocumento,
                 x.RetiradoPorRelacao,
                 x.Motivo,
-                x.RetiradoEm,
-                x.PrevisaoDevolucaoEm,
-                x.DevolvidoEm,
+                ToLocalOrNull(x.RetiradoEm),
+                ToLocalOrNull(x.PrevisaoDevolucaoEm),
+                ToLocalOrNull(x.DevolvidoEm),
                 x.DevolvidoParaNome,
                 x.Observacoes);
         }).ToList();
     }
 
     private static DateTimeOffset ToUtc(DateTimeOffset value) => value.Offset == TimeSpan.Zero ? value : value.ToUniversalTime();
-
+    private static DateTimeOffset? ToLocalOrNull(DateTimeOffset? value) => value.HasValue ? value.Value.ToLocalTime() : null;
     private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-
     private static string? DigitsOrNull(string? value)
     {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return null;
-        }
-
+        if (string.IsNullOrWhiteSpace(value)) return null;
         var digits = new string(value.Where(char.IsDigit).ToArray());
         return string.IsNullOrWhiteSpace(digits) ? null : digits;
     }
@@ -211,7 +160,7 @@ public sealed class ChavesSafeRentalManagementService(
             null => null,
             { Length: 11 } => $"({digits[..2]}) {digits[2..7]}-{digits[7..]}",
             { Length: 10 } => $"({digits[..2]}) {digits[2..6]}-{digits[6..]}",
-            _ => value
+            _ => value ?? string.Empty
         };
     }
 
@@ -238,16 +187,8 @@ public sealed class ChavesSafeRentalManagementService(
     {
         current = TrimOrNull(current);
         next = TrimOrNull(next);
-        if (string.IsNullOrWhiteSpace(current))
-        {
-            return next;
-        }
-
-        if (string.IsNullOrWhiteSpace(next))
-        {
-            return current;
-        }
-
+        if (string.IsNullOrWhiteSpace(current)) return next;
+        if (string.IsNullOrWhiteSpace(next)) return current;
         return $"{current}{Environment.NewLine}{next}";
     }
 }
