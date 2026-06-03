@@ -171,7 +171,6 @@ public partial class ShellWindow
 
     private async void SaveChaveRetiradaButton_Click(object sender, RoutedEventArgs e)
     {
-        ShowChavesStatusMessage("Salvando retirada...");
         SaveChaveRetiradaButton.IsEnabled = false;
         Guid selectedImovelId = Guid.Empty;
 
@@ -192,12 +191,20 @@ public partial class ShellWindow
                 return;
             }
 
+            var retiradaEm = DateTimeOffset.Now;
             var previsaoHora = GetChavesPrevisaoHorario();
             var previsaoLocalDateTime = previsao.Value.Date.Add(previsaoHora);
             var previsaoDevolucao = new DateTimeOffset(
                 previsaoLocalDateTime,
                 TimeZoneInfo.Local.GetUtcOffset(previsaoLocalDateTime));
 
+            if (previsaoDevolucao < retiradaEm)
+            {
+                ShowChavesDialog("A previsão de devolução não pode ser anterior à retirada da chave.", "Chaves", MessageBoxImage.Warning);
+                return;
+            }
+
+            ShowChavesStatusMessage("Salvando retirada...");
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             await _rentalManagementService.CreateImovelChaveMovimentoAsync(
                 new CreateImovelChaveMovimentoRequest(
@@ -209,7 +216,7 @@ public partial class ShellWindow
                     ChavesRetiradoPorDocumentoBox.Text,
                     ChavesRetiradoPorRelacaoBox.Text,
                     ChavesMotivoBox.Text,
-                    DateTimeOffset.Now,
+                    retiradaEm,
                     previsaoDevolucao,
                     ChavesObservacoesBox.Text),
                 timeout.Token);
@@ -259,7 +266,6 @@ public partial class ShellWindow
 
     private async void ReturnChaveButton_Click(object sender, RoutedEventArgs e)
     {
-        ShowChavesStatusMessage("Salvando devolução...");
         ReturnChaveButton.IsEnabled = false;
         try
         {
@@ -283,6 +289,7 @@ public partial class ShellWindow
                 return;
             }
 
+            ShowChavesStatusMessage("Salvando devolução...");
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             await _rentalManagementService.ReturnImovelChaveMovimentoAsync(
                 new ReturnImovelChaveMovimentoRequest(
@@ -339,11 +346,13 @@ public partial class ShellWindow
 
     private void ShowChavesDialog(string message, string caption, MessageBoxImage icon)
     {
+        ChavesErrorText.Text = string.Empty;
         MessageBox.Show(this, message, caption, MessageBoxButton.OK, icon);
     }
 
     private void ShowChavesDialogAndReset(string message, string caption, MessageBoxImage icon)
     {
+        ChavesErrorText.Text = string.Empty;
         MessageBox.Show(this, message, caption, MessageBoxButton.OK, icon);
         ResetChavesCardState();
     }
