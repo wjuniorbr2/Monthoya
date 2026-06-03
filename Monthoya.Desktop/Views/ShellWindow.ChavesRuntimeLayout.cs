@@ -248,15 +248,19 @@ public partial class ShellWindow
 
     private static void DetachFromParent(UIElement element)
     {
-        if (element.Parent is Panel panel)
+        var parent = element is FrameworkElement frameworkElement
+            ? frameworkElement.Parent
+            : null;
+
+        if (parent is Panel panel)
         {
             panel.Children.Remove(element);
         }
-        else if (element.Parent is Decorator decorator)
+        else if (parent is Decorator decorator)
         {
             decorator.Child = null;
         }
-        else if (element.Parent is ContentControl contentControl)
+        else if (parent is ContentControl contentControl)
         {
             contentControl.Content = null;
         }
