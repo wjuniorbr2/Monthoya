@@ -7,6 +7,8 @@ namespace Monthoya.Desktop.Views;
 
 public partial class ShellWindow
 {
+    private const double ChavesListPanelMaxWidth = 760;
+
     private static readonly bool ChavesDualListsRegistered = RegisterChavesDualLists();
     private bool _chavesDualListsApplied;
     private bool _chavesBoardCodeLoadStarted;
@@ -194,7 +196,11 @@ public partial class ShellWindow
 
     private static Grid CreateChavesDualListPanel(string title, UIElement searchHost, Border listHost)
     {
-        var panel = new Grid();
+        var panel = new Grid
+        {
+            MaxWidth = ChavesListPanelMaxWidth,
+            HorizontalAlignment = HorizontalAlignment.Stretch
+        };
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         panel.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
@@ -244,6 +250,7 @@ public partial class ShellWindow
         _lastAllChavesItems = BuildAllChavesItemsFromCurrentData();
         ApplyLoadedBoardCodesToCachedItems();
         RefreshChavesDualListsFromCache();
+        await LoadChavesBoardCodesOnceAsync();
     }
 
     private async Task LoadChavesBoardCodesOnceAsync()
@@ -254,9 +261,23 @@ public partial class ShellWindow
         }
 
         _chavesBoardCodeLoadStarted = true;
-        await RefreshChavesBoardCodesFromImoveisAsync();
+        await LoadMissingChavesBoardCodesForCachedItemsAsync();
         ApplyLoadedBoardCodesToCachedItems();
         RefreshChavesDualListsFromCache();
+    }
+
+    private async Task LoadMissingChavesBoardCodesForCachedItemsAsync()
+    {
+        foreach (var item in _lastAllChavesItems)
+        {
+            if (_chavesBoardCodeByImovelId.ContainsKey(item.ImovelId))
+            {
+                continue;
+            }
+
+            var details = await _rentalManagementService.GetImovelAsync(item.ImovelId);
+            _chavesBoardCodeByImovelId[item.ImovelId] = details?.Dados.ChaveCodigo;
+        }
     }
 
     private void RefreshChavesDualListsFromCache()
