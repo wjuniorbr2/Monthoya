@@ -9,6 +9,7 @@ public partial class ShellWindow
 {
     private static readonly bool ChavesDualListsRegistered = RegisterChavesDualLists();
     private bool _chavesDualListsApplied;
+    private bool _chavesBoardCodeLoadStarted;
     private DataGrid? _chavesTakenGrid;
     private TextBox? _chavesTakenSearchBox;
     private ChavesListItem? _selectedChavesTakenItem;
@@ -70,6 +71,7 @@ public partial class ShellWindow
         };
 
         _ = RefreshChavesDualListsAsync();
+        _ = LoadChavesBoardCodesOnceAsync();
     }
 
     private void BuildChavesDualListLayout(Border originalListHost, UIElement originalSearchHost)
@@ -78,6 +80,7 @@ public partial class ShellWindow
 
         HideOldChavesSearchSection(originalSearchHost);
         DetachFromParent(originalSearchHost);
+        DetachFromParent(ChavesSearchBox);
         DetachFromParent(originalListHost);
         if (formHost is not null)
         {
@@ -102,7 +105,7 @@ public partial class ShellWindow
 
         var leftPanel = CreateChavesDualListPanel(
             "Pesquisar imóveis disponíveis",
-            originalSearchHost,
+            ChavesSearchBox,
             originalListHost);
 
         _chavesTakenSearchBox = new TextBox
@@ -111,7 +114,7 @@ public partial class ShellWindow
             Margin = new Thickness(0),
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
-        _chavesTakenSearchBox.TextChanged += async (_, _) => await RefreshChavesDualListsAsync();
+        _chavesTakenSearchBox.TextChanged += (_, _) => RefreshChavesDualListsFromCache();
 
         _chavesTakenGrid = new DataGrid
         {
@@ -159,9 +162,9 @@ public partial class ShellWindow
             _chavesTakenSearchBox,
             rightListHost);
 
-        var dualGrid = new Grid { Margin = new Thickness(0, 0, 0, 10) };
+        var dualGrid = new Grid { Margin = new Thickness(0, 8, 0, 10) };
         dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+        dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(24) });
         dualGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         Grid.SetColumn(leftPanel, 0);
         Grid.SetColumn(rightPanel, 2);
@@ -239,15 +242,36 @@ public partial class ShellWindow
         }
 
         _lastAllChavesItems = BuildAllChavesItemsFromCurrentData();
+        ApplyLoadedBoardCodesToCachedItems();
+        RefreshChavesDualListsFromCache();
+    }
+
+    private async Task LoadChavesBoardCodesOnceAsync()
+    {
+        if (_chavesBoardCodeLoadStarted)
+        {
+            return;
+        }
+
+        _chavesBoardCodeLoadStarted = true;
+        await RefreshChavesBoardCodesFromImoveisAsync();
+        ApplyLoadedBoardCodesToCachedItems();
+        RefreshChavesDualListsFromCache();
+    }
+
+    private void RefreshChavesDualListsFromCache()
+    {
+        if (_chavesTakenGrid is null)
+        {
+            return;
+        }
+
         if (_lastAllChavesItems.Count == 0)
         {
             ChavesGrid.ItemsSource = Array.Empty<ChavesListItem>();
             _chavesTakenGrid.ItemsSource = Array.Empty<ChavesListItem>();
             return;
         }
-
-        await RefreshChavesBoardCodesFromImoveisAsync();
-        ApplyLoadedBoardCodesToCachedItems();
 
         var availableQuery = ChavesSearchBox.Text;
         var takenQuery = _chavesTakenSearchBox?.Text ?? string.Empty;
@@ -266,8 +290,6 @@ public partial class ShellWindow
 
         ChavesGrid.ItemsSource = available;
         _chavesTakenGrid.ItemsSource = taken;
-        ConfigureAvailableKeysGridColumns();
-        ConfigureTakenKeysGridColumns();
         UpdateChavesBoardCodeDisplayFromSelection();
         UpdateChavesWithdrawalButtonState();
     }
@@ -300,6 +322,11 @@ public partial class ShellWindow
 
     private void ConfigureAvailableKeysGridColumns()
     {
+        if (ChavesGrid.Columns.Count == 4)
+        {
+            return;
+        }
+
         ChavesGrid.Columns.Clear();
         AddGridColumn(ChavesGrid, "Código", "ChaveCodigo", 0.55);
         AddGridColumn(ChavesGrid, "Endereço", "Imovel", 1.7);
@@ -310,6 +337,11 @@ public partial class ShellWindow
     private void ConfigureTakenKeysGridColumns()
     {
         if (_chavesTakenGrid is null)
+        {
+            return;
+        }
+
+        if (_chavesTakenGrid.Columns.Count == 5)
         {
             return;
         }
