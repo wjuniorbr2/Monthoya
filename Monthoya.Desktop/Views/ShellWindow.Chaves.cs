@@ -19,6 +19,7 @@ public partial class ShellWindow
         _chaveMovimentos = await _rentalManagementService.GetImovelChaveMovimentosAsync();
         ApplyChavesFilter();
         await RefreshChavesDualListsAsync();
+        RefreshChavesHistoryFromCurrentData();
         UpdateSelectedChaveMovement();
         if (!ChavesPrevisaoBox.SelectedDate.HasValue)
         {
@@ -178,7 +179,7 @@ public partial class ShellWindow
         {
             if (ChavesImovelBox.SelectedValue is not Guid imovelId || imovelId == Guid.Empty)
             {
-                ShowChavesDialogAndReset("Selecione o imóvel na lista.", "Chaves", MessageBoxImage.Warning);
+                ShowChavesDialog("Selecione o imóvel na lista.", "Chaves", MessageBoxImage.Warning);
                 return;
             }
 
@@ -187,7 +188,7 @@ public partial class ShellWindow
             var previsao = ChavesPrevisaoBox.SelectedDate;
             if (!previsao.HasValue)
             {
-                ShowChavesDialogAndReset("Informe a previsão de devolução.", "Chaves", MessageBoxImage.Warning);
+                ShowChavesDialog("Informe a previsão de devolução.", "Chaves", MessageBoxImage.Warning);
                 return;
             }
 
@@ -222,7 +223,7 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ShowChavesDialogAndReset(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
+            ShowChavesDialog(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
         }
         finally
         {
@@ -247,12 +248,12 @@ public partial class ShellWindow
             }
             else
             {
-                ShowChavesDialogAndReset($"{actionName} demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.", "Chaves", MessageBoxImage.Warning);
+                ShowChavesDialog($"{actionName} demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.", "Chaves", MessageBoxImage.Warning);
             }
         }
         catch (Exception ex)
         {
-            ShowChavesDialogAndReset(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
+            ShowChavesDialog(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
         }
     }
 
@@ -265,14 +266,20 @@ public partial class ShellWindow
             var item = GetSelectedChavesReturnItem();
             if (item is null || !item.MovimentoId.HasValue)
             {
-                ShowChavesDialogAndReset("Selecione uma chave retirada na lista da direita.", "Chaves", MessageBoxImage.Warning);
+                ShowChavesDialog("Selecione uma chave retirada na lista da direita.", "Chaves", MessageBoxImage.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(ChavesDevolvidoParaBox.Text))
+            {
+                ShowChavesDialog("Informe quem recebeu a chave.", "Chaves", MessageBoxImage.Warning);
                 return;
             }
 
             var devolucao = GetChavesReturnDateTime();
             if (item.RetiradoEm.HasValue && devolucao < item.RetiradoEm.Value)
             {
-                ShowChavesDialogAndReset("A data/hora da devolução não pode ser anterior à retirada da chave.", "Chaves", MessageBoxImage.Warning);
+                ShowChavesDialog("A data/hora da devolução não pode ser anterior à retirada da chave.", "Chaves", MessageBoxImage.Warning);
                 return;
             }
 
@@ -290,15 +297,15 @@ public partial class ShellWindow
         }
         catch (OperationCanceledException)
         {
-            ShowChavesDialogAndReset("A devolução demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.", "Chaves", MessageBoxImage.Warning);
+            ShowChavesDialog("A devolução demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.", "Chaves", MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
-            ShowChavesDialogAndReset(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
+            ShowChavesDialog(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
         }
         finally
         {
-            ReturnChaveButton.IsEnabled = true;
+            UpdateSelectedChaveMovement();
         }
     }
 
@@ -326,7 +333,13 @@ public partial class ShellWindow
     private void UpdateSelectedChaveMovement()
     {
         var item = GetSelectedChavesReturnItem();
-        ReturnChaveButton.IsEnabled = item is not null && item.MovimentoId.HasValue;
+        var hasReceiver = !string.IsNullOrWhiteSpace(ChavesDevolvidoParaBox.Text);
+        ReturnChaveButton.IsEnabled = item is not null && item.MovimentoId.HasValue && hasReceiver;
+    }
+
+    private void ShowChavesDialog(string message, string caption, MessageBoxImage icon)
+    {
+        MessageBox.Show(this, message, caption, MessageBoxButton.OK, icon);
     }
 
     private void ShowChavesDialogAndReset(string message, string caption, MessageBoxImage icon)
