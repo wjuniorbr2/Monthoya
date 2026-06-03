@@ -36,6 +36,7 @@ public partial class App : Application
                 services.AddSingleton<AppStartup>();
                 services.AddTransient<ConfigurationWindow>();
                 services.AddTransient<SetupAdminWindow>();
+                services.AddTransient<AgencyProfileWindow>();
                 services.AddTransient<LoginWindow>();
                 services.AddTransient<ShellWindow>();
             })
