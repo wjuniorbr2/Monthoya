@@ -1,7 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Media;
 using System.Windows.Threading;
 using Monthoya.Core.Services;
 
@@ -11,7 +9,6 @@ public partial class ShellWindow
 {
     private static readonly bool ChavesRuntimeLayoutRegistered = RegisterChavesRuntimeLayout();
     private bool _chavesRuntimeLayoutApplied;
-    private DataGrid? _chavesAvailableImoveisGrid;
     private ComboBox? _chavesMovimentoTipoBox;
     private TextBlock? _chavesActionTitleText;
     private StackPanel? _chavesRetiradaFieldsPanel;
@@ -48,26 +45,38 @@ public partial class ShellWindow
         HideLabelImmediatelyBefore(ChavesImovelBox);
         RelabelTextBlockImmediatelyBefore(ChavesRetiradoPorRelacaoBox, "Tipo de pessoa");
 
-        var listsHost = FindChavesListsHost();
-        if (listsHost is not null)
-        {
-            BuildChavesTwoListArea(listsHost);
-        }
+        ConfigureChavesSingleList();
 
         var formHost = FindChavesFormHost();
         if (formHost is not null)
         {
-            BuildChavesUnifiedForm(formHost);
+            BuildChavesTopUnifiedForm(formHost);
         }
 
-        SetChavesMovimentoMode(isReturn: false);
+        SetChavesMovimentoMode(isReturn: false, clearMode: true);
         ApplyChavesFilter();
     }
 
-    private Border? FindChavesListsHost()
+    private void ConfigureChavesSingleList()
     {
-        return FindVisualChildrenForPeopleRuntimeAdjustment<Border>(ChavesPanel)
-            .FirstOrDefault(border => border.Child == ChavesGrid);
+        ChavesGrid.MaxHeight = 280;
+        ChavesGrid.SelectionMode = DataGridSelectionMode.Single;
+        ChavesGrid.SelectionUnit = DataGridSelectionUnit.FullRow;
+        ChavesGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+
+        if (ChavesGrid.Columns.Count > 0)
+        {
+            ChavesGrid.Columns.Clear();
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Imóvel", Binding = new System.Windows.Data.Binding("Imovel"), Width = new DataGridLength(2, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Código", Binding = new System.Windows.Data.Binding("ChaveCodigo"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Situação", Binding = new System.Windows.Data.Binding("Status"), Width = new DataGridLength(1.2, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Retirado por", Binding = new System.Windows.Data.Binding("RetiradoPorNome"), Width = new DataGridLength(1.4, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Telefone", Binding = new System.Windows.Data.Binding("RetiradoPorTelefone"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Tipo de pessoa", Binding = new System.Windows.Data.Binding("TipoPessoa"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Motivo", Binding = new System.Windows.Data.Binding("Motivo"), Width = new DataGridLength(1.2, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Retirado em", Binding = new System.Windows.Data.Binding("RetiradoEm") { StringFormat = "dd/MM/yyyy HH:mm" }, Width = new DataGridLength(1.1, DataGridLengthUnitType.Star) });
+            ChavesGrid.Columns.Add(new DataGridTextColumn { Header = "Previsão", Binding = new System.Windows.Data.Binding("PrevisaoDevolucaoEm") { StringFormat = "dd/MM/yyyy HH:mm" }, Width = new DataGridLength(1.1, DataGridLengthUnitType.Star) });
+        }
     }
 
     private Border? FindChavesFormHost()
@@ -77,74 +86,7 @@ public partial class ShellWindow
                 .Any(button => ReferenceEquals(button, SaveChaveRetiradaButton)));
     }
 
-    private void BuildChavesTwoListArea(Border host)
-    {
-        host.Margin = new Thickness(0, 12, 0, 12);
-        host.MinHeight = 160;
-        host.MaxHeight = 260;
-
-        _chavesAvailableImoveisGrid = new DataGrid
-        {
-            AutoGenerateColumns = false,
-            IsReadOnly = true,
-            BorderThickness = new Thickness(0),
-            MaxHeight = 220,
-            SelectionMode = DataGridSelectionMode.Single,
-            SelectionUnit = DataGridSelectionUnit.FullRow,
-            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
-        };
-        _chavesAvailableImoveisGrid.Columns.Add(new DataGridTextColumn { Header = "Imóvel disponível", Binding = new System.Windows.Data.Binding("Endereco"), Width = new DataGridLength(2, DataGridLengthUnitType.Star) });
-        _chavesAvailableImoveisGrid.Columns.Add(new DataGridTextColumn { Header = "Código", Binding = new System.Windows.Data.Binding("Chaves"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
-        _chavesAvailableImoveisGrid.Columns.Add(new DataGridTextColumn { Header = "Status", Binding = new System.Windows.Data.Binding("Status"), Width = new DataGridLength(1, DataGridLengthUnitType.Star) });
-        _chavesAvailableImoveisGrid.SelectionChanged += (_, _) =>
-        {
-            if (_chavesAvailableImoveisGrid.SelectedItem is ImovelSummary imovel)
-            {
-                SelectChavesAvailableImovel(imovel);
-            }
-        };
-
-        ChavesGrid.MaxHeight = 220;
-        ChavesGrid.SelectionMode = DataGridSelectionMode.Single;
-        ChavesGrid.SelectionUnit = DataGridSelectionUnit.FullRow;
-        ChavesGrid.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-
-        var leftPanel = new DockPanel();
-        leftPanel.Children.Add(new TextBlock
-        {
-            Text = "Imóveis disponíveis",
-            FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 6)
-        });
-        DockPanel.SetDock(leftPanel.Children[0], Dock.Top);
-        leftPanel.Children.Add(_chavesAvailableImoveisGrid);
-
-        var rightPanel = new DockPanel();
-        rightPanel.Children.Add(new TextBlock
-        {
-            Text = "Chaves retiradas",
-            FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 6)
-        });
-        DockPanel.SetDock(rightPanel.Children[0], Dock.Top);
-        rightPanel.Children.Add(ChavesGrid);
-
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) });
-
-        Grid.SetColumn(leftPanel, 0);
-        Grid.SetColumn(rightPanel, 1);
-        leftPanel.Margin = new Thickness(0, 0, 7, 0);
-        rightPanel.Margin = new Thickness(7, 0, 0, 0);
-        grid.Children.Add(leftPanel);
-        grid.Children.Add(rightPanel);
-
-        host.Child = grid;
-    }
-
-    private void BuildChavesUnifiedForm(Border retiradaHost)
+    private void BuildChavesTopUnifiedForm(Border retiradaHost)
     {
         var originalPanel = retiradaHost.Child as StackPanel;
         if (originalPanel is null)
@@ -161,8 +103,18 @@ public partial class ShellWindow
             devolucaoHost.Visibility = Visibility.Collapsed;
         }
 
-        retiradaHost.Margin = new Thickness(0);
+        retiradaHost.Margin = new Thickness(0, 0, 0, 12);
+        Grid.SetRow(retiradaHost, 2);
+        Grid.SetColumn(retiradaHost, 0);
         Grid.SetColumnSpan(retiradaHost, 2);
+
+        var listsHost = FindVisualChildrenForPeopleRuntimeAdjustment<Border>(ChavesPanel)
+            .FirstOrDefault(border => border.Child == ChavesGrid);
+        if (listsHost is not null)
+        {
+            Grid.SetRow(listsHost, 3);
+            listsHost.Margin = new Thickness(0, 0, 0, 0);
+        }
 
         var mainPanel = new StackPanel();
         var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 12) };
@@ -175,12 +127,17 @@ public partial class ShellWindow
         };
         _chavesMovimentoTipoBox = new ComboBox
         {
-            Width = 160,
+            Width = 170,
             Margin = new Thickness(14, 0, 0, 0),
-            ItemsSource = new[] { "Retirada", "Devolução" },
-            SelectedIndex = 0
+            ItemsSource = new[] { "", "Retirada", "Devolução" },
+            SelectedIndex = 0,
+            ToolTip = "Escolha Retirada ou Devolução para filtrar a lista"
         };
-        _chavesMovimentoTipoBox.SelectionChanged += (_, _) => SetChavesMovimentoMode(_chavesMovimentoTipoBox.SelectedIndex == 1);
+        _chavesMovimentoTipoBox.SelectionChanged += (_, _) =>
+        {
+            SetChavesMovimentoMode(_chavesMovimentoTipoBox.SelectedItem as string == "Devolução", clearMode: _chavesMovimentoTipoBox.SelectedIndex == 0);
+            ApplyChavesFilter();
+        };
         header.Children.Add(_chavesActionTitleText);
         header.Children.Add(_chavesMovimentoTipoBox);
 
@@ -201,8 +158,18 @@ public partial class ShellWindow
         retiradaHost.Child = mainPanel;
     }
 
+    private string? GetChavesSelectedMode()
+    {
+        return _chavesMovimentoTipoBox?.SelectedItem as string;
+    }
+
     private static UIElement CreateLabeledField(string label, FrameworkElement field, double width)
     {
+        if (field.Parent is Panel oldParent)
+        {
+            oldParent.Children.Remove(field);
+        }
+
         var panel = new StackPanel { Width = width, Margin = new Thickness(0, 0, 14, 12) };
         panel.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold });
         field.Margin = new Thickness(0, 6, 0, 0);
@@ -222,30 +189,32 @@ public partial class ShellWindow
         return new WrapPanel();
     }
 
-    private void SetChavesMovimentoMode(bool isReturn)
+    private void SetChavesMovimentoMode(bool isReturn, bool clearMode = false)
     {
-        if (_chavesMovimentoTipoBox is not null)
+        if (_chavesMovimentoTipoBox is not null && !clearMode)
         {
-            _chavesMovimentoTipoBox.SelectedIndex = isReturn ? 1 : 0;
+            _chavesMovimentoTipoBox.SelectedIndex = isReturn ? 2 : 1;
         }
 
         if (_chavesActionTitleText is not null)
         {
-            _chavesActionTitleText.Text = isReturn ? "Devolução de chaves" : "Retirada de chaves";
+            _chavesActionTitleText.Text = clearMode
+                ? "Retirada de chaves"
+                : isReturn ? "Devolução de chaves" : "Retirada de chaves";
         }
 
         if (_chavesRetiradaFieldsPanel is not null)
         {
-            _chavesRetiradaFieldsPanel.Visibility = isReturn ? Visibility.Collapsed : Visibility.Visible;
+            _chavesRetiradaFieldsPanel.Visibility = isReturn && !clearMode ? Visibility.Collapsed : Visibility.Visible;
         }
 
         if (_chavesDevolucaoFieldsPanel is not null)
         {
-            _chavesDevolucaoFieldsPanel.Visibility = isReturn ? Visibility.Visible : Visibility.Collapsed;
+            _chavesDevolucaoFieldsPanel.Visibility = isReturn && !clearMode ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        SaveChaveRetiradaButton.Visibility = isReturn ? Visibility.Collapsed : Visibility.Visible;
-        ReturnChaveButton.Visibility = isReturn ? Visibility.Visible : Visibility.Collapsed;
+        SaveChaveRetiradaButton.Visibility = isReturn && !clearMode ? Visibility.Collapsed : Visibility.Visible;
+        ReturnChaveButton.Visibility = isReturn && !clearMode ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private static void HideLabelImmediatelyBefore(FrameworkElement field)
