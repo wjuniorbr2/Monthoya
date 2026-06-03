@@ -53,6 +53,7 @@ public partial class ShellWindow
     {
         ChavesImovelBox.SelectedValue = item.ImovelId;
         ChavesCodigoBox.Text = item.ChaveCodigo ?? string.Empty;
+        UpdateChavesSelectedImovelSummary(item.Imovel, item.Proprietario);
 
         if (item.MovimentoId.HasValue)
         {
@@ -97,12 +98,13 @@ public partial class ShellWindow
             .Where(x => ContainsSearch(
                 query,
                 x.Imovel,
+                x.Proprietario,
                 x.ChaveCodigo,
                 x.Status,
                 x.RetiradoPorNome,
                 x.RetiradoPorTelefone,
                 x.RetiradoPorDocumento,
-                x.TipoPessoa,
+                x.Relacao,
                 x.Motivo,
                 x.Observacoes))
             .OrderByDescending(x => x.MovimentoId.HasValue)
@@ -120,8 +122,9 @@ public partial class ShellWindow
                 imovel.Id,
                 null,
                 imovel.Endereco,
+                imovel.Proprietario,
+                null,
                 imovel.Chaves,
-                "Disponível para retirada",
                 null,
                 null,
                 null,
@@ -136,6 +139,7 @@ public partial class ShellWindow
             imovel.Id,
             movimento.Id,
             imovel.Endereco,
+            imovel.Proprietario,
             movimento.ChaveCodigo,
             movimento.Status,
             movimento.RetiradoPorNome,
@@ -166,8 +170,9 @@ public partial class ShellWindow
                 return;
             }
 
+            var previsaoHora = GetChavesPrevisaoHorario();
             var previsaoDevolucao = new DateTimeOffset(
-                previsao.Value.Date.AddHours(18),
+                previsao.Value.Date.Add(previsaoHora),
                 TimeZoneInfo.Local.GetUtcOffset(previsao.Value.Date));
 
             var movimento = await _rentalManagementService.CreateImovelChaveMovimentoAsync(
@@ -261,18 +266,21 @@ public partial class ShellWindow
         ChavesMotivoBox.Clear();
         ChavesObservacoesBox.Clear();
         ChavesPrevisaoBox.SelectedDate = DateTime.Today;
+        ClearChavesSelectedImovelSummary();
+        ResetChavesRelacaoDropdown();
     }
 
     private sealed record ChavesListItem(
         Guid ImovelId,
         Guid? MovimentoId,
         string Imovel,
+        string Proprietario,
         string? ChaveCodigo,
         string Status,
         string? RetiradoPorNome,
         string? RetiradoPorTelefone,
         string? RetiradoPorDocumento,
-        string? TipoPessoa,
+        string? Relacao,
         string? Motivo,
         DateTimeOffset? RetiradoEm,
         DateTimeOffset? PrevisaoDevolucaoEm,
