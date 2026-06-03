@@ -164,6 +164,8 @@ public partial class ShellWindow
     {
         ShowChavesStatusMessage("Salvando retirada...");
         SaveChaveRetiradaButton.IsEnabled = false;
+        Guid selectedImovelId = Guid.Empty;
+
         try
         {
             if (ChavesImovelBox.SelectedValue is not Guid imovelId || imovelId == Guid.Empty)
@@ -171,6 +173,8 @@ public partial class ShellWindow
                 ShowChavesErrorMessage("Selecione o imóvel na lista.");
                 return;
             }
+
+            selectedImovelId = imovelId;
 
             var previsao = ChavesPrevisaoBox.SelectedDate;
             if (!previsao.HasValue)
@@ -184,6 +188,7 @@ public partial class ShellWindow
                 previsao.Value.Date.Add(previsaoHora),
                 TimeZoneInfo.Local.GetUtcOffset(previsao.Value.Date)).ToUniversalTime();
 
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             var movimento = await _rentalManagementService.CreateImovelChaveMovimentoAsync(
                 new CreateImovelChaveMovimentoRequest(
                     imovelId,
@@ -196,13 +201,18 @@ public partial class ShellWindow
                     ChavesMotivoBox.Text,
                     DateTimeOffset.UtcNow,
                     previsaoDevolucao,
-                    ChavesObservacoesBox.Text));
+                    ChavesObservacoesBox.Text),
+                timeout.Token);
 
             ClearChavesRetiradaForm();
             await LoadChavesAsync();
             RestoreChavesListSelection(movimento.Id);
             await RefreshChavesDualListsAsync();
             ShowChavesSuccessMessage("Retirada registrada com sucesso.");
+        }
+        catch (OperationCanceledException)
+        {
+            await ReloadChavesAfterTimedSaveAsync(selectedImovelId, "Retirada");
         }
         catch (Exception ex)
         {
@@ -211,6 +221,33 @@ public partial class ShellWindow
         finally
         {
             UpdateChavesWithdrawalButtonState();
+        }
+    }
+
+    private async Task ReloadChavesAfterTimedSaveAsync(Guid imovelId, string actionName)
+    {
+        try
+        {
+            ShowChavesStatusMessage("Atualizando listas...");
+            await LoadChavesAsync();
+            await RefreshChavesDualListsAsync();
+
+            var saved = imovelId != Guid.Empty
+                && _chaveMovimentos.Any(x => x.ImovelId == imovelId && !x.DevolvidoEm.HasValue);
+
+            if (saved)
+            {
+                ClearChavesRetiradaForm();
+                ShowChavesSuccessMessage($"{actionName} registrada com sucesso.");
+            }
+            else
+            {
+                ShowChavesErrorMessage($"{actionName} demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowChavesErrorMessage(GetChavesExceptionMessage(ex));
         }
     }
 
@@ -227,11 +264,13 @@ public partial class ShellWindow
                 return;
             }
 
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
             var returned = await _rentalManagementService.ReturnImovelChaveMovimentoAsync(
                 new ReturnImovelChaveMovimentoRequest(
                     item.MovimentoId.Value,
                     ChavesDevolvidoParaBox.Text,
-                    ChavesDevolucaoObservacoesBox.Text));
+                    ChavesDevolucaoObservacoesBox.Text),
+                timeout.Token);
 
             ChavesDevolvidoParaBox.Clear();
             ChavesDevolucaoObservacoesBox.Clear();
@@ -239,6 +278,10 @@ public partial class ShellWindow
             RestoreChavesListSelection(returned.Id);
             await RefreshChavesDualListsAsync();
             ShowChavesSuccessMessage("Devolução registrada com sucesso.");
+        }
+        catch (OperationCanceledException)
+        {
+            ShowChavesErrorMessage("A devolução demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.");
         }
         catch (Exception ex)
         {
