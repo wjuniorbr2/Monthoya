@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace Monthoya.Desktop.Views;
@@ -49,8 +50,12 @@ public partial class ShellWindow
         ChavesMotivoBox.Width = 230;
         ChavesObservacoesBox.Width = 300;
 
+        ApplyChavesPrimaryButtonStyle(SaveChaveRetiradaButton);
+        ApplyChavesPrimaryButtonStyle(ReturnChaveButton);
+
         ChavesRetiradoPorNomeBox.TextChanged += (_, _) => UpdateChavesWithdrawalButtonState();
         ChavesRetiradoPorTelefoneBox.TextChanged += (_, _) => UpdateChavesWithdrawalButtonState();
+        ChavesRetiradoPorRelacaoBox.TextChanged += (_, _) => UpdateChavesWithdrawalButtonState();
         ChavesGrid.SelectionChanged += (_, _) =>
         {
             UpdateChavesBoardCodeDisplayFromSelection();
@@ -73,6 +78,8 @@ public partial class ShellWindow
         ReorderChavesRetiradaFields();
         ConfigureChavesRelationAndTimeFields();
         ConfigureChavesListCardBounds();
+        ApplyChavesPrimaryButtonStyle(SaveChaveRetiradaButton);
+        ApplyChavesPrimaryButtonStyle(ReturnChaveButton);
         UpdateChavesWithdrawalButtonState();
         UpdateChavesBoardCodeDisplayFromSelection();
     }
@@ -86,7 +93,7 @@ public partial class ShellWindow
             return;
         }
 
-        listHost.Margin = new Thickness(0, 14, 18, 12);
+        listHost.Margin = new Thickness(0, 6, 0, 0);
         listHost.HorizontalAlignment = HorizontalAlignment.Stretch;
         listHost.VerticalAlignment = VerticalAlignment.Stretch;
         listHost.Padding = new Thickness(10);
@@ -143,6 +150,10 @@ public partial class ShellWindow
         if (_chavesRelacaoComboBox is not null)
         {
             _chavesRelacaoComboBox.Width = 112;
+            _chavesRelacaoComboBox.SelectionChanged -= ChavesRelacaoComboBox_SelectionChangedForButtonState;
+            _chavesRelacaoComboBox.SelectionChanged += ChavesRelacaoComboBox_SelectionChangedForButtonState;
+            _chavesRelacaoComboBox.LostFocus -= ChavesRelacaoComboBox_LostFocusForButtonState;
+            _chavesRelacaoComboBox.LostFocus += ChavesRelacaoComboBox_LostFocusForButtonState;
             if (GetFieldContainer(_chavesRelacaoComboBox) is FrameworkElement relationContainer)
             {
                 relationContainer.Width = 112;
@@ -165,6 +176,12 @@ public partial class ShellWindow
             phoneContainer.Width = 130;
         }
     }
+
+    private void ChavesRelacaoComboBox_SelectionChangedForButtonState(object sender, SelectionChangedEventArgs e) =>
+        UpdateChavesWithdrawalButtonState();
+
+    private void ChavesRelacaoComboBox_LostFocusForButtonState(object sender, RoutedEventArgs e) =>
+        UpdateChavesWithdrawalButtonState();
 
     private static void ChavesPrevisaoHoraBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
     {
@@ -334,7 +351,38 @@ public partial class ShellWindow
         var hasSelectedAvailableProperty = ChavesGrid.SelectedItem is ChavesListItem item && !item.MovimentoId.HasValue;
         var hasName = !string.IsNullOrWhiteSpace(ChavesRetiradoPorNomeBox.Text);
         var hasPhone = !string.IsNullOrWhiteSpace(ChavesRetiradoPorTelefoneBox.Text);
-        SaveChaveRetiradaButton.IsEnabled = hasSelectedAvailableProperty && hasName && hasPhone;
+        var hasRelation = !string.IsNullOrWhiteSpace(ChavesRetiradoPorRelacaoBox.Text)
+            || !string.IsNullOrWhiteSpace(_chavesRelacaoComboBox?.Text);
+        SaveChaveRetiradaButton.IsEnabled = hasSelectedAvailableProperty && hasName && hasRelation && hasPhone;
+    }
+
+    private static void ApplyChavesPrimaryButtonStyle(Button button)
+    {
+        var enabledBrush = new SolidColorBrush(Color.FromRgb(0, 109, 176));
+        var disabledBrush = new SolidColorBrush(Color.FromRgb(116, 181, 216));
+        var borderBrush = new SolidColorBrush(Color.FromRgb(0, 93, 150));
+
+        var style = new Style(typeof(Button));
+        style.Setters.Add(new Setter(Control.BackgroundProperty, enabledBrush));
+        style.Setters.Add(new Setter(Control.ForegroundProperty, Brushes.White));
+        style.Setters.Add(new Setter(Control.BorderBrushProperty, borderBrush));
+        style.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
+        style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(18, 7, 18, 7)));
+        style.Setters.Add(new Setter(Control.FontWeightProperty, FontWeights.SemiBold));
+        style.Setters.Add(new Setter(UIElement.OpacityProperty, 1.0));
+
+        var disabledTrigger = new Trigger
+        {
+            Property = UIElement.IsEnabledProperty,
+            Value = false
+        };
+        disabledTrigger.Setters.Add(new Setter(Control.BackgroundProperty, disabledBrush));
+        disabledTrigger.Setters.Add(new Setter(Control.ForegroundProperty, Brushes.White));
+        disabledTrigger.Setters.Add(new Setter(Control.BorderBrushProperty, disabledBrush));
+        disabledTrigger.Setters.Add(new Setter(UIElement.OpacityProperty, 1.0));
+        style.Triggers.Add(disabledTrigger);
+
+        button.Style = style;
     }
 
     private static FrameworkElement? GetFieldContainer(FrameworkElement field)
