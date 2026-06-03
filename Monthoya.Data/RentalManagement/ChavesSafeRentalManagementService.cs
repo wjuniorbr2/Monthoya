@@ -23,7 +23,7 @@ public sealed class ChavesSafeRentalManagementService(
     public Task<ImovelDetails?> GetImovelAsync(Guid imovelId, CancellationToken cancellationToken = default) => inner.GetImovelAsync(imovelId, cancellationToken);
     public Task<ImovelSummary> CreateImovelAsync(CreateImovelRequest request, CancellationToken cancellationToken = default) => inner.CreateImovelAsync(request, cancellationToken);
     public Task<ImovelSummary> UpdateImovelAsync(UpdateImovelRequest request, CancellationToken cancellationToken = default) => inner.UpdateImovelAsync(request, cancellationToken);
-    public Task SetImovelActiveAsync(Guid imovelId, bool isActive, CancellationToken cancellationToken = default) => inner.SetImovelActiveAsync(imovelId, isActive, cancellationToken);
+    public Task SetImovelActiveAsync(Guid imovelId, bool isActive, CancellationToken cancellationToken = default) => inner.SetImovelActiveAsync(imovelId, cancellationToken);
     public Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default) => inner.CreateImovelImagemAsync(request, cancellationToken);
     public Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default) => inner.GetImovelImagensAsync(imovelId, cancellationToken);
     public Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default) => inner.GetLocacoesAsync(cancellationToken);
@@ -106,6 +106,16 @@ public sealed class ChavesSafeRentalManagementService(
         movimento.UpdatedAtUtc = DateTimeOffset.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken);
         return (await GetImovelChaveMovimentosCoreAsync(movimento.ImovelId, cancellationToken)).Single(x => x.Id == movimento.Id);
+    }
+
+    public async Task DeleteImovelChaveMovimentoAsync(Guid movimentoId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var movimento = await dbContext.ImovelChaveMovimentos.SingleOrDefaultAsync(x => x.Id == movimentoId, cancellationToken)
+            ?? throw new InvalidOperationException("Entrada do histórico de chaves não encontrada.");
+
+        dbContext.ImovelChaveMovimentos.Remove(movimento);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<ImovelChaveMovimentoSummary>> GetImovelChaveMovimentosCoreAsync(Guid? imovelId, CancellationToken cancellationToken)
