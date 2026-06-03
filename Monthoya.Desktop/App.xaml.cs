@@ -13,6 +13,9 @@ public partial class App : Application
 {
     private IHost? _host;
 
+    public IServiceProvider Services => _host?.Services
+        ?? throw new InvalidOperationException("Os serviços do aplicativo ainda não foram inicializados.");
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
