@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Monthoya.Desktop.Views;
 
@@ -45,6 +46,12 @@ public partial class ShellWindow
         };
 
         panel.Children.Add(CreateSettingsMenuButton(
+            "Dados da imobiliária",
+            "Edite razão social, CNPJ, CRECI, responsável, endereço, contato, dados bancários e textos usados automaticamente nos documentos.",
+            "Abrir dados",
+            (_, _) => ShowAgencyProfileSettingsDialog()));
+
+        panel.Children.Add(CreateSettingsMenuButton(
             "Índices de reajuste",
             "Configure IGP-M, IPCA, INPC e índices personalizados usados nos contratos.",
             "Abrir índices",
@@ -57,6 +64,20 @@ public partial class ShellWindow
             (_, _) => ShowAiSettingsDialog()));
 
         return panel;
+    }
+
+    private void ShowAgencyProfileSettingsDialog()
+    {
+        if (Application.Current is not App app)
+        {
+            MessageBox.Show(this, "Não foi possível acessar os serviços do aplicativo.", "Dados da imobiliária", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        using var scope = app.Services.CreateScope();
+        var window = ActivatorUtilities.CreateInstance<AgencyProfileWindow>(scope.ServiceProvider, false);
+        window.Owner = this;
+        window.ShowDialog();
     }
 
     private Button CreateSettingsMenuButton(string title, string description, string actionText, RoutedEventHandler clickHandler)
