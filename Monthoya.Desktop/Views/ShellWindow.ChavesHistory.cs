@@ -66,6 +66,8 @@ public partial class ShellWindow
             VerticalAlignment = VerticalAlignment.Stretch,
             MinHeight = 0,
             MaxHeight = double.PositiveInfinity,
+            RowHeight = double.NaN,
+            MinRowHeight = 20,
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
@@ -119,20 +121,43 @@ public partial class ShellWindow
             return;
         }
 
-        AddGridColumn(_chavesHistoryGrid, "Código", "ChaveCodigo", 0.27);
-        AddGridColumn(_chavesHistoryGrid, "Endereço", "Imovel", 1.12);
-        AddGridColumn(_chavesHistoryGrid, "Proprietário", "Proprietario", 1.05);
-        AddGridColumn(_chavesHistoryGrid, "Situação", "Situacao", 0.52);
-        AddGridColumn(_chavesHistoryGrid, "Retirado por", "RetiradoPorNome", 0.72);
-        AddGridColumn(_chavesHistoryGrid, "Telefone", "RetiradoPorTelefone", 0.62);
-        AddGridColumn(_chavesHistoryGrid, "Retirado em", "RetiradoEm", 0.72, "dd/MM HH:mm");
-        AddGridColumn(_chavesHistoryGrid, "Previsão", "PrevisaoDevolucaoEm", 0.72, "dd/MM HH:mm");
-        AddGridColumn(_chavesHistoryGrid, "Devolvido em", "DevolvidoEm", 0.72, "dd/MM HH:mm");
-        AddGridColumn(_chavesHistoryGrid, "Relação", "Relacao", 0.66);
-        AddGridColumn(_chavesHistoryGrid, "Documento", "Documento", 0.56);
-        AddGridColumn(_chavesHistoryGrid, "Motivo", "Motivo", 0.9);
-        AddGridColumn(_chavesHistoryGrid, "Obs. retirada", "ObservacoesRetirada", 1.1);
-        AddGridColumn(_chavesHistoryGrid, "Obs. devolução", "ObservacoesDevolucao", 1.1);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Cód.", "ChaveCodigo", 0.27);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Endereço", "Imovel", 1.12);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Proprietário", "Proprietario", 1.05);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Situação", "Situacao", 0.52);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Retirado por", "RetiradoPorNome", 0.72);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Telefone", "RetiradoPorTelefone", 0.71);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Retirado em", "RetiradoEm", 0.68, "dd/MM HH:mm");
+        AddWrappingGridColumn(_chavesHistoryGrid, "Previsão", "PrevisaoDevolucaoEm", 0.68, "dd/MM HH:mm");
+        AddWrappingGridColumn(_chavesHistoryGrid, "Devolvido em", "DevolvidoEm", 0.68, "dd/MM HH:mm");
+        AddWrappingGridColumn(_chavesHistoryGrid, "Relação", "Relacao", 0.66);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Documento", "Documento", 0.56);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Motivo", "Motivo", 0.9);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Obs. retirada", "ObservacoesRetirada", 1.2);
+        AddWrappingGridColumn(_chavesHistoryGrid, "Obs. devolução", "ObservacoesDevolucao", 1.2);
+    }
+
+    private static void AddWrappingGridColumn(DataGrid grid, string header, string binding, double width, string? stringFormat = null)
+    {
+        var columnBinding = new System.Windows.Data.Binding(binding);
+        if (!string.IsNullOrWhiteSpace(stringFormat))
+        {
+            columnBinding.StringFormat = stringFormat;
+        }
+
+        var elementStyle = new Style(typeof(TextBlock));
+        elementStyle.Setters.Add(new Setter(TextBlock.TextWrappingProperty, TextWrapping.Wrap));
+        elementStyle.Setters.Add(new Setter(TextBlock.TextTrimmingProperty, TextTrimming.None));
+        elementStyle.Setters.Add(new Setter(TextBlock.PaddingProperty, new Thickness(2, 1, 2, 1)));
+        elementStyle.Setters.Add(new Setter(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Top));
+
+        grid.Columns.Add(new DataGridTextColumn
+        {
+            Header = header,
+            Binding = columnBinding,
+            Width = new DataGridLength(width, DataGridLengthUnitType.Star),
+            ElementStyle = elementStyle
+        });
     }
 
     private void ConfigureChavesHistoryContextMenu()
