@@ -51,6 +51,18 @@ public sealed class AppStartup(
             }
         }
 
+        var agenciaPerfilService = scope.ServiceProvider.GetRequiredService<IAgenciaPerfilService>();
+        if (!await agenciaPerfilService.HasProfileAsync())
+        {
+            var agencyWindow = ActivatorUtilities.CreateInstance<AgencyProfileWindow>(scope.ServiceProvider, true);
+            var agencyResult = agencyWindow.ShowDialog();
+            if (agencyResult != true)
+            {
+                Application.Current.Shutdown();
+                return;
+            }
+        }
+
         EnsureRuntimeStyleAliases();
 
         while (true)
