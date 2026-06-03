@@ -299,7 +299,8 @@ public sealed record ImovelSummary(
     string Chaves,
     string Publicacao,
     decimal? ValorAluguel,
-    decimal? ValorVenda);
+    decimal? ValorVenda,
+    string? ChaveCodigo = null);
 public sealed record ImovelDetails(ImovelSummary Summary, CreateImovelRequest Dados);
 public sealed record ImovelImagemSummary(
     Guid Id,
@@ -359,4 +360,4 @@ public interface INfseProvider
     Task<NfseProviderResult> DownloadNotaFiscalPdfAsync(NotaFiscal notaFiscal, CancellationToken cancellationToken = default);
 }
 
-public sealed record NfseProviderResult(bool Succeeded, string Message, string? Numero = null, string? CodigoVerificacao = null, string? PdfUrl = null);
+public sealed record NfseProviderResult(bool Succeeded, string Message, string? ExternalId = null, string? PdfUrl = null);
