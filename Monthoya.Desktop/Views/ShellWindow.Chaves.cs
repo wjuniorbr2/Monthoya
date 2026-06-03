@@ -178,7 +178,7 @@ public partial class ShellWindow
         {
             if (ChavesImovelBox.SelectedValue is not Guid imovelId || imovelId == Guid.Empty)
             {
-                ShowChavesErrorMessage("Selecione o imóvel na lista.");
+                ShowChavesDialogAndReset("Selecione o imóvel na lista.", "Chaves", MessageBoxImage.Warning);
                 return;
             }
 
@@ -187,7 +187,7 @@ public partial class ShellWindow
             var previsao = ChavesPrevisaoBox.SelectedDate;
             if (!previsao.HasValue)
             {
-                ShowChavesErrorMessage("Informe a previsão de devolução.");
+                ShowChavesDialogAndReset("Informe a previsão de devolução.", "Chaves", MessageBoxImage.Warning);
                 return;
             }
 
@@ -198,7 +198,7 @@ public partial class ShellWindow
                 TimeZoneInfo.Local.GetUtcOffset(previsaoLocalDateTime));
 
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-            var movimento = await _rentalManagementService.CreateImovelChaveMovimentoAsync(
+            await _rentalManagementService.CreateImovelChaveMovimentoAsync(
                 new CreateImovelChaveMovimentoRequest(
                     imovelId,
                     ChavesCodigoBox.Text,
@@ -213,11 +213,8 @@ public partial class ShellWindow
                     ChavesObservacoesBox.Text),
                 timeout.Token);
 
-            ClearChavesRetiradaForm();
             await LoadChavesAsync();
-            RestoreChavesListSelection(movimento.Id);
-            await RefreshChavesDualListsAsync();
-            ShowChavesSuccessMessage("Retirada registrada com sucesso.");
+            ShowChavesDialogAndReset("Retirada registrada com sucesso.", "Chaves", MessageBoxImage.Information);
         }
         catch (OperationCanceledException)
         {
@@ -225,7 +222,7 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ShowChavesErrorMessage(GetChavesExceptionMessage(ex));
+            ShowChavesDialogAndReset(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
         }
         finally
         {
@@ -246,17 +243,16 @@ public partial class ShellWindow
 
             if (saved)
             {
-                ClearChavesRetiradaForm();
-                ShowChavesSuccessMessage($"{actionName} registrada com sucesso.");
+                ShowChavesDialogAndReset($"{actionName} registrada com sucesso.", "Chaves", MessageBoxImage.Information);
             }
             else
             {
-                ShowChavesErrorMessage($"{actionName} demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.");
+                ShowChavesDialogAndReset($"{actionName} demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.", "Chaves", MessageBoxImage.Warning);
             }
         }
         catch (Exception ex)
         {
-            ShowChavesErrorMessage(GetChavesExceptionMessage(ex));
+            ShowChavesDialogAndReset(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
         }
     }
 
@@ -269,19 +265,19 @@ public partial class ShellWindow
             var item = GetSelectedChavesReturnItem();
             if (item is null || !item.MovimentoId.HasValue)
             {
-                ShowChavesErrorMessage("Selecione uma chave retirada na lista da direita.");
+                ShowChavesDialogAndReset("Selecione uma chave retirada na lista da direita.", "Chaves", MessageBoxImage.Warning);
                 return;
             }
 
             var devolucao = GetChavesReturnDateTime();
             if (item.RetiradoEm.HasValue && devolucao < item.RetiradoEm.Value)
             {
-                ShowChavesErrorMessage("A data/hora da devolução não pode ser anterior à retirada da chave.");
+                ShowChavesDialogAndReset("A data/hora da devolução não pode ser anterior à retirada da chave.", "Chaves", MessageBoxImage.Warning);
                 return;
             }
 
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-            var returned = await _rentalManagementService.ReturnImovelChaveMovimentoAsync(
+            await _rentalManagementService.ReturnImovelChaveMovimentoAsync(
                 new ReturnImovelChaveMovimentoRequest(
                     item.MovimentoId.Value,
                     ChavesDevolvidoParaBox.Text,
@@ -289,21 +285,16 @@ public partial class ShellWindow
                     devolucao),
                 timeout.Token);
 
-            ChavesDevolvidoParaBox.Clear();
-            ChavesDevolucaoObservacoesBox.Clear();
-            SetChavesReturnDateTimeToNow();
             await LoadChavesAsync();
-            RestoreChavesListSelection(returned.Id);
-            await RefreshChavesDualListsAsync();
-            ShowChavesSuccessMessage("Devolução registrada com sucesso.");
+            ShowChavesDialogAndReset("Devolução registrada com sucesso.", "Chaves", MessageBoxImage.Information);
         }
         catch (OperationCanceledException)
         {
-            ShowChavesErrorMessage("A devolução demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.");
+            ShowChavesDialogAndReset("A devolução demorou mais que o esperado. Clique em Atualizar para conferir se foi registrada.", "Chaves", MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
-            ShowChavesErrorMessage(GetChavesExceptionMessage(ex));
+            ShowChavesDialogAndReset(GetChavesExceptionMessage(ex), "Chaves", MessageBoxImage.Warning);
         }
         finally
         {
@@ -336,6 +327,32 @@ public partial class ShellWindow
     {
         var item = GetSelectedChavesReturnItem();
         ReturnChaveButton.IsEnabled = item is not null && item.MovimentoId.HasValue;
+    }
+
+    private void ShowChavesDialogAndReset(string message, string caption, MessageBoxImage icon)
+    {
+        MessageBox.Show(this, message, caption, MessageBoxButton.OK, icon);
+        ResetChavesCardState();
+    }
+
+    private void ResetChavesCardState()
+    {
+        ChavesGrid.SelectedItem = null;
+        if (_chavesTakenGrid is not null)
+        {
+            _chavesTakenGrid.SelectedItem = null;
+        }
+
+        _selectedChavesTakenItem = null;
+        ChavesImovelBox.SelectedValue = null;
+        ChavesStatusFilterBox.SelectedIndex = -1;
+        ClearChavesRetiradaForm();
+        ChavesDevolvidoParaBox.Clear();
+        ChavesDevolucaoObservacoesBox.Clear();
+        SetChavesReturnDateTimeToNow();
+        ChavesErrorText.Text = string.Empty;
+        ReturnChaveButton.IsEnabled = false;
+        UpdateChavesWithdrawalButtonState();
     }
 
     private void ClearChavesRetiradaForm()
