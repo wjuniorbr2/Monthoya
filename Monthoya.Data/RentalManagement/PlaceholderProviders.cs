@@ -13,8 +13,8 @@ public sealed class LocalBoletoProvider : IBoletoProvider
     public Task<BoletoProviderResult> RegisterBoletoAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
         Task.FromResult(Failed());
 
-    public Task<BoletoProviderResult> QueryStatusAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
-        Task.FromResult(Failed());
+    public Task<BoletoProviderStatusResult> QueryStatusAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
+        Task.FromResult(new BoletoProviderStatusResult(BoletoStatus.Erro, null, NotConfigured));
 
     public Task<BoletoProviderResult> CancelAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
         Task.FromResult(Failed());
@@ -23,7 +23,7 @@ public sealed class LocalBoletoProvider : IBoletoProvider
     public Task<BoletoProviderResult> CancelBoletoAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
         CancelAsync(boleto, cancellationToken);
 
-    public Task<BoletoProviderResult> GetBoletoStatusAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
+    public Task<BoletoProviderStatusResult> GetBoletoStatusAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
         QueryStatusAsync(boleto, cancellationToken);
 
     public Task<BoletoProviderResult> DownloadBoletoPdfAsync(Boleto boleto, CancellationToken cancellationToken = default) =>
