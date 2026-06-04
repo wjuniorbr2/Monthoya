@@ -33,6 +33,10 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
     public DbSet<VistoriaItem> VistoriaItens => Set<VistoriaItem>();
     public DbSet<VistoriaFoto> VistoriaFotos => Set<VistoriaFoto>();
     public DbSet<Rescisao> Rescisoes => Set<Rescisao>();
+    public DbSet<NotificationMessage> NotificationMessages => Set<NotificationMessage>();
+    public DbSet<NotificationRecipient> NotificationRecipients => Set<NotificationRecipient>();
+    public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
+    public DbSet<NotificationEmailSettings> NotificationEmailSettings => Set<NotificationEmailSettings>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,6 +55,60 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
         });
 
         ConfigureRentalManagement(modelBuilder);
+        ConfigureNotifications(modelBuilder);
+    }
+
+    private static void ConfigureNotifications(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<NotificationMessage>(entity =>
+        {
+            entity.ToTable("notification_messages");
+            entity.Property(x => x.Title).HasMaxLength(220).IsRequired();
+            entity.Property(x => x.Body).HasMaxLength(8000).IsRequired();
+            entity.Property(x => x.Category).HasConversion<int>();
+            entity.Property(x => x.Priority).HasConversion<int>();
+            entity.Property(x => x.RelatedEntityType).HasMaxLength(120);
+            entity.Property(x => x.ActionLabel).HasMaxLength(120);
+            entity.Property(x => x.ActionTarget).HasMaxLength(500);
+            entity.HasOne(x => x.CreatedByUser).WithMany().HasForeignKey(x => x.CreatedByUserId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(x => new { x.Category, x.RelatedEntityType, x.RelatedEntityId });
+            entity.HasIndex(x => x.CreatedAtUtc);
+            entity.HasIndex(x => x.ScheduledForUtc);
+        });
+
+        modelBuilder.Entity<NotificationRecipient>(entity =>
+        {
+            entity.ToTable("notification_recipients");
+            entity.HasOne(x => x.NotificationMessage).WithMany(x => x.Recipients).HasForeignKey(x => x.NotificationMessageId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.NotificationMessageId, x.UserId }).IsUnique();
+            entity.HasIndex(x => new { x.UserId, x.ReadAtUtc });
+            entity.HasIndex(x => new { x.UserId, x.AcknowledgedAtUtc });
+        });
+
+        modelBuilder.Entity<NotificationDelivery>(entity =>
+        {
+            entity.ToTable("notification_deliveries");
+            entity.Property(x => x.Channel).HasConversion<int>();
+            entity.Property(x => x.Destination).HasMaxLength(500);
+            entity.Property(x => x.Status).HasConversion<int>();
+            entity.Property(x => x.ErrorMessage).HasMaxLength(2000);
+            entity.HasOne(x => x.NotificationMessage).WithMany(x => x.Deliveries).HasForeignKey(x => x.NotificationMessageId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.RecipientUser).WithMany().HasForeignKey(x => x.RecipientUserId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(x => new { x.NotificationMessageId, x.Channel });
+            entity.HasIndex(x => new { x.RecipientUserId, x.Status });
+        });
+
+        modelBuilder.Entity<NotificationEmailSettings>(entity =>
+        {
+            entity.ToTable("notification_email_settings");
+            entity.Property(x => x.SenderDisplayName).HasMaxLength(220);
+            entity.Property(x => x.SenderEmail).HasMaxLength(320);
+            entity.Property(x => x.SmtpHost).HasMaxLength(220);
+            entity.Property(x => x.SmtpUsername).HasMaxLength(320);
+            entity.Property(x => x.SmtpPasswordSecret).HasMaxLength(1000);
+            entity.Property(x => x.ReplyToEmail).HasMaxLength(320);
+        });
     }
 
     private static void ConfigureRentalManagement(ModelBuilder modelBuilder)

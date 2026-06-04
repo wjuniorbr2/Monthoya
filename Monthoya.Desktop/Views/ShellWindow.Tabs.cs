@@ -175,6 +175,7 @@ public partial class ShellWindow
             ShellPage.Pessoas => "\uE716",
             ShellPage.Imoveis => "\uE80F",
             ShellPage.Chaves => "\uE8D7",
+            ShellPage.Notificacoes => "\uEA8F",
             ShellPage.Locacoes => "\uE8A1",
             ShellPage.Financeiro => "$",
             ShellPage.Boletos => "\uE8C7",
@@ -286,6 +287,7 @@ public partial class ShellWindow
         PessoasPanel.Visibility = page == ShellPage.Pessoas ? Visibility.Visible : Visibility.Collapsed;
         ImoveisPanel.Visibility = page == ShellPage.Imoveis ? Visibility.Visible : Visibility.Collapsed;
         ChavesPanel.Visibility = page == ShellPage.Chaves ? Visibility.Visible : Visibility.Collapsed;
+        NotificacoesPanel.Visibility = page == ShellPage.Notificacoes ? Visibility.Visible : Visibility.Collapsed;
         ModulePanel.Visibility = IsGenericModulePage(page) ? Visibility.Visible : Visibility.Collapsed;
         DiagnosticsPanel.Visibility = page == ShellPage.Diagnostics ? Visibility.Visible : Visibility.Collapsed;
 
@@ -295,6 +297,7 @@ public partial class ShellWindow
             ShellPage.Pessoas => PessoasNavButton,
             ShellPage.Imoveis => ImoveisNavButton,
             ShellPage.Chaves => ChavesNavButton,
+            ShellPage.Notificacoes => NotificacoesNavButton,
             ShellPage.Locacoes => LocacoesNavButton,
             ShellPage.Financeiro => FinanceiroNavButton,
             ShellPage.Boletos => BoletosNavButton,
@@ -330,6 +333,10 @@ public partial class ShellWindow
             else if (page == ShellPage.Chaves)
             {
                 await LoadChavesAsync();
+            }
+            else if (page == ShellPage.Notificacoes)
+            {
+                await LoadNotificationsAsync();
             }
             else if (IsGenericModulePage(page))
             {

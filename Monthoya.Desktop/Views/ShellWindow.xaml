@@ -74,6 +74,91 @@
             </Button>
         </StackPanel>
 
+        <Button x:Name="NotificationBellButton"
+                Grid.RowSpan="2"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Width="44"
+                Height="34"
+                Margin="0,34,16,0"
+                Panel.ZIndex="201"
+                Background="White"
+                BorderBrush="#CBD5E1"
+                BorderThickness="1"
+                Cursor="Hand"
+                Click="NotificationBellButton_Click"
+                ToolTip="Notificações"
+                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+            <Grid>
+                <TextBlock Text="&#xEA8F;"
+                           FontFamily="Segoe MDL2 Assets"
+                           FontSize="17"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           Foreground="#0F172A" />
+                <Border x:Name="NotificationBadge"
+                        MinWidth="18"
+                        Height="18"
+                        Padding="4,0"
+                        CornerRadius="9"
+                        Background="#B42318"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="0,-8,-8,0"
+                        Visibility="Collapsed">
+                    <TextBlock x:Name="NotificationBadgeText"
+                               Foreground="White"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               TextAlignment="Center"
+                               VerticalAlignment="Center" />
+                </Border>
+            </Grid>
+        </Button>
+        <Popup x:Name="NotificationPopup"
+               PlacementTarget="{Binding ElementName=NotificationBellButton}"
+               Placement="Bottom"
+               StaysOpen="False"
+               AllowsTransparency="True"
+               Panel.ZIndex="202">
+            <Border Width="380"
+                    Margin="0,8,0,0"
+                    Padding="14"
+                    Background="White"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,10">
+                        <TextBlock Text="Notificações" FontSize="17" FontWeight="SemiBold" DockPanel.Dock="Left" />
+                        <Button Style="{StaticResource SecondaryButton}" DockPanel.Dock="Right" Content="Central" Click="OpenNotificationCenterButton_Click" />
+                    </DockPanel>
+                    <ItemsControl x:Name="NotificationRecentItems">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1" Padding="0,8">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Body}" Foreground="{StaticResource MutedBrush}" TextTrimming="CharacterEllipsis" Margin="0,2,0,0" />
+                                        <TextBlock Text="{Binding Priority}" Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="NotificationPopupEmptyText"
+                               Text="Nenhuma notificação recente."
+                               Foreground="{StaticResource MutedBrush}"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0"
+                               Visibility="Collapsed" />
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+                        <Button Style="{StaticResource SecondaryButton}" Content="Marcar todas como lidas" Click="MarkAllNotificationsReadButton_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Popup>
+
         <!-- Invisible top drag strip covering full width so the user can drag the window from the top area -->
         <Border Background="Transparent"
                 Grid.RowSpan="2"
@@ -144,6 +229,12 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Style="{StaticResource NavIconText}" Text="&#xE8D7;" />
                                 <TextBlock Style="{StaticResource NavLabelText}" Text="Chaves" />
+                            </StackPanel>
+                        </Button>
+                        <Button x:Name="NotificacoesNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="NotificacoesNavButton_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource NavIconText}" Text="&#xEA8F;" />
+                                <TextBlock Style="{StaticResource NavLabelText}" Text="Notificações" />
                             </StackPanel>
                         </Button>
                         <Button x:Name="FinanceiroNavButton" Style="{StaticResource NavButton}" HorizontalAlignment="Stretch" Margin="0,0,0,10" Click="FinanceiroNavButton_Click">
@@ -1211,6 +1302,132 @@
                                     <Button x:Name="ReturnChaveButton" Style="{StaticResource SecondaryButton}" HorizontalAlignment="Stretch" Click="ReturnChaveButton_Click" Content="Registrar devolução" IsEnabled="False" />
                                 </StackPanel>
                             </Border>
+                        </Grid>
+                    </Grid>
+
+                    <Grid x:Name="NotificacoesPanel" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Left">
+                                <TextBlock Text="Central de notificações" FontSize="30" FontWeight="SemiBold" />
+                                <TextBlock Text="Mensagens internas, alertas do sistema e avisos que precisam de confirmação." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,4,0,0" />
+                            </StackPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Style="{StaticResource SecondaryButton}" Content="Marcar todas como lidas" Click="MarkAllNotificationsReadButton_Click" Margin="0,0,10,0" />
+                                <Button Style="{StaticResource SecondaryButton}" Content="Atualizar" Click="ReloadNotificationsButton_Click" />
+                            </StackPanel>
+                        </DockPanel>
+                        <Grid Grid.Row="1" Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="170" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="NotificationsSearchBox"
+                                     TextChanged="NotificationsSearchBox_TextChanged"
+                                     ToolTip="Pesquisar por título ou mensagem" />
+                            <ComboBox x:Name="NotificationsCategoryFilterBox"
+                                      Grid.Column="1"
+                                      Margin="10,0,0,0"
+                                      SelectionChanged="NotificationsFilter_SelectionChanged" />
+                            <ComboBox x:Name="NotificationsPriorityFilterBox"
+                                      Grid.Column="2"
+                                      Margin="10,0,0,0"
+                                      SelectionChanged="NotificationsFilter_SelectionChanged" />
+                            <CheckBox x:Name="NotificationsUnreadOnlyBox"
+                                      Grid.Column="3"
+                                      Content="Não lidas"
+                                      VerticalAlignment="Center"
+                                      Margin="10,0,0,0"
+                                      Checked="NotificationsFilter_SelectionChanged"
+                                      Unchecked="NotificationsFilter_SelectionChanged" />
+                        </Grid>
+                        <Grid Grid.Row="2" Margin="0,16,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="420" />
+                            </Grid.ColumnDefinitions>
+                            <Border Style="{StaticResource CardBorder}" Padding="0">
+                                <DataGrid x:Name="NotificationsGrid"
+                                          AutoGenerateColumns="False"
+                                          IsReadOnly="True"
+                                          BorderThickness="0"
+                                          SelectionChanged="NotificationsGrid_SelectionChanged">
+                                    <DataGrid.Columns>
+                                        <DataGridCheckBoxColumn Header="Lida" Binding="{Binding IsRead}" Width="70" />
+                                        <DataGridTextColumn Header="Prioridade" Binding="{Binding Priority}" Width="*" />
+                                        <DataGridTextColumn Header="Categoria" Binding="{Binding Category}" Width="1.4*" />
+                                        <DataGridTextColumn Header="Título" Binding="{Binding Title}" Width="2.2*" />
+                                        <DataGridTextColumn Header="Criada em" Binding="{Binding CreatedAtUtc, StringFormat=dd/MM/yyyy HH:mm}" Width="1.2*" />
+                                        <DataGridCheckBoxColumn Header="Confirmação" Binding="{Binding RequiresAcknowledgement}" Width="110" />
+                                        <DataGridTextColumn Header="Entrega" Binding="{Binding DeliverySummary}" Width="1.6*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </Border>
+                            <ScrollViewer Grid.Column="1" Margin="18,0,0,0" VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <Border Style="{StaticResource CardBorder}">
+                                        <StackPanel>
+                                            <TextBlock Text="Detalhes" FontSize="18" FontWeight="SemiBold" />
+                                            <TextBlock x:Name="NotificationDetailsTitleText" Text="Selecione uma notificação." FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,12,0,4" />
+                                            <TextBlock x:Name="NotificationDetailsMetaText" Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,0,0,10" />
+                                            <TextBlock x:Name="NotificationDetailsBodyText" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                                <Button x:Name="NotificationMarkReadButton" Style="{StaticResource SecondaryButton}" Content="Marcar como lida" Click="NotificationMarkReadButton_Click" IsEnabled="False" Margin="0,0,8,0" />
+                                                <Button x:Name="NotificationAcknowledgeButton" Style="{StaticResource SecondaryButton}" Content="Confirmar" Click="NotificationAcknowledgeButton_Click" IsEnabled="False" Margin="0,0,8,0" />
+                                                <Button x:Name="NotificationActionButton" Style="{StaticResource SecondaryButton}" Content="Abrir" Click="NotificationActionButton_Click" IsEnabled="False" />
+                                            </StackPanel>
+                                            <DataGrid x:Name="NotificationDeliveriesGrid"
+                                                      AutoGenerateColumns="False"
+                                                      IsReadOnly="True"
+                                                      MaxHeight="150"
+                                                      BorderThickness="0">
+                                                <DataGrid.Columns>
+                                                    <DataGridTextColumn Header="Canal" Binding="{Binding Channel}" Width="*" />
+                                                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="*" />
+                                                    <DataGridTextColumn Header="Destino" Binding="{Binding Destination}" Width="1.5*" />
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+                                        </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource CardBorder}" Margin="0,16,0,0">
+                                        <StackPanel>
+                                            <TextBlock Text="Nova mensagem / notificação" FontSize="18" FontWeight="SemiBold" />
+                                            <TextBlock Text="Título" FontWeight="SemiBold" Margin="0,12,0,0" />
+                                            <TextBox x:Name="NewNotificationTitleBox" Margin="0,6,0,10" />
+                                            <TextBlock Text="Mensagem" FontWeight="SemiBold" />
+                                            <TextBox x:Name="NewNotificationBodyBox" AcceptsReturn="True" Height="90" TextWrapping="Wrap" Margin="0,6,0,10" />
+                                            <WrapPanel>
+                                                <StackPanel Width="180" Margin="0,0,12,10">
+                                                    <TextBlock Text="Prioridade" FontWeight="SemiBold" />
+                                                    <ComboBox x:Name="NewNotificationPriorityBox" Margin="0,6,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Width="180" Margin="0,0,0,10">
+                                                    <TextBlock Text="Categoria" FontWeight="SemiBold" />
+                                                    <ComboBox x:Name="NewNotificationCategoryBox" Margin="0,6,0,0" />
+                                                </StackPanel>
+                                            </WrapPanel>
+                                            <TextBlock Text="Destinatários" FontWeight="SemiBold" />
+                                            <ListBox x:Name="NewNotificationRecipientsList"
+                                                     SelectionMode="Multiple"
+                                                     DisplayMemberPath="DisplayName"
+                                                     MaxHeight="120"
+                                                     Margin="0,6,0,10" />
+                                            <CheckBox x:Name="NewNotificationRequiresAckBox" Content="Exigir confirmação de leitura" Margin="0,0,0,8" />
+                                            <CheckBox Content="No sistema" IsChecked="True" IsEnabled="False" Margin="0,0,0,6" />
+                                            <CheckBox x:Name="NewNotificationEmailBox" Content="E-mail (configurar na próxima etapa)" IsEnabled="False" Margin="0,0,0,6" />
+                                            <CheckBox x:Name="NewNotificationWhatsAppBox" Content="WhatsApp não configurado ainda" IsEnabled="False" Margin="0,0,0,10" />
+                                            <TextBlock x:Name="NewNotificationErrorText" Foreground="#B42318" TextWrapping="Wrap" Margin="0,0,0,10" />
+                                            <Button Style="{StaticResource PrimaryButtonSmall}" Content="Enviar mensagem" HorizontalAlignment="Left" Click="CreateNotificationButton_Click" />
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
                         </Grid>
                     </Grid>
 

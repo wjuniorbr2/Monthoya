@@ -69,6 +69,12 @@ public partial class ShellWindow
             "Abrir IA / OCR",
             (_, _) => ShowAiSettingsDialog()));
 
+        panel.Children.Add(CreateSettingsMenuButton(
+            "E-mail de envio",
+            "Configure SMTP para enviar notificações por e-mail. Gmail e Outlook/Microsoft 365 usam porta 587 com TLS.",
+            "Abrir e-mail",
+            (_, _) => ShowEmailSettingsDialog()));
+
         return panel;
     }
 

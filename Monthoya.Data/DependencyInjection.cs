@@ -7,6 +7,7 @@ using Monthoya.Core.Integrations;
 using Monthoya.Core.Services;
 using Monthoya.Data.Dashboard;
 using Monthoya.Data.Documents;
+using Monthoya.Data.Notifications;
 using Monthoya.Data.RentalManagement;
 using Monthoya.Data.Settings;
 using Monthoya.Data.Storage;
@@ -36,6 +37,10 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserPasswordService, UserPasswordService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<INotificationService, NotificationService>();
+        services.AddScoped<INotificationEmailSettingsService, NotificationEmailSettingsService>();
+        services.AddScoped<IEmailNotificationSender, SmtpEmailNotificationSender>();
+        services.AddScoped<IWhatsAppNotificationSender, StubWhatsAppNotificationSender>();
         services.AddScoped<RentalManagementService>();
         services.AddScoped<IRentalManagementService, ChavesSafeRentalManagementService>();
         services.AddScoped<IAgenciaPerfilService, AgenciaPerfilService>();

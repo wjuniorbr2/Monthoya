@@ -10,6 +10,8 @@ public partial class ShellWindow
 {
     private async Task LoadChavesAsync()
     {
+        await _notificationService.CheckAndCreateKeyOverdueNotificationsAsync();
+        await RefreshNotificationBellAsync();
         _imoveis = await _rentalManagementService.GetImoveisAsync();
         ChavesImovelBox.ItemsSource = _imoveis
             .Where(x => !string.Equals(x.Status, "Inativo", StringComparison.OrdinalIgnoreCase))

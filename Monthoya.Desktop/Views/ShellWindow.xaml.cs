@@ -21,6 +21,8 @@ public partial class ShellWindow : Window
     private readonly IUserService _userService;
     private readonly IDashboardService _dashboardService;
     private readonly IRentalManagementService _rentalManagementService;
+    private readonly INotificationService _notificationService;
+    private readonly INotificationEmailSettingsService _notificationEmailSettingsService;
     private Guid? _editingUserId;
     private ShellTab? _activeTab;
     private ShellPage _activeModulePage;
@@ -31,6 +33,8 @@ public partial class ShellWindow : Window
     private readonly List<PendingImovelMedia> _pendingImovelMedia = [];
     private IReadOnlyList<VistoriaSummary> _imovelVistorias = [];
     private IReadOnlyList<ImovelChaveMovimentoSummary> _chaveMovimentos = [];
+    private IReadOnlyList<NotificationSummary> _notifications = [];
+    private IReadOnlyList<UserSummary> _notificationUsers = [];
     private IReadOnlyList<object> _moduleItems = [];
     private Guid? _selectedPessoaId;
     private PessoaDetails? _selectedPessoaDetails;
@@ -52,7 +56,9 @@ public partial class ShellWindow : Window
         AuthenticatedUser currentUser,
         IUserService userService,
         IDashboardService dashboardService,
-        IRentalManagementService rentalManagementService)
+        IRentalManagementService rentalManagementService,
+        INotificationService notificationService,
+        INotificationEmailSettingsService notificationEmailSettingsService)
     {
         InitializeComponent();
         // Start the main window maximized after login
@@ -61,6 +67,8 @@ public partial class ShellWindow : Window
         _userService = userService;
         _dashboardService = dashboardService;
         _rentalManagementService = rentalManagementService;
+        _notificationService = notificationService;
+        _notificationEmailSettingsService = notificationEmailSettingsService;
 
         CurrentUserText.Text = currentUser.DisplayName;
         CurrentRoleText.Text = GetRoleLabel(currentUser.Role);
@@ -137,13 +145,36 @@ public partial class ShellWindow : Window
         ChavesStatusFilterBox.SelectedValue = "ativas";
         ChavesImovelBox.DisplayMemberPath = "Endereco";
         ChavesImovelBox.SelectedValuePath = "Id";
+        NotificationsCategoryFilterBox.ItemsSource = NotificationCategoryFilterOptions;
+        NotificationsCategoryFilterBox.SelectedValuePath = "Category";
+        NotificationsCategoryFilterBox.DisplayMemberPath = "Label";
+        NotificationsCategoryFilterBox.SelectedValue = null;
+        NotificationsPriorityFilterBox.ItemsSource = NotificationPriorityFilterOptions;
+        NotificationsPriorityFilterBox.SelectedValuePath = "Priority";
+        NotificationsPriorityFilterBox.DisplayMemberPath = "Label";
+        NotificationsPriorityFilterBox.SelectedValue = null;
+        NewNotificationPriorityBox.ItemsSource = NotificationPriorityOptions;
+        NewNotificationPriorityBox.SelectedValuePath = "Priority";
+        NewNotificationPriorityBox.DisplayMemberPath = "Label";
+        NewNotificationPriorityBox.SelectedValue = NotificationPriority.Normal;
+        NewNotificationCategoryBox.ItemsSource = NotificationCategoryOptions;
+        NewNotificationCategoryBox.SelectedValuePath = "Category";
+        NewNotificationCategoryBox.DisplayMemberPath = "Label";
+        NewNotificationCategoryBox.SelectedValue = NotificationCategory.ManualMessage;
         SetAccessCheckboxes(RolePermissions.DefaultUserAccess);
         UpdateAccessControlState();
         DiagnosticsText.Text = $"Login: {currentUser.LoginName}{Environment.NewLine}E-mail: {currentUser.Email}{Environment.NewLine}Perfil: {GetRoleLabel(currentUser.Role)}{Environment.NewLine}Acessos: {GetAccessLabel(RolePermissions.GetEffectiveAccess(currentUser.Role, currentUser.Access))}{Environment.NewLine}Banco: configurado via secrets/appsettings";
 
         AddShellTab(ShellPage.Dashboard, "Tela Inicial");
         SourceInitialized += ShellWindow_SourceInitialized;
-        Loaded += async (_, _) => await ShowPageAsync(ShellPage.Dashboard, true);
+        Loaded += async (_, _) =>
+        {
+            await _notificationService.ProcessDueScheduledNotificationsAsync();
+            await _notificationService.CheckAndCreateKeyOverdueNotificationsAsync();
+            await ShowPageAsync(ShellPage.Dashboard, true);
+            await RefreshNotificationBellAsync();
+            await ShowRequiredNotificationsAsync();
+        };
         UpdateMaximizeButtonIcon();
     }
 
@@ -397,6 +428,7 @@ public partial class ShellWindow : Window
         UsersPanel.Visibility = Visibility.Collapsed;
         DiagnosticsPanel.Visibility = Visibility.Collapsed;
         ChavesPanel.Visibility = Visibility.Collapsed;
+        NotificacoesPanel.Visibility = Visibility.Collapsed;
     }
 
     private async void DashboardNavButton_Click(object sender, RoutedEventArgs e)
@@ -431,6 +463,7 @@ public partial class ShellWindow : Window
         PessoasNavButton.Style = (Style)FindResource("NavButton");
         ImoveisNavButton.Style = (Style)FindResource("NavButton");
         ChavesNavButton.Style = (Style)FindResource("NavButton");
+        NotificacoesNavButton.Style = (Style)FindResource("NavButton");
         LocacoesNavButton.Style = (Style)FindResource("NavButton");
         FinanceiroNavButton.Style = (Style)FindResource("NavButton");
         BoletosNavButton.Style = (Style)FindResource("NavButton");
@@ -453,6 +486,9 @@ public partial class ShellWindow : Window
 
     private async void ChavesNavButton_Click(object sender, RoutedEventArgs e) =>
         await UpdateActiveTabAsync(ShellPage.Chaves, "Chaves", true);
+
+    private async void NotificacoesNavButton_Click(object sender, RoutedEventArgs e) =>
+        await UpdateActiveTabAsync(ShellPage.Notificacoes, "Notificações", true);
 
     private async void LocacoesNavButton_Click(object sender, RoutedEventArgs e) =>
         await UpdateActiveTabAsync(ShellPage.Locacoes, "Locações", true);
@@ -729,6 +765,7 @@ public partial class ShellWindow : Window
         Pessoas,
         Imoveis,
         Chaves,
+        Notificacoes,
         Locacoes,
         Financeiro,
         Boletos,
@@ -757,6 +794,8 @@ public partial class ShellWindow : Window
     private sealed record VistoriaTipoOption(string Label, VistoriaTipo Tipo);
     private sealed record VistoriaStatusOption(string Label, VistoriaStatus Status);
     private sealed record ChavesStatusFilterOption(string Label, string Status);
+    private sealed record NotificationCategoryOption(string Label, NotificationCategory? Category);
+    private sealed record NotificationPriorityOption(string Label, NotificationPriority? Priority);
     private sealed record PessoaDocumentoTipoOption(string Label, string Tipo);
     private sealed record PessoaDocumentoDonoOption(string Label, string Tipo);
     private sealed record PessoaStatusFilterOption(string Label, string Status);
@@ -883,6 +922,34 @@ public partial class ShellWindow : Window
         new("Devolvidas", "devolvidas"),
         new("Todas", "todas")
     ];
+
+    private static readonly IReadOnlyList<NotificationCategoryOption> NotificationCategoryFilterOptions =
+    [
+        new("Todas categorias", null),
+        new("Mensagem manual", NotificationCategory.ManualMessage),
+        new("Alerta do sistema", NotificationCategory.SystemAlert),
+        new("Lembrete", NotificationCategory.ScheduledReminder),
+        new("Ação necessária", NotificationCategory.TaskRequired),
+        new("Informação", NotificationCategory.Info),
+        new("Aviso", NotificationCategory.Warning),
+        new("Comunicado", NotificationCategory.AdminAnnouncement),
+        new("Chave em atraso", NotificationCategory.KeyOverdue)
+    ];
+
+    private static readonly IReadOnlyList<NotificationCategoryOption> NotificationCategoryOptions =
+        NotificationCategoryFilterOptions.Skip(1).ToList();
+
+    private static readonly IReadOnlyList<NotificationPriorityOption> NotificationPriorityFilterOptions =
+    [
+        new("Todas prioridades", null),
+        new("Baixa", NotificationPriority.Low),
+        new("Normal", NotificationPriority.Normal),
+        new("Alta", NotificationPriority.High),
+        new("Crítica", NotificationPriority.Critical)
+    ];
+
+    private static readonly IReadOnlyList<NotificationPriorityOption> NotificationPriorityOptions =
+        NotificationPriorityFilterOptions.Skip(1).ToList();
 
     private static readonly IReadOnlyList<PessoaDocumentoTipoOption> PessoaDocumentoTipoFisicaOptions =
     [

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Monthoya.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Monthoya.Data.Migrations
 {
     [DbContext(typeof(MonthoyaDbContext))]
-    partial class MonthoyaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260604094327_AddNotificationFoundation")]
+    partial class AddNotificationFoundation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1239,56 +1242,6 @@ namespace Monthoya.Data.Migrations
                     b.HasIndex("RecipientUserId", "Status");
 
                     b.ToTable("notification_deliveries", (string)null);
-                });
-
-            modelBuilder.Entity("Monthoya.Core.Entities.NotificationEmailSettings", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("ReplyToEmail")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)");
-
-                    b.Property<string>("SenderDisplayName")
-                        .HasMaxLength(220)
-                        .HasColumnType("character varying(220)");
-
-                    b.Property<string>("SenderEmail")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)");
-
-                    b.Property<string>("SmtpHost")
-                        .HasMaxLength(220)
-                        .HasColumnType("character varying(220)");
-
-                    b.Property<string>("SmtpPasswordSecret")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<int>("SmtpPort")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SmtpUsername")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)");
-
-                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("UseSslTls")
-                        .HasColumnType("boolean");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("notification_email_settings", (string)null);
                 });
 
             modelBuilder.Entity("Monthoya.Core.Entities.NotificationMessage", b =>
