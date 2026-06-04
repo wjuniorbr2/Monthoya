@@ -11,30 +11,7 @@ public sealed class UserPasswordService(
 {
     public async Task ChangePasswordAsync(ChangeUserPasswordRequest request, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
-        {
-            throw new InvalidOperationException("Informe a senha atual.");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.NewPassword))
-        {
-            throw new InvalidOperationException("Informe a nova senha.");
-        }
-
-        if (request.NewPassword.Length < 6)
-        {
-            throw new InvalidOperationException("A nova senha deve ter pelo menos 6 caracteres.");
-        }
-
-        if (!string.Equals(request.NewPassword, request.ConfirmNewPassword, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException("A confirmação da nova senha não confere.");
-        }
-
-        if (string.Equals(request.CurrentPassword, request.NewPassword, StringComparison.Ordinal))
-        {
-            throw new InvalidOperationException("A nova senha deve ser diferente da senha atual.");
-        }
+        var errors = new List<string>();
 
         var user = await dbContext.Users.SingleOrDefaultAsync(x => x.Id == request.UserId, cancellationToken)
             ?? throw new InvalidOperationException("Usuário não encontrado.");
@@ -44,10 +21,42 @@ public sealed class UserPasswordService(
             throw new InvalidOperationException("Usuário inativo.");
         }
 
-        var verification = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword);
-        if (verification == PasswordVerificationResult.Failed)
+        if (string.IsNullOrWhiteSpace(request.CurrentPassword))
         {
-            throw new InvalidOperationException("A senha atual está incorreta.");
+            errors.Add("Informe a senha atual.");
+        }
+        else
+        {
+            var verification = passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword);
+            if (verification == PasswordVerificationResult.Failed)
+            {
+                errors.Add("A senha atual está incorreta.");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(request.NewPassword))
+        {
+            errors.Add("Informe a nova senha.");
+        }
+        else if (request.NewPassword.Length < 6)
+        {
+            errors.Add("A nova senha deve ter pelo menos 6 caracteres.");
+        }
+
+        if (!string.Equals(request.NewPassword, request.ConfirmNewPassword, StringComparison.Ordinal))
+        {
+            errors.Add("A confirmação da nova senha não confere.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.CurrentPassword)
+            && string.Equals(request.CurrentPassword, request.NewPassword, StringComparison.Ordinal))
+        {
+            errors.Add("A nova senha deve ser diferente da senha atual.");
+        }
+
+        if (errors.Count > 0)
+        {
+            throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
         }
 
         user.PasswordHash = passwordHasher.HashPassword(user, request.NewPassword);
