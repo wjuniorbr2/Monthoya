@@ -40,6 +40,7 @@ public partial class App : Application
                 services.AddTransient<ConfigurationWindow>();
                 services.AddTransient<SetupAdminWindow>();
                 services.AddTransient<AgencyProfileWindow>();
+                services.AddTransient<ChangePasswordWindow>();
                 services.AddTransient<LoginWindow>();
                 services.AddTransient<ShellWindow>();
             })
