@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<PasswordHasher<AppUser>>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserPasswordService, UserPasswordService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<RentalManagementService>();
         services.AddScoped<IRentalManagementService, ChavesSafeRentalManagementService>();
