@@ -8,7 +8,6 @@ namespace Monthoya.Desktop.Views;
 
 public partial class ShellWindow
 {
-
     private async Task LoadUsersAsync()
     {
         UsersGrid.ItemsSource = await _userService.GetUsersAsync();
@@ -167,7 +166,6 @@ public partial class ShellWindow
             UserEmailBox.Text,
             UserRoleBox.SelectedValue is UserRole role ? role : UserRole.Usuario,
             UserManagementAccessBox.IsChecked == true,
-            string.Empty,
             ToggleUserActiveButton.Content?.ToString() ?? "Ativar/Desativar");
 
     private Task RestoreUsersPageStateAsync(UsersPageState state)
@@ -194,7 +192,6 @@ public partial class ShellWindow
         string Email,
         UserRole Role,
         bool CanManageUsers,
-        string ErrorText,
         string ToggleButtonText) : IShellPageState
     {
         public static UsersPageState Default { get; } = new(
@@ -205,7 +202,6 @@ public partial class ShellWindow
             "",
             UserRole.Usuario,
             false,
-            "",
             "Ativar/Desativar");
     }
 }
