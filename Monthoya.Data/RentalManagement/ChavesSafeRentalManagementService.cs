@@ -162,7 +162,7 @@ public sealed class ChavesSafeRentalManagementService(
         return string.IsNullOrWhiteSpace(digits) ? null : digits;
     }
 
-    private static string FormatPhoneForDisplay(string? value)
+    private static string? FormatPhoneForDisplay(string? value)
     {
         var digits = DigitsOrNull(value);
         return digits switch
