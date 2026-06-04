@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace Monthoya.Desktop.Views;
@@ -386,23 +385,5 @@ public partial class ShellWindow
         return _selectedChavesTakenItem
             ?? _chavesTakenGrid?.SelectedItem as ChavesListItem
             ?? ChavesGrid.SelectedItem as ChavesListItem;
-    }
-
-    private void ShowChavesStatusMessage(string message)
-    {
-        ChavesErrorText.Foreground = Brushes.DimGray;
-        ChavesErrorText.Text = message;
-    }
-
-    private void ShowChavesSuccessMessage(string message)
-    {
-        ChavesErrorText.Foreground = Brushes.ForestGreen;
-        ChavesErrorText.Text = message;
-    }
-
-    private void ShowChavesErrorMessage(string message)
-    {
-        ChavesErrorText.Foreground = Brushes.Red;
-        ChavesErrorText.Text = message;
     }
 }
