@@ -39,7 +39,11 @@ public partial class ChangePasswordWindow : Window
         }
         catch (Exception ex)
         {
-            ErrorText.Text = ex.Message;
+            var message = ex.GetBaseException().Message;
+            ErrorText.Text = string.Empty;
+            MessageBox.Show(this, message, "Alterar senha", MessageBoxButton.OK, MessageBoxImage.Warning);
+            CurrentBox.Focus();
+            Keyboard.Focus(CurrentBox);
         }
     }
 
