@@ -42,7 +42,7 @@ public partial class ShellWindow
         var panel = new StackPanel
         {
             Orientation = Orientation.Vertical,
-            Margin = new Thickness(0, 0, 0, 0)
+            Margin = new Thickness(0)
         };
 
         panel.Children.Add(CreateSettingsMenuButton(
@@ -74,13 +74,12 @@ public partial class ShellWindow
 
     private void ShowAgencyProfileSettingsDialog()
     {
-        if (Application.Current is not App app)
+        using var scope = CreateSettingsServiceScope("Dados da imobiliária");
+        if (scope is null)
         {
-            MessageBox.Show(this, "Não foi possível acessar os serviços do aplicativo.", "Dados da imobiliária", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        using var scope = app.Services.CreateScope();
         var window = ActivatorUtilities.CreateInstance<AgencyProfileWindow>(scope.ServiceProvider, false);
         window.Owner = this;
         window.ShowDialog();
@@ -88,16 +87,26 @@ public partial class ShellWindow
 
     private void ShowChangePasswordDialog()
     {
-        if (Application.Current is not App app)
+        using var scope = CreateSettingsServiceScope("Alterar senha");
+        if (scope is null)
         {
-            MessageBox.Show(this, "Não foi possível acessar os serviços do aplicativo.", "Alterar senha", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        using var scope = app.Services.CreateScope();
         var window = ActivatorUtilities.CreateInstance<ChangePasswordWindow>(scope.ServiceProvider, _currentUser);
         window.Owner = this;
         window.ShowDialog();
+    }
+
+    private IServiceScope? CreateSettingsServiceScope(string caption)
+    {
+        if (Application.Current is App app)
+        {
+            return app.Services.CreateScope();
+        }
+
+        MessageBox.Show(this, "Não foi possível acessar os serviços do aplicativo.", caption, MessageBoxButton.OK, MessageBoxImage.Warning);
+        return null;
     }
 
     private Button CreateSettingsMenuButton(string title, string description, string actionText, RoutedEventHandler clickHandler)
