@@ -1,5 +1,11 @@
 namespace Monthoya.Core.Services;
 
+public sealed record ChangePasswordRequest(
+    Guid UserId,
+    string CurrentPassword,
+    string NewPassword,
+    string ConfirmNewPassword);
+
 public interface IUserService
 {
     Task<bool> HasAnyUsersAsync(CancellationToken cancellationToken = default);
@@ -13,4 +19,6 @@ public interface IUserService
     Task SetUserActiveAsync(Guid userId, bool isActive, CancellationToken cancellationToken = default);
 
     Task<bool> VerifyPasswordAsync(Guid userId, string password, CancellationToken cancellationToken = default);
+
+    Task ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default);
 }
