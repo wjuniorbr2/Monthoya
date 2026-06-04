@@ -23,8 +23,6 @@ public partial class ChangePasswordWindow : Window
 
     private async void SaveButton_Click(object sender, RoutedEventArgs e)
     {
-        ErrorText.Text = string.Empty;
-
         try
         {
             var request = new ChangeUserPasswordRequest(
@@ -40,7 +38,6 @@ public partial class ChangePasswordWindow : Window
         catch (Exception ex)
         {
             var message = ex.GetBaseException().Message;
-            ErrorText.Text = string.Empty;
             MessageBox.Show(this, message, "Alterar senha", MessageBoxButton.OK, MessageBoxImage.Warning);
             CurrentBox.Focus();
             Keyboard.Focus(CurrentBox);
