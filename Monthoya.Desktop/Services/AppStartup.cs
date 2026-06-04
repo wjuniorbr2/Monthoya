@@ -67,19 +67,25 @@ public sealed class AppStartup(
 
         while (true)
         {
-            var loginWindow = services.GetRequiredService<LoginWindow>();
-            var loginResult = loginWindow.ShowDialog();
-            if (loginResult != true || loginWindow.AuthenticatedUser is null)
+            AuthenticatedUser authenticatedUser;
+            using (var loginScope = services.CreateScope())
             {
-                Application.Current.Shutdown();
-                return;
+                var loginWindow = ActivatorUtilities.CreateInstance<LoginWindow>(loginScope.ServiceProvider);
+                var loginResult = loginWindow.ShowDialog();
+                if (loginResult != true || loginWindow.AuthenticatedUser is null)
+                {
+                    Application.Current.Shutdown();
+                    return;
+                }
+
+                authenticatedUser = loginWindow.AuthenticatedUser;
             }
 
             EnsureRuntimeStyleAliases();
 
             // Create a scope that will live for the lifetime of the shell window.
             var windowScope = services.CreateScope();
-            var shellWindow = ActivatorUtilities.CreateInstance<ShellWindow>(windowScope.ServiceProvider, loginWindow.AuthenticatedUser);
+            var shellWindow = ActivatorUtilities.CreateInstance<ShellWindow>(windowScope.ServiceProvider, authenticatedUser);
             Application.Current.MainWindow = shellWindow;
             Application.Current.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             shellWindow.ShowDialog();
