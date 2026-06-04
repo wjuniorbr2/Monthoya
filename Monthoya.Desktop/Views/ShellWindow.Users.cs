@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Security;
@@ -63,27 +63,42 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            UserErrorText.Text = ex.Message;
+            ShowUserManagementDialog(ex.GetBaseException().Message, MessageBoxImage.Warning);
         }
     }
 
     private async void ToggleUserActiveButton_Click(object sender, RoutedEventArgs e)
     {
+        UserErrorText.Text = string.Empty;
+
         if (UsersGrid.SelectedItem is not UserSummary selected)
         {
-            UserErrorText.Text = "Selecione um usuário.";
+            ShowUserManagementDialog("Selecione um usuário.", MessageBoxImage.Warning);
             return;
         }
 
         if (selected.Id == _currentUser.Id)
         {
-            UserErrorText.Text = "Você não pode desativar o próprio usuário logado.";
+            ShowUserManagementDialog("Você não pode desativar o próprio usuário logado.", MessageBoxImage.Warning);
             return;
         }
 
-        await _userService.SetUserActiveAsync(selected.Id, !selected.IsActive);
-        ClearUserForm();
-        await LoadUsersAsync();
+        try
+        {
+            await _userService.SetUserActiveAsync(selected.Id, !selected.IsActive);
+            ClearUserForm();
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowUserManagementDialog(ex.GetBaseException().Message, MessageBoxImage.Warning);
+        }
+    }
+
+    private void ShowUserManagementDialog(string message, MessageBoxImage icon)
+    {
+        UserErrorText.Text = string.Empty;
+        MessageBox.Show(this, message, "Usuários", MessageBoxButton.OK, icon);
     }
 
     private void ClearUserForm()
@@ -152,7 +167,7 @@ public partial class ShellWindow
             UserEmailBox.Text,
             UserRoleBox.SelectedValue is UserRole role ? role : UserRole.Usuario,
             UserManagementAccessBox.IsChecked == true,
-            UserErrorText.Text,
+            string.Empty,
             ToggleUserActiveButton.Content?.ToString() ?? "Ativar/Desativar");
 
     private Task RestoreUsersPageStateAsync(UsersPageState state)
@@ -166,7 +181,7 @@ public partial class ShellWindow
         UserRoleBox.SelectedValue = state.Role;
         UserManagementAccessBox.IsChecked = state.CanManageUsers;
         UpdateAccessControlState();
-        UserErrorText.Text = state.ErrorText;
+        UserErrorText.Text = string.Empty;
         ToggleUserActiveButton.Content = state.ToggleButtonText;
         return Task.CompletedTask;
     }
@@ -194,5 +209,3 @@ public partial class ShellWindow
             "Ativar/Desativar");
     }
 }
-
-
