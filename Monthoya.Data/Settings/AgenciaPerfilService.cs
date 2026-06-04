@@ -11,18 +11,7 @@ public sealed class AgenciaPerfilService(MonthoyaDbContext dbContext) : IAgencia
     public async Task<AgenciaPerfil?> GetAsync(CancellationToken cancellationToken = default)
     {
         await EnsureTableAsync(cancellationToken);
-        await using var command = CreateCommand("""
-            SELECT "Id", "RazaoSocial", "NomeFantasia", "Cnpj", "InscricaoMunicipal", "InscricaoEstadual", "Creci",
-                   "ResponsavelNome", "ResponsavelCpf", "ResponsavelCargo", "Email", "Telefone", "WhatsApp", "Site",
-                   "Rua", "Numero", "Complemento", "Bairro", "Cidade", "Estado", "Cep", "DadosBancarios",
-                   "TextoPadraoRodape", "Observacoes", "CreatedAtUtc", "UpdatedAtUtc"
-            FROM agencia_perfil
-            ORDER BY "CreatedAtUtc"
-            LIMIT 1;
-            """);
-
-        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-        return await reader.ReadAsync(cancellationToken) ? ReadProfile(reader) : null;
+        return await GetProfileCoreAsync(cancellationToken);
     }
 
     public async Task<bool> HasProfileAsync(CancellationToken cancellationToken = default)
@@ -41,8 +30,40 @@ public sealed class AgenciaPerfilService(MonthoyaDbContext dbContext) : IAgencia
             throw new InvalidOperationException("Informe a razão social/nome da imobiliária.");
         }
 
-        var existing = await GetAsync(cancellationToken);
+        var existing = await GetProfileCoreAsync(cancellationToken);
         var profile = existing ?? new AgenciaPerfil();
+        ApplyRequest(profile, request);
+
+        if (existing is null)
+        {
+            await InsertAsync(profile, cancellationToken);
+        }
+        else
+        {
+            await UpdateAsync(profile, cancellationToken);
+        }
+
+        return profile;
+    }
+
+    private async Task<AgenciaPerfil?> GetProfileCoreAsync(CancellationToken cancellationToken)
+    {
+        await using var command = CreateCommand("""
+            SELECT "Id", "RazaoSocial", "NomeFantasia", "Cnpj", "InscricaoMunicipal", "InscricaoEstadual", "Creci",
+                   "ResponsavelNome", "ResponsavelCpf", "ResponsavelCargo", "Email", "Telefone", "WhatsApp", "Site",
+                   "Rua", "Numero", "Complemento", "Bairro", "Cidade", "Estado", "Cep", "DadosBancarios",
+                   "TextoPadraoRodape", "Observacoes", "CreatedAtUtc", "UpdatedAtUtc"
+            FROM agencia_perfil
+            ORDER BY "CreatedAtUtc"
+            LIMIT 1;
+            """);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        return await reader.ReadAsync(cancellationToken) ? ReadProfile(reader) : null;
+    }
+
+    private static void ApplyRequest(AgenciaPerfil profile, AgenciaPerfilRequest request)
+    {
         profile.RazaoSocial = TrimRequired(request.RazaoSocial);
         profile.NomeFantasia = TrimOrNull(request.NomeFantasia);
         profile.Cnpj = DigitsOrNull(request.Cnpj);
@@ -67,17 +88,6 @@ public sealed class AgenciaPerfilService(MonthoyaDbContext dbContext) : IAgencia
         profile.TextoPadraoRodape = TrimOrNull(request.TextoPadraoRodape);
         profile.Observacoes = TrimOrNull(request.Observacoes);
         profile.UpdatedAtUtc = DateTimeOffset.UtcNow;
-
-        if (existing is null)
-        {
-            await InsertAsync(profile, cancellationToken);
-        }
-        else
-        {
-            await UpdateAsync(profile, cancellationToken);
-        }
-
-        return profile;
     }
 
     private async Task InsertAsync(AgenciaPerfil profile, CancellationToken cancellationToken)
