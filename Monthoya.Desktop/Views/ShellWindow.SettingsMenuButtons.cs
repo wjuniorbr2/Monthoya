@@ -52,6 +52,12 @@ public partial class ShellWindow
             (_, _) => ShowAgencyProfileSettingsDialog()));
 
         panel.Children.Add(CreateSettingsMenuButton(
+            "Alterar senha",
+            "Confirme sua senha atual e cadastre uma nova senha para o usuário conectado.",
+            "Alterar senha",
+            (_, _) => ShowChangePasswordDialog()));
+
+        panel.Children.Add(CreateSettingsMenuButton(
             "Índices de reajuste",
             "Configure IGP-M, IPCA, INPC e índices personalizados usados nos contratos.",
             "Abrir índices",
@@ -76,6 +82,20 @@ public partial class ShellWindow
 
         using var scope = app.Services.CreateScope();
         var window = ActivatorUtilities.CreateInstance<AgencyProfileWindow>(scope.ServiceProvider, false);
+        window.Owner = this;
+        window.ShowDialog();
+    }
+
+    private void ShowChangePasswordDialog()
+    {
+        if (Application.Current is not App app)
+        {
+            MessageBox.Show(this, "Não foi possível acessar os serviços do aplicativo.", "Alterar senha", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        using var scope = app.Services.CreateScope();
+        var window = ActivatorUtilities.CreateInstance<ChangePasswordWindow>(scope.ServiceProvider, _currentUser);
         window.Owner = this;
         window.ShowDialog();
     }
