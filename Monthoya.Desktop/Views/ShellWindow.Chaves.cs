@@ -13,6 +13,7 @@ public partial class ShellWindow
         await _notificationService.CheckAndCreateKeyOverdueNotificationsAsync();
         await RefreshNotificationBellAsync();
         _imoveis = await _rentalManagementService.GetImoveisAsync();
+        PrimeChavesBoardCodeCacheFromLoadedImoveis();
         ChavesImovelBox.ItemsSource = _imoveis
             .Where(x => !string.Equals(x.Status, "Inativo", StringComparison.OrdinalIgnoreCase))
             .OrderBy(x => x.Endereco)
