@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace Monthoya.Desktop.Views;
@@ -130,6 +131,7 @@ public partial class ShellWindow
             VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled
         };
+        _chavesTakenGrid.LoadingRow += ChavesTakenGrid_LoadingRow;
         ConfigureTakenKeysGridColumns();
         _chavesTakenGrid.SelectionChanged += (_, _) =>
         {
@@ -356,12 +358,27 @@ public partial class ShellWindow
         }
 
         _chavesTakenGrid.Columns.Clear();
-        AddGridColumn(_chavesTakenGrid, "Código", "ChaveCodigo", 0.38);
+        AddGridColumn(_chavesTakenGrid, "Cód.", "ChaveCodigo", 0.38);
         AddGridColumn(_chavesTakenGrid, "Endereço", "Imovel", 1.22);
         AddGridColumn(_chavesTakenGrid, "Retirado por", "RetiradoPorNome", 0.85);
         AddGridColumn(_chavesTakenGrid, "Telefone", "RetiradoPorTelefone", 0.7);
         AddGridColumn(_chavesTakenGrid, "Retirado em", "RetiradoEm", 0.78, "dd/MM HH:mm");
         AddGridColumn(_chavesTakenGrid, "Previsão", "PrevisaoDevolucaoEm", 0.74, "dd/MM HH:mm");
+    }
+
+    private void ChavesTakenGrid_LoadingRow(object? sender, DataGridRowEventArgs e)
+    {
+        e.Row.Foreground = IsChavesTakenItemLate(e.Row.Item)
+            ? new SolidColorBrush(Color.FromRgb(180, 35, 24))
+            : Brushes.Black;
+    }
+
+    private static bool IsChavesTakenItemLate(object? item)
+    {
+        return item is ChavesListItem chave
+            && chave.MovimentoId.HasValue
+            && chave.PrevisaoDevolucaoEm.HasValue
+            && chave.PrevisaoDevolucaoEm.Value < DateTimeOffset.Now;
     }
 
     private static void AddGridColumn(DataGrid grid, string header, string binding, double width, string? stringFormat = null)
