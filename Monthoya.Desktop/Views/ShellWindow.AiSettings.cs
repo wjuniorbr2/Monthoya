@@ -14,10 +14,12 @@ public partial class ShellWindow
         {
             Title = "Configurações de IA",
             Owner = this,
-            Width = 560,
-            Height = 430,
+            Width = 660,
+            Height = 500,
+            MinWidth = 640,
+            MinHeight = 480,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            ResizeMode = ResizeMode.NoResize
+            ResizeMode = ResizeMode.CanResize
         };
 
         var root = new StackPanel
@@ -95,8 +97,8 @@ public partial class ShellWindow
         var saveButton = new Button
         {
             Content = "Salvar",
-            MinWidth = 110,
-            Margin = new Thickness(0, 0, 8, 0),
+            MinWidth = 120,
+            Margin = new Thickness(0, 0, 10, 0),
             Style = TryFindResource("PrimaryButton") as Style
         };
         saveButton.Click += (_, _) =>
@@ -111,8 +113,8 @@ public partial class ShellWindow
         var testButton = new Button
         {
             Content = "Testar configuração",
-            MinWidth = 150,
-            Margin = new Thickness(0, 0, 8, 0),
+            MinWidth = 170,
+            Margin = new Thickness(0, 0, 10, 0),
             Style = TryFindResource("SecondaryButton") as Style
         };
         testButton.Click += (_, _) =>
@@ -129,7 +131,7 @@ public partial class ShellWindow
         var cancelButton = new Button
         {
             Content = "Cancelar",
-            MinWidth = 100,
+            MinWidth = 120,
             Style = TryFindResource("SecondaryButton") as Style
         };
         cancelButton.Click += (_, _) => window.Close();
