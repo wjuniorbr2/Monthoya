@@ -10,9 +10,14 @@ public partial class ShellWindow
 {
     private async void AddTabButton_Click(object sender, RoutedEventArgs e)
     {
+        if (_isPageTransitionRunning)
+        {
+            return;
+        }
+
         SaveActiveTabState();
         AddShellTab(ShellPage.Dashboard, "Tela Inicial");
-        await ShowPageAsync(ShellPage.Dashboard, true);
+        await RunPageTransitionAsync(() => ShowPageAsync(ShellPage.Dashboard, true));
     }
 
     private void AddShellTab(ShellPage page, string title)
@@ -33,47 +38,105 @@ public partial class ShellWindow
 
     private async Task UpdateActiveTabAsync(ShellPage page, string title, bool loadData)
     {
-        SaveActiveTabState();
-        if (_activeTab is null)
+        if (_isPageTransitionRunning)
         {
-            AddShellTab(page, title);
-        }
-        else
-        {
-            var previousPage = _activeTab.Page;
-            _activeTab.Page = page;
-            _activeTab.Title = title;
-            // If switching this existing tab to Pessoas, ensure it starts with the PT-BR default label
-            if (page == ShellPage.Pessoas && previousPage != ShellPage.Pessoas && string.IsNullOrWhiteSpace(_activeTab.SelectedPessoaName))
-            {
-                _activeTab.SelectedPessoaName = "Criar Novo";
-            }
-            else if (page == ShellPage.Imoveis && previousPage != ShellPage.Imoveis && string.IsNullOrWhiteSpace(_activeTab.SelectedImovelName))
-            {
-                _activeTab.SelectedImovelName = "Criar novo";
-            }
-            RenderTabs();
+            return;
         }
 
-        await ShowPageAsync(page, loadData);
+        await RunPageTransitionAsync(async () =>
+        {
+            SaveActiveTabState();
+            if (_activeTab is null)
+            {
+                AddShellTab(page, title);
+            }
+            else
+            {
+                var previousPage = _activeTab.Page;
+                _activeTab.Page = page;
+                _activeTab.Title = title;
+                // If switching this existing tab to Pessoas, ensure it starts with the PT-BR default label
+                if (page == ShellPage.Pessoas && previousPage != ShellPage.Pessoas && string.IsNullOrWhiteSpace(_activeTab.SelectedPessoaName))
+                {
+                    _activeTab.SelectedPessoaName = "Criar Novo";
+                }
+                else if (page == ShellPage.Imoveis && previousPage != ShellPage.Imoveis && string.IsNullOrWhiteSpace(_activeTab.SelectedImovelName))
+                {
+                    _activeTab.SelectedImovelName = "Criar novo";
+                }
+                RenderTabs();
+            }
+
+            await ShowPageAsync(page, loadData);
+        });
     }
 
     private async Task SelectTabAsync(ShellTab tab)
     {
-        SaveActiveTabState();
-        _activeTab = tab;
-        // When selecting an existing Pessoas tab, if it has no stored name and the current loaded selection belongs to another tab,
-        // prefer the per-tab stored name; if none, initialize to PT-BR default "Criar Novo" so it doesn't show a leftover name.
-        if (tab.Page == ShellPage.Pessoas && string.IsNullOrWhiteSpace(tab.SelectedPessoaName))
+        if (_isPageTransitionRunning)
         {
-            tab.SelectedPessoaName = "Criar Novo";
+            return;
         }
-        else if (tab.Page == ShellPage.Imoveis && string.IsNullOrWhiteSpace(tab.SelectedImovelName))
+
+        await RunPageTransitionAsync(async () =>
         {
-            tab.SelectedImovelName = "Criar novo";
+            SaveActiveTabState();
+            _activeTab = tab;
+            // When selecting an existing Pessoas tab, if it has no stored name and the current loaded selection belongs to another tab,
+            // prefer the per-tab stored name; if none, initialize to PT-BR default "Criar Novo" so it doesn't show a leftover name.
+            if (tab.Page == ShellPage.Pessoas && string.IsNullOrWhiteSpace(tab.SelectedPessoaName))
+            {
+                tab.SelectedPessoaName = "Criar Novo";
+            }
+            else if (tab.Page == ShellPage.Imoveis && string.IsNullOrWhiteSpace(tab.SelectedImovelName))
+            {
+                tab.SelectedImovelName = "Criar novo";
+            }
+            RenderTabs();
+            await ShowPageAsync(tab.Page, true);
+        });
+    }
+
+    private async Task RunPageTransitionAsync(Func<Task> transition)
+    {
+        if (_isPageTransitionRunning)
+        {
+            return;
         }
-        RenderTabs();
-        await ShowPageAsync(tab.Page, true);
+
+        try
+        {
+            _isPageTransitionRunning = true;
+            SetNavigationButtonsEnabled(false);
+            await transition();
+        }
+        finally
+        {
+            SetNavigationButtonsEnabled(true);
+            _isPageTransitionRunning = false;
+        }
+    }
+
+    private void SetNavigationButtonsEnabled(bool isEnabled)
+    {
+        DashboardNavButton.IsEnabled = isEnabled;
+        UsersNavButton.IsEnabled = isEnabled;
+        PessoasNavButton.IsEnabled = isEnabled;
+        ImoveisNavButton.IsEnabled = isEnabled;
+        ChavesNavButton.IsEnabled = isEnabled;
+        NotificacoesNavButton.IsEnabled = isEnabled;
+        LocacoesNavButton.IsEnabled = isEnabled;
+        FinanceiroNavButton.IsEnabled = isEnabled;
+        BoletosNavButton.IsEnabled = isEnabled;
+        NotasFiscaisNavButton.IsEnabled = isEnabled;
+        DocumentosNavButton.IsEnabled = isEnabled;
+        RelatoriosNavButton.IsEnabled = isEnabled;
+        DimobNavButton.IsEnabled = isEnabled;
+        ManutencoesNavButton.IsEnabled = isEnabled;
+        VistoriasNavButton.IsEnabled = isEnabled;
+        ConfiguracoesNavButton.IsEnabled = isEnabled;
+        DiagnosticsNavButton.IsEnabled = isEnabled;
+        AddTabButton.IsEnabled = isEnabled;
     }
 
     private void RenderTabs()
@@ -254,6 +317,11 @@ public partial class ShellWindow
 
     private async Task CloseTabAsync(ShellTab tab)
     {
+        if (_isPageTransitionRunning)
+        {
+            return;
+        }
+
         if (_tabs.Count == 1)
         {
             await UpdateActiveTabAsync(ShellPage.Dashboard, "Tela Inicial", true);
@@ -273,7 +341,7 @@ public partial class ShellWindow
             var nextTabIndex = Math.Clamp(closedTabIndex, 0, _tabs.Count - 1);
             _activeTab = _tabs[nextTabIndex];
             RenderTabs();
-            await ShowPageAsync(_activeTab.Page, true);
+            await RunPageTransitionAsync(() => ShowPageAsync(_activeTab.Page, true));
             return;
         }
 
