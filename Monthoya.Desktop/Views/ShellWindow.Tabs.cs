@@ -136,7 +136,6 @@ public partial class ShellWindow
         VistoriasNavButton.IsEnabled = isEnabled;
         ConfiguracoesNavButton.IsEnabled = isEnabled;
         DiagnosticsNavButton.IsEnabled = isEnabled;
-        AddTabButton.IsEnabled = isEnabled;
     }
 
     private void RenderTabs()
