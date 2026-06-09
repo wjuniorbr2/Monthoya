@@ -1024,6 +1024,7 @@
                                                     <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula Sanepar" FontWeight="SemiBold" /><TextBox x:Name="ImovelSaneparBox" Margin="0,6,0,0" /></StackPanel>
                                                     <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula Copel" FontWeight="SemiBold" /><TextBox x:Name="ImovelCopelBox" Margin="0,6,0,0" /></StackPanel>
                                                     <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="220" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>
                                                 </WrapPanel>
                                             </StackPanel>
                                         </TabItem>

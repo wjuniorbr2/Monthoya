@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 
@@ -10,6 +11,10 @@ public partial class ShellWindow
 {
     private bool _pessoasLayoutPatched;
     private bool _isFormattingPessoaRgPatch;
+    private bool _isFormattingPessoaBankFields;
+    private bool _pessoaBankInputBehaviorConfigured;
+    private bool _pessoaBankSelectionConfigured;
+    private bool _pessoaResponsavelBankSelectionConfigured;
     private Button? _topSavePessoaButton;
     private ComboBox? _pessoaEstadoCivilComboBox;
     private ComboBox? _pessoaWorkComboBox;
@@ -30,6 +35,21 @@ public partial class ShellWindow
     private TextBox? _pessoaTrabalhoEstadoBox;
     private TextBox? _pessoaTrabalhoCidadeBox;
     private TextBox? _pessoaTrabalhoCepBox;
+    private ComboBox? _pessoaBancoBox;
+    private TextBox? _pessoaBancoCodigoBox;
+    private TextBox? _pessoaBancoNomeBox;
+    private TextBox? _pessoaAgenciaNumeroBox;
+    private TextBox? _pessoaAgenciaDigitoBox;
+    private TextBox? _pessoaContaNumeroBox;
+    private TextBox? _pessoaContaDigitoBox;
+    private ComboBox? _pessoaContaTipoBox;
+    private TextBox? _pessoaTitularNomeBox;
+    private TextBox? _pessoaTitularDocumentoBox;
+    private ComboBox? _pessoaPixTipoBox;
+    private TextBox? _pessoaPixChaveBox;
+    private ComboBox? _pessoaRepassePreferencialBox;
+    private Button? _pessoaUsarDadosPessoaBancoButton;
+    private Button? _pessoaUsarPixButton;
     private TextBox? _pessoaConjugeEmailBox;
     private TextBox? _pessoaConjugeDadosBancariosBox;
     private TextBox? _pessoaConjugeObservacoesBox;
@@ -58,6 +78,21 @@ public partial class ShellWindow
     private TextBox? _pessoaInscricaoMunicipalBox;
     private DatePicker? _pessoaDataAberturaBox;
     private TextBox? _pessoaResponsavelCargoBox;
+    private ComboBox? _pessoaResponsavelBancoBox;
+    private TextBox? _pessoaResponsavelBancoCodigoBox;
+    private TextBox? _pessoaResponsavelBancoNomeBox;
+    private TextBox? _pessoaResponsavelAgenciaNumeroBox;
+    private TextBox? _pessoaResponsavelAgenciaDigitoBox;
+    private TextBox? _pessoaResponsavelContaNumeroBox;
+    private TextBox? _pessoaResponsavelContaDigitoBox;
+    private ComboBox? _pessoaResponsavelContaTipoBox;
+    private TextBox? _pessoaResponsavelTitularNomeBox;
+    private TextBox? _pessoaResponsavelTitularDocumentoBox;
+    private ComboBox? _pessoaResponsavelPixTipoBox;
+    private TextBox? _pessoaResponsavelPixChaveBox;
+    private ComboBox? _pessoaResponsavelRepassePreferencialBox;
+    private Button? _pessoaUsarDadosResponsavelBancoButton;
+    private Button? _pessoaResponsavelUsarPixButton;
     private TextBox? _pessoaResponsavelObservacoesBox;
     private StackPanel? _pessoaFisicaWorkSection;
     private StackPanel? _pessoaConjugeSection;
@@ -78,14 +113,13 @@ public partial class ShellWindow
             return;
         }
 
-        _pessoasLayoutPatched = true;
-
         if (PessoasGrid.Parent is not Border resultsCard
             || resultsCard.Parent is not Grid leftColumnGrid
             || leftColumnGrid.Parent is not Grid pessoasWorkspace
             || PessoaDocumentosGrid.Parent is not Grid documentsGrid
             || documentsGrid.Parent is not Border documentsCard)
         {
+            Dispatcher.BeginInvoke(ApplyPessoasPanelLayoutPatch, DispatcherPriority.Loaded);
             return;
         }
 
@@ -96,8 +130,11 @@ public partial class ShellWindow
 
         if (editCard is null)
         {
+            Dispatcher.BeginInvoke(ApplyPessoasPanelLayoutPatch, DispatcherPriority.Loaded);
             return;
         }
+
+        _pessoasLayoutPatched = true;
 
         leftColumnGrid.Children.Remove(resultsCard);
         leftColumnGrid.Children.Remove(documentsCard);
@@ -408,6 +445,7 @@ public partial class ShellWindow
         AddPessoaFisicaDetailedFields();
         AddPessoaJuridicaDetailedFields();
         ConfigureDynamicPessoaInputBehavior();
+        ConfigurePessoaBankInputBehavior();
         _pessoaEstadoCivilComboBox!.SelectionChanged += (_, _) => UpdatePessoaConditionalSections();
         _pessoaWorkComboBox!.SelectionChanged += (_, _) => UpdatePessoaConditionalSections();
         _pessoaConjugeWorkComboBox!.SelectionChanged += (_, _) => UpdatePessoaConditionalSections();
@@ -430,6 +468,7 @@ public partial class ShellWindow
         _pessoaTrabalhoEstadoBox ??= NewTextBox(80);
         _pessoaTrabalhoCidadeBox ??= NewTextBox(180);
         _pessoaTrabalhoCepBox ??= NewTextBox(120);
+        CreatePessoaBankControls();
 
         _pessoaConjugeEmailBox ??= NewTextBox(260);
         _pessoaConjugeDadosBancariosBox ??= NewMultilineBox(64);
@@ -466,7 +505,56 @@ public partial class ShellWindow
         _pessoaInscricaoMunicipalBox ??= NewTextBox(160);
         _pessoaDataAberturaBox ??= NewDatePicker();
         _pessoaResponsavelCargoBox ??= NewTextBox(160);
+        CreatePessoaResponsavelBankControls();
         _pessoaResponsavelObservacoesBox ??= NewMultilineBox(64);
+    }
+
+    private void CreatePessoaBankControls()
+    {
+        _pessoaBancoBox ??= NewBankComboBox();
+        _pessoaBancoCodigoBox ??= NewTextBox(90);
+        _pessoaBancoNomeBox ??= NewTextBox(180);
+        _pessoaAgenciaNumeroBox ??= NewTextBox(100);
+        _pessoaAgenciaDigitoBox ??= NewTextBox(60);
+        _pessoaContaNumeroBox ??= NewTextBox(130);
+        _pessoaContaDigitoBox ??= NewTextBox(60);
+        _pessoaContaTipoBox ??= NewContaTipoComboBox();
+        _pessoaTitularNomeBox ??= NewTextBox(220);
+        _pessoaTitularDocumentoBox ??= NewTextBox(170);
+        _pessoaPixTipoBox ??= NewPixTipoComboBox();
+        _pessoaPixChaveBox ??= NewTextBox(220);
+        _pessoaRepassePreferencialBox ??= NewRepassePreferencialComboBox();
+        _pessoaUsarDadosPessoaBancoButton ??= NewSmallBankActionButton("Usar dados da pessoa", (_, _) => FillPessoaBankHolderFromPessoa());
+        _pessoaUsarPixButton ??= NewSmallBankActionButton("Usar como PIX", (_, _) => FillPessoaPixFromSelectedType());
+        if (!_pessoaBankSelectionConfigured)
+        {
+            _pessoaBankSelectionConfigured = true;
+            AttachBankSelection(_pessoaBancoBox, _pessoaBancoCodigoBox, _pessoaBancoNomeBox);
+        }
+    }
+
+    private void CreatePessoaResponsavelBankControls()
+    {
+        _pessoaResponsavelBancoBox ??= NewBankComboBox();
+        _pessoaResponsavelBancoCodigoBox ??= NewTextBox(90);
+        _pessoaResponsavelBancoNomeBox ??= NewTextBox(180);
+        _pessoaResponsavelAgenciaNumeroBox ??= NewTextBox(100);
+        _pessoaResponsavelAgenciaDigitoBox ??= NewTextBox(60);
+        _pessoaResponsavelContaNumeroBox ??= NewTextBox(130);
+        _pessoaResponsavelContaDigitoBox ??= NewTextBox(60);
+        _pessoaResponsavelContaTipoBox ??= NewContaTipoComboBox();
+        _pessoaResponsavelTitularNomeBox ??= NewTextBox(220);
+        _pessoaResponsavelTitularDocumentoBox ??= NewTextBox(170);
+        _pessoaResponsavelPixTipoBox ??= NewPixTipoComboBox();
+        _pessoaResponsavelPixChaveBox ??= NewTextBox(220);
+        _pessoaResponsavelRepassePreferencialBox ??= NewRepassePreferencialComboBox();
+        _pessoaUsarDadosResponsavelBancoButton ??= NewSmallBankActionButton("Usar dados do responsável", (_, _) => FillResponsavelBankHolderFromResponsavel());
+        _pessoaResponsavelUsarPixButton ??= NewSmallBankActionButton("Usar como PIX", (_, _) => FillResponsavelPixFromSelectedType());
+        if (!_pessoaResponsavelBankSelectionConfigured)
+        {
+            _pessoaResponsavelBankSelectionConfigured = true;
+            AttachBankSelection(_pessoaResponsavelBancoBox, _pessoaResponsavelBancoCodigoBox, _pessoaResponsavelBancoNomeBox);
+        }
     }
 
     private void AddPessoaFisicaDetailedFields()
@@ -475,11 +563,17 @@ public partial class ShellWindow
         MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, personalRow, "Data de nascimento", PessoaDataNascimentoBox, 140);
         MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, personalRow, "Profissão", PessoaProfissaoBox, 170);
         MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, personalRow, "Nacionalidade", PessoaNacionalidadeBox, 150);
-        MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, personalRow, "Dados bancários", PessoaDadosBancariosBox, 360);
         personalRow.Children.Add(FieldStack("Outras informações", _pessoaOutrasInformacoesBox!, 360));
         PessoaFisicaFieldsPanel.Children.Insert(0, personalRow);
+        PessoaFisicaFieldsPanel.Children.Insert(1, CreateBankSection(
+            PessoaDadosBancariosBox,
+            _pessoaBancoBox!, _pessoaAgenciaNumeroBox!, _pessoaAgenciaDigitoBox!,
+            _pessoaContaNumeroBox!, _pessoaContaDigitoBox!, _pessoaContaTipoBox!, _pessoaTitularNomeBox!,
+            _pessoaTitularDocumentoBox!, _pessoaPixTipoBox!, _pessoaPixChaveBox!, _pessoaRepassePreferencialBox!,
+            _pessoaUsarDadosPessoaBancoButton!, _pessoaUsarPixButton!));
         RemoveTextBlock(PessoaFisicaFieldsPanel, "CPF");
         RemoveTextBlock(PessoaFisicaFieldsPanel, "CPF/CNPJ");
+        RemoveTextBlock(PessoaFisicaFieldsPanel, "Dados bancários");
 
         RenameSection(PessoaFisicaFieldsPanel, "Endereço:", "ENDEREÇO DE RESIDÊNCIA:");
         ReplaceSectionHeaderWithCep(PessoaFisicaFieldsPanel, "ENDEREÇO DE RESIDÊNCIA:", PessoaCepBox);
@@ -571,9 +665,15 @@ public partial class ShellWindow
         MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "Nascimento do responsável", PessoaResponsavelDataNascimentoBox, 140);
         MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "Profissão do responsável", PessoaResponsavelProfissaoBox, 170);
         MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "Nacionalidade do responsável", PessoaResponsavelNacionalidadeBox, 150);
-        MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "Dados bancários", PessoaResponsavelDadosBancariosBox, 360);
         responsibleRow.Children.Add(FieldStack("Outras informações", _pessoaResponsavelObservacoesBox!, 360));
         PessoaJuridicaFieldsPanel.Children.Add(responsibleRow);
+        PessoaJuridicaFieldsPanel.Children.Add(CreateBankSection(
+            PessoaResponsavelDadosBancariosBox,
+            _pessoaResponsavelBancoBox!, _pessoaResponsavelAgenciaNumeroBox!, _pessoaResponsavelAgenciaDigitoBox!,
+            _pessoaResponsavelContaNumeroBox!, _pessoaResponsavelContaDigitoBox!, _pessoaResponsavelContaTipoBox!, _pessoaResponsavelTitularNomeBox!,
+            _pessoaResponsavelTitularDocumentoBox!, _pessoaResponsavelPixTipoBox!, _pessoaResponsavelPixChaveBox!, _pessoaResponsavelRepassePreferencialBox!,
+            _pessoaUsarDadosResponsavelBancoButton!, _pessoaResponsavelUsarPixButton!));
+        RemoveTextBlock(PessoaJuridicaFieldsPanel, "Dados bancários");
         RemoveLegacyPessoaResponsavelWorkFields();
 
         RenameSection(PessoaJuridicaFieldsPanel, "Endereço do responsável:", "ENDEREÇO DE RESIDÊNCIA:");
@@ -613,6 +713,222 @@ public partial class ShellWindow
         RemoveChild(PessoaJuridicaFieldsPanel, PessoaResponsavelEnderecoTrabalhoBox);
         RemoveChild(PessoaJuridicaFieldsPanel, PessoaResponsavelNomeEmpresaTrabalhoBox);
         RemoveChild(PessoaJuridicaFieldsPanel, PessoaResponsavelTelefoneEmpresaTrabalhoBox);
+    }
+
+    private void FillPessoaBankHolderFromPessoa()
+    {
+        SetText(_pessoaTitularNomeBox, PessoaNomeBox.Text);
+        SetText(_pessoaTitularDocumentoBox, PessoaDocumentoBox.Text);
+    }
+
+    private void FillResponsavelBankHolderFromResponsavel()
+    {
+        SetText(_pessoaResponsavelTitularNomeBox, PessoaResponsavelNomeBox.Text);
+        SetText(_pessoaResponsavelTitularDocumentoBox, PessoaResponsavelCpfBox.Text);
+    }
+
+    private void FillPessoaPixFromSelectedType() =>
+        FillPixFromSelectedType(_pessoaPixTipoBox, _pessoaPixChaveBox, PessoaDocumentoBox.Text, null, PessoaEmailBox.Text, PessoaTelefoneBox.Text);
+
+    private void FillResponsavelPixFromSelectedType() =>
+        FillPixFromSelectedType(_pessoaResponsavelPixTipoBox, _pessoaResponsavelPixChaveBox, PessoaResponsavelCpfBox.Text, null, PessoaResponsavelEmailBox.Text, PessoaResponsavelTelefoneBox.Text);
+
+    private static void FillPixFromSelectedType(ComboBox? tipoBox, TextBox? chaveBox, string? cpf, string? cnpj, string? email, string? telefone)
+    {
+        if (tipoBox?.SelectedValue is not Monthoya.Core.Entities.PixChaveTipo pixTipo || chaveBox is null)
+        {
+            return;
+        }
+
+        var source = pixTipo switch
+        {
+            Monthoya.Core.Entities.PixChaveTipo.Cpf => cpf,
+            Monthoya.Core.Entities.PixChaveTipo.Cnpj => cnpj,
+            Monthoya.Core.Entities.PixChaveTipo.Email => email,
+            Monthoya.Core.Entities.PixChaveTipo.Telefone => telefone,
+            _ => null
+        };
+
+        if (!string.IsNullOrWhiteSpace(source))
+        {
+            chaveBox.Text = source.Trim();
+        }
+    }
+
+    private void ConfigurePessoaBankInputBehavior()
+    {
+        if (_pessoaBankInputBehaviorConfigured)
+        {
+            return;
+        }
+
+        _pessoaBankInputBehaviorConfigured = true;
+        RegisterDigitsOnly(_pessoaAgenciaNumeroBox, 6);
+        RegisterDigitsOnly(_pessoaContaNumeroBox, 14);
+        RegisterDigitOrX(_pessoaAgenciaDigitoBox);
+        RegisterDigitOrX(_pessoaContaDigitoBox);
+        RegisterCpfCnpjFormatter(_pessoaTitularDocumentoBox);
+        RegisterPixFormatter(_pessoaPixTipoBox, _pessoaPixChaveBox);
+
+        RegisterDigitsOnly(_pessoaResponsavelAgenciaNumeroBox, 6);
+        RegisterDigitsOnly(_pessoaResponsavelContaNumeroBox, 14);
+        RegisterDigitOrX(_pessoaResponsavelAgenciaDigitoBox);
+        RegisterDigitOrX(_pessoaResponsavelContaDigitoBox);
+        RegisterCpfCnpjFormatter(_pessoaResponsavelTitularDocumentoBox);
+        RegisterPixFormatter(_pessoaResponsavelPixTipoBox, _pessoaResponsavelPixChaveBox);
+    }
+
+    private void RegisterDigitsOnly(TextBox? textBox, int maxDigits)
+    {
+        if (textBox is null)
+        {
+            return;
+        }
+
+        textBox.PreviewTextInput += (_, e) => e.Handled = e.Text.Any(ch => !char.IsDigit(ch));
+        textBox.TextChanged += (_, _) => FormatPessoaBankTextBox(textBox, OnlyDigits(textBox.Text, maxDigits));
+        DataObject.AddPastingHandler(textBox, (_, e) => ReplacePastedText(e, value => OnlyDigits(value, maxDigits)));
+    }
+
+    private void RegisterDigitOrX(TextBox? textBox)
+    {
+        if (textBox is null)
+        {
+            return;
+        }
+
+        textBox.PreviewTextInput += (_, e) => e.Handled = e.Text.Any(ch => !char.IsDigit(ch) && char.ToUpperInvariant(ch) != 'X');
+        textBox.TextChanged += (_, _) => FormatPessoaBankTextBox(textBox, NormalizeDigitOrX(textBox.Text));
+        DataObject.AddPastingHandler(textBox, (_, e) => ReplacePastedText(e, NormalizeDigitOrX));
+    }
+
+    private void RegisterCpfCnpjFormatter(TextBox? textBox)
+    {
+        if (textBox is null)
+        {
+            return;
+        }
+
+        textBox.PreviewTextInput += (_, e) => e.Handled = e.Text.Any(ch => !char.IsDigit(ch));
+        textBox.TextChanged += (_, _) => FormatPessoaBankTextBox(textBox, FormatCpfCnpjDocument(textBox.Text));
+        DataObject.AddPastingHandler(textBox, (_, e) => ReplacePastedText(e, FormatCpfCnpjDocument));
+    }
+
+    private void RegisterPixFormatter(ComboBox? pixTipoBox, TextBox? pixChaveBox)
+    {
+        if (pixTipoBox is null || pixChaveBox is null)
+        {
+            return;
+        }
+
+        pixChaveBox.PreviewTextInput += (_, e) =>
+        {
+            if (GetPessoaPixType(pixTipoBox) is Monthoya.Core.Entities.PixChaveTipo.Cpf
+                or Monthoya.Core.Entities.PixChaveTipo.Cnpj
+                or Monthoya.Core.Entities.PixChaveTipo.Telefone)
+            {
+                e.Handled = e.Text.Any(ch => !char.IsDigit(ch));
+            }
+        };
+        pixChaveBox.TextChanged += (_, _) => FormatPessoaBankTextBox(pixChaveBox, FormatPixByType(pixChaveBox.Text, GetPessoaPixType(pixTipoBox)));
+        pixTipoBox.SelectionChanged += (_, _) => FormatPessoaBankTextBox(pixChaveBox, FormatPixByType(pixChaveBox.Text, GetPessoaPixType(pixTipoBox)));
+        DataObject.AddPastingHandler(pixChaveBox, (_, e) => ReplacePastedText(e, value => FormatPixByType(value, GetPessoaPixType(pixTipoBox))));
+    }
+
+    private void FormatPessoaBankTextBox(TextBox textBox, string formatted)
+    {
+        if (_isFormattingPessoaBankFields || textBox.Text == formatted)
+        {
+            return;
+        }
+
+        _isFormattingPessoaBankFields = true;
+        textBox.Text = formatted;
+        textBox.CaretIndex = textBox.Text.Length;
+        _isFormattingPessoaBankFields = false;
+    }
+
+    private static void ReplacePastedText(DataObjectPastingEventArgs e, Func<string, string> formatter)
+    {
+        if (!e.DataObject.GetDataPresent(DataFormats.Text))
+        {
+            e.CancelCommand();
+            return;
+        }
+
+        var text = e.DataObject.GetData(DataFormats.Text) as string ?? string.Empty;
+        e.DataObject = new DataObject(DataFormats.Text, formatter(text));
+    }
+
+    private static Monthoya.Core.Entities.PixChaveTipo? GetPessoaPixType(ComboBox comboBox) =>
+        comboBox.SelectedValue is Monthoya.Core.Entities.PixChaveTipo value ? value : null;
+
+    private static string OnlyDigits(string? value, int maxDigits)
+    {
+        var digits = new string((value ?? string.Empty).Where(char.IsDigit).Take(maxDigits).ToArray());
+        return digits;
+    }
+
+    private static string NormalizeDigitOrX(string? value)
+    {
+        var first = (value ?? string.Empty)
+            .Select(char.ToUpperInvariant)
+            .FirstOrDefault(ch => char.IsDigit(ch) || ch == 'X');
+        return first == default ? string.Empty : first.ToString();
+    }
+
+    private static string FormatCpfCnpjDocument(string? value)
+    {
+        var digits = OnlyDigits(value, 14);
+        return digits.Length <= 11 ? FormatCpfDigits(digits) : FormatCnpjDigits(digits);
+    }
+
+    private static string FormatPixByType(string? value, Monthoya.Core.Entities.PixChaveTipo? pixType) =>
+        pixType switch
+        {
+            Monthoya.Core.Entities.PixChaveTipo.Cpf => FormatCpfDigits(OnlyDigits(value, 11)),
+            Monthoya.Core.Entities.PixChaveTipo.Cnpj => FormatCnpjDigits(OnlyDigits(value, 14)),
+            Monthoya.Core.Entities.PixChaveTipo.Telefone => FormatPhoneDigits(OnlyDigits(value, 11)),
+            Monthoya.Core.Entities.PixChaveTipo.Email => (value ?? string.Empty).Trim(),
+            _ => value ?? string.Empty
+        };
+
+    private static string FormatCpfDigits(string digits) =>
+        digits.Length switch
+        {
+            <= 3 => digits,
+            <= 6 => $"{digits[..3]}.{digits[3..]}",
+            <= 9 => $"{digits[..3]}.{digits.Substring(3, 3)}.{digits[6..]}",
+            _ => $"{digits[..3]}.{digits.Substring(3, 3)}.{digits.Substring(6, 3)}-{digits[9..]}"
+        };
+
+    private static string FormatCnpjDigits(string digits) =>
+        digits.Length switch
+        {
+            <= 2 => digits,
+            <= 5 => $"{digits[..2]}.{digits[2..]}",
+            <= 8 => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits[5..]}",
+            <= 12 => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}/{digits[8..]}",
+            _ => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}/{digits.Substring(8, 4)}-{digits[12..]}"
+        };
+
+    private static string FormatPhoneDigits(string digits)
+    {
+        if (digits.Length <= 2)
+        {
+            return digits;
+        }
+
+        var ddd = digits[..2];
+        var number = digits[2..];
+        if (number.Length <= 4)
+        {
+            return $"({ddd}) {number}";
+        }
+
+        return number.Length <= 8
+            ? $"({ddd}) {number[..4]}-{number[4..]}"
+            : $"({ddd}) {number[..5]}-{number[5..]}";
     }
 
     private void UpdatePessoaConditionalSections()
@@ -707,6 +1023,226 @@ public partial class ShellWindow
         return textBox;
     }
 
+    private static ComboBox NewBankComboBox()
+    {
+        var comboBox = new ComboBox
+        {
+            Width = 290,
+            Margin = new Thickness(0, 6, 0, 0),
+            IsEditable = true,
+            IsTextSearchEnabled = false,
+            StaysOpenOnEdit = true,
+            ItemsSource = BrazilianBankCatalog
+        };
+        TextSearch.SetTextPath(comboBox, nameof(BankOption.SearchText));
+        return comboBox;
+    }
+
+    private static Button NewSmallBankActionButton(string content, RoutedEventHandler clickHandler)
+    {
+        var button = new Button
+        {
+            Content = content,
+            Style = (Style)Application.Current.FindResource("SecondaryButton"),
+            Margin = new Thickness(0, 6, 8, 0),
+            Padding = new Thickness(10, 4, 10, 4),
+            MinHeight = 28
+        };
+        button.Click += clickHandler;
+        return button;
+    }
+
+    private static void AttachBankSelection(ComboBox bankBox, TextBox codigoBox, TextBox nomeBox)
+    {
+        bankBox.DropDownOpened += (_, _) =>
+        {
+            if (GetEditableComboTextBox(bankBox) is TextBox { Text.Length: 0 })
+            {
+                bankBox.ItemsSource = BrazilianBankCatalog;
+            }
+        };
+
+        bankBox.Loaded += (_, _) =>
+        {
+            bankBox.ApplyTemplate();
+            if (GetEditableComboTextBox(bankBox) is not TextBox textBox)
+            {
+                return;
+            }
+
+            textBox.TextChanged += (_, _) =>
+            {
+                if (bankBox.SelectedItem is BankOption selectedBank
+                    && textBox.Text.Equals(selectedBank.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                if (bankBox.IsKeyboardFocusWithin)
+                {
+                    var query = textBox.Text;
+                    ApplyBankSearch(bankBox, query);
+                    bankBox.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (GetEditableComboTextBox(bankBox) is not { } editableTextBox
+                            || editableTextBox.Text == query)
+                        {
+                            return;
+                        }
+
+                        editableTextBox.Text = query;
+                        editableTextBox.CaretIndex = editableTextBox.Text.Length;
+                    }, DispatcherPriority.Background);
+                }
+            };
+        };
+
+        bankBox.SelectionChanged += (_, _) =>
+        {
+            if (bankBox.SelectedItem is BankOption bank)
+            {
+                codigoBox.Text = bank.Code;
+                nomeBox.Text = bank.Name;
+            }
+        };
+    }
+
+    private static TextBox? GetEditableComboTextBox(ComboBox comboBox) =>
+        comboBox.Template.FindName("PART_EditableTextBox", comboBox) as TextBox;
+
+    private static void ApplyBankSearch(ComboBox bankBox, string searchText)
+    {
+        var query = searchText.Trim();
+        if (query.Length == 0)
+        {
+            bankBox.ItemsSource = BrazilianBankCatalog;
+            return;
+        }
+
+        var normalizedQuery = NormalizeBankSearchText(query);
+        var matches = BrazilianBankCatalog
+            .Where(bank => bank.Code.Contains(query, StringComparison.OrdinalIgnoreCase)
+                           || NormalizeBankSearchText(bank.Name).Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase)
+                           || NormalizeBankSearchText(bank.ToString()).Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase)
+                           || NormalizeBankSearchText(bank.SearchText).Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+        bankBox.ItemsSource = matches;
+
+        bankBox.IsDropDownOpen = true;
+    }
+
+    private static string NormalizeBankSearchText(string value)
+    {
+        var normalized = value.Normalize(System.Text.NormalizationForm.FormD);
+        var builder = new System.Text.StringBuilder(normalized.Length);
+        foreach (var character in normalized)
+        {
+            if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(character) != System.Globalization.UnicodeCategory.NonSpacingMark)
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString().Normalize(System.Text.NormalizationForm.FormC);
+    }
+
+    private static ComboBox NewContaTipoComboBox() => new()
+    {
+        Width = 130,
+        Margin = new Thickness(0, 6, 0, 0),
+        ItemsSource = new EnumOption<Monthoya.Core.Entities.ContaBancariaTipo>[]
+        {
+            new(Monthoya.Core.Entities.ContaBancariaTipo.Corrente, "Corrente"),
+            new(Monthoya.Core.Entities.ContaBancariaTipo.Poupanca, "Poupança"),
+            new(Monthoya.Core.Entities.ContaBancariaTipo.Pagamento, "Pagamento"),
+            new(Monthoya.Core.Entities.ContaBancariaTipo.Outro, "Outro")
+        },
+        SelectedValuePath = "Value",
+        DisplayMemberPath = "Label",
+        SelectedIndex = -1
+    };
+
+    private static ComboBox NewPixTipoComboBox() => new()
+    {
+        Width = 130,
+        Margin = new Thickness(0, 6, 0, 0),
+        ItemsSource = new EnumOption<Monthoya.Core.Entities.PixChaveTipo>[]
+        {
+            new(Monthoya.Core.Entities.PixChaveTipo.Cpf, "CPF"),
+            new(Monthoya.Core.Entities.PixChaveTipo.Cnpj, "CNPJ"),
+            new(Monthoya.Core.Entities.PixChaveTipo.Email, "E-mail"),
+            new(Monthoya.Core.Entities.PixChaveTipo.Telefone, "Telefone"),
+            new(Monthoya.Core.Entities.PixChaveTipo.Aleatoria, "Aleatória"),
+            new(Monthoya.Core.Entities.PixChaveTipo.Outro, "Outro")
+        },
+        SelectedValuePath = "Value",
+        DisplayMemberPath = "Label",
+        SelectedIndex = -1
+    };
+
+    private static ComboBox NewRepassePreferencialComboBox() => new()
+    {
+        Width = 160,
+        Margin = new Thickness(0, 6, 0, 0),
+        ItemsSource = new EnumOption<Monthoya.Core.Entities.MetodoRepassePreferencial>[]
+        {
+            new(Monthoya.Core.Entities.MetodoRepassePreferencial.Pix, "PIX"),
+            new(Monthoya.Core.Entities.MetodoRepassePreferencial.TransferenciaBancaria, "Transferência"),
+            new(Monthoya.Core.Entities.MetodoRepassePreferencial.Manual, "Manual")
+        },
+        SelectedValuePath = "Value",
+        DisplayMemberPath = "Label",
+        SelectedIndex = -1
+    };
+
+    private static StackPanel CreateBankSection(
+        TextBox observacoes,
+        ComboBox banco,
+        TextBox agenciaNumero,
+        TextBox agenciaDigito,
+        TextBox contaNumero,
+        TextBox contaDigito,
+        ComboBox contaTipo,
+        TextBox titularNome,
+        TextBox titularDocumento,
+        ComboBox pixTipo,
+        TextBox pixChave,
+        ComboBox repassePreferencial,
+        Button usarDadosButton,
+        Button usarPixButton)
+    {
+        var actionRow = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 0, 0, 6),
+            Children = { usarDadosButton, usarPixButton }
+        };
+
+        return new StackPanel
+        {
+            Tag = "PessoaBankFields",
+            Margin = new Thickness(0, 10, 0, 12),
+            Children =
+            {
+                SectionHeader("DADOS BANCÁRIOS / PIX:"),
+                actionRow,
+                WrapFields(
+                    ("Banco", banco, 290),
+                    ("Agência", agenciaNumero, 100),
+                    ("Dígito ag.", agenciaDigito, 70),
+                    ("Conta", contaNumero, 130),
+                    ("Dígito conta", contaDigito, 80),
+                    ("Tipo de conta", contaTipo, 130),
+                    ("Titular", titularNome, 220),
+                    ("CPF/CNPJ titular", titularDocumento, 170),
+                    ("Tipo PIX", pixTipo, 130),
+                    ("Chave PIX", pixChave, 220),
+                    ("Repasse preferencial", repassePreferencial, 160),
+                    ("Observações bancárias", observacoes, 360))
+            }
+        };
+    }
+
     private static DatePicker NewDatePicker() => new()
     {
         Width = 140,
@@ -799,6 +1335,48 @@ public partial class ShellWindow
             }
         };
     }
+
+    private sealed record EnumOption<T>(T Value, string Label);
+    private sealed record BankOption(string Code, string Name)
+    {
+        public string SearchText => $"{Code} {Name}";
+        public override string ToString() => $"{Code} - {Name}";
+    }
+
+    private static readonly BankOption[] BrazilianBankCatalog =
+    [
+        new("001", "Banco do Brasil"),
+        new("003", "Banco da Amazônia"),
+        new("004", "Banco do Nordeste"),
+        new("021", "Banestes"),
+        new("033", "Santander"),
+        new("041", "Banrisul"),
+        new("070", "BRB"),
+        new("077", "Banco Inter"),
+        new("104", "Caixa Econômica Federal"),
+        new("121", "Banco Agibank"),
+        new("136", "Unicred"),
+        new("197", "Stone"),
+        new("208", "BTG Pactual"),
+        new("212", "Banco Original"),
+        new("237", "Bradesco"),
+        new("260", "Nubank"),
+        new("290", "PagBank"),
+        new("318", "Banco BMG"),
+        new("320", "China Construction Bank Brasil"),
+        new("323", "Mercado Pago"),
+        new("336", "Banco C6"),
+        new("341", "Itaú Unibanco"),
+        new("422", "Banco Safra"),
+        new("623", "Banco PAN"),
+        new("633", "Banco Rendimento"),
+        new("655", "Banco Votorantim"),
+        new("707", "Banco Daycoval"),
+        new("735", "Banco Neon"),
+        new("739", "Banco Cetelem"),
+        new("748", "Sicredi"),
+        new("756", "Sicoob")
+    ];
 
     private static void RemoveFromCurrentParent(UIElement element)
     {

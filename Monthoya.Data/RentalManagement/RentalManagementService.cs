@@ -87,6 +87,47 @@ public sealed class RentalManagementService(
         return new PessoaDetails(summary, ToPessoaRequest(pessoa));
     }
 
+    public async Task<IReadOnlyList<string>> GetStreetSuggestionsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var ruas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        var pessoaRuas = await dbContext.Pessoas
+            .AsNoTracking()
+            .Include(x => x.PessoaFisica)
+            .Include(x => x.PessoaJuridica)
+            .Select(x => new
+            {
+                FisicaRua = x.PessoaFisica != null ? x.PessoaFisica.Rua : null,
+                FisicaEmpresaRua = x.PessoaFisica != null ? x.PessoaFisica.EmpresaRua : null,
+                FisicaConjugeEmpresaRua = x.PessoaFisica != null ? x.PessoaFisica.ConjugeEmpresaRua : null,
+                JuridicaEmpresaRua = x.PessoaJuridica != null ? x.PessoaJuridica.EmpresaRua : null,
+                JuridicaResponsavelRua = x.PessoaJuridica != null ? x.PessoaJuridica.ResponsavelRua : null
+            })
+            .ToListAsync(cancellationToken);
+
+        foreach (var pessoa in pessoaRuas)
+        {
+            AddStreetSuggestion(ruas, pessoa.FisicaRua);
+            AddStreetSuggestion(ruas, pessoa.FisicaEmpresaRua);
+            AddStreetSuggestion(ruas, pessoa.FisicaConjugeEmpresaRua);
+            AddStreetSuggestion(ruas, pessoa.JuridicaEmpresaRua);
+            AddStreetSuggestion(ruas, pessoa.JuridicaResponsavelRua);
+        }
+
+        var imovelRuas = await dbContext.Imoveis
+            .AsNoTracking()
+            .Select(x => x.Rua)
+            .ToListAsync(cancellationToken);
+
+        foreach (var rua in imovelRuas)
+        {
+            AddStreetSuggestion(ruas, rua);
+        }
+
+        return ruas.Order(StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
+
     public async Task<PessoaSummary> CreatePessoaAsync(CreatePessoaRequest request, CancellationToken cancellationToken = default)
     {
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
@@ -147,6 +188,18 @@ public sealed class RentalManagementService(
                 EmpresaEstado = NormalizeState(request.EmpresaEstado),
                 EmpresaCep = DigitsOrNull(request.EmpresaCep),
                 DadosBancarios = TrimOrNull(request.DadosBancarios),
+                BancoCodigo = DigitsOrNull(request.BancoCodigo),
+                BancoNome = TrimOrNull(request.BancoNome),
+                AgenciaNumero = DigitsOrNull(request.AgenciaNumero),
+                AgenciaDigito = TrimOrNull(request.AgenciaDigito),
+                ContaNumero = DigitsOrNull(request.ContaNumero),
+                ContaDigito = TrimOrNull(request.ContaDigito),
+                ContaTipo = request.ContaTipo,
+                TitularNome = TrimOrNull(request.TitularNome),
+                TitularDocumento = DigitsOrNull(request.TitularDocumento),
+                PixTipo = request.PixTipo,
+                PixChave = NormalizePixChave(request.PixChave, request.PixTipo),
+                RepassePreferencial = request.RepassePreferencial,
                 ConjugeNome = TrimOrNull(request.ConjugeNome),
                 ConjugeRg = DigitsOrNull(request.ConjugeRg),
                 ConjugeCpf = DigitsOrNull(request.ConjugeCpf),
@@ -218,6 +271,18 @@ public sealed class RentalManagementService(
                 ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.ResponsavelNomeEmpresaTrabalho),
                 ResponsavelTelefoneEmpresaTrabalho = DigitsOrNull(request.ResponsavelTelefoneEmpresaTrabalho),
                 ResponsavelDadosBancarios = TrimOrNull(request.ResponsavelDadosBancarios),
+                ResponsavelBancoCodigo = DigitsOrNull(request.ResponsavelBancoCodigo),
+                ResponsavelBancoNome = TrimOrNull(request.ResponsavelBancoNome),
+                ResponsavelAgenciaNumero = DigitsOrNull(request.ResponsavelAgenciaNumero),
+                ResponsavelAgenciaDigito = TrimOrNull(request.ResponsavelAgenciaDigito),
+                ResponsavelContaNumero = DigitsOrNull(request.ResponsavelContaNumero),
+                ResponsavelContaDigito = TrimOrNull(request.ResponsavelContaDigito),
+                ResponsavelContaTipo = request.ResponsavelContaTipo,
+                ResponsavelTitularNome = TrimOrNull(request.ResponsavelTitularNome),
+                ResponsavelTitularDocumento = DigitsOrNull(request.ResponsavelTitularDocumento),
+                ResponsavelPixTipo = request.ResponsavelPixTipo,
+                ResponsavelPixChave = NormalizePixChave(request.ResponsavelPixChave, request.ResponsavelPixTipo),
+                ResponsavelRepassePreferencial = request.ResponsavelRepassePreferencial,
                 ResponsavelObservacoes = TrimOrNull(request.ResponsavelObservacoes)
             };
         }
@@ -302,6 +367,18 @@ public sealed class RentalManagementService(
             pessoa.PessoaFisica.EmpresaEstado = NormalizeState(request.Pessoa.EmpresaEstado);
             pessoa.PessoaFisica.EmpresaCep = DigitsOrNull(request.Pessoa.EmpresaCep);
             pessoa.PessoaFisica.DadosBancarios = TrimOrNull(request.Pessoa.DadosBancarios);
+            pessoa.PessoaFisica.BancoCodigo = DigitsOrNull(request.Pessoa.BancoCodigo);
+            pessoa.PessoaFisica.BancoNome = TrimOrNull(request.Pessoa.BancoNome);
+            pessoa.PessoaFisica.AgenciaNumero = DigitsOrNull(request.Pessoa.AgenciaNumero);
+            pessoa.PessoaFisica.AgenciaDigito = TrimOrNull(request.Pessoa.AgenciaDigito);
+            pessoa.PessoaFisica.ContaNumero = DigitsOrNull(request.Pessoa.ContaNumero);
+            pessoa.PessoaFisica.ContaDigito = TrimOrNull(request.Pessoa.ContaDigito);
+            pessoa.PessoaFisica.ContaTipo = request.Pessoa.ContaTipo;
+            pessoa.PessoaFisica.TitularNome = TrimOrNull(request.Pessoa.TitularNome);
+            pessoa.PessoaFisica.TitularDocumento = DigitsOrNull(request.Pessoa.TitularDocumento);
+            pessoa.PessoaFisica.PixTipo = request.Pessoa.PixTipo;
+            pessoa.PessoaFisica.PixChave = NormalizePixChave(request.Pessoa.PixChave, request.Pessoa.PixTipo);
+            pessoa.PessoaFisica.RepassePreferencial = request.Pessoa.RepassePreferencial;
             pessoa.PessoaFisica.ConjugeNome = TrimOrNull(request.Pessoa.ConjugeNome);
             pessoa.PessoaFisica.ConjugeRg = DigitsOrNull(request.Pessoa.ConjugeRg);
             pessoa.PessoaFisica.ConjugeCpf = DigitsOrNull(request.Pessoa.ConjugeCpf);
@@ -377,6 +454,18 @@ public sealed class RentalManagementService(
             pessoa.PessoaJuridica.ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.Pessoa.ResponsavelNomeEmpresaTrabalho);
             pessoa.PessoaJuridica.ResponsavelTelefoneEmpresaTrabalho = DigitsOrNull(request.Pessoa.ResponsavelTelefoneEmpresaTrabalho);
             pessoa.PessoaJuridica.ResponsavelDadosBancarios = TrimOrNull(request.Pessoa.ResponsavelDadosBancarios);
+            pessoa.PessoaJuridica.ResponsavelBancoCodigo = DigitsOrNull(request.Pessoa.ResponsavelBancoCodigo);
+            pessoa.PessoaJuridica.ResponsavelBancoNome = TrimOrNull(request.Pessoa.ResponsavelBancoNome);
+            pessoa.PessoaJuridica.ResponsavelAgenciaNumero = DigitsOrNull(request.Pessoa.ResponsavelAgenciaNumero);
+            pessoa.PessoaJuridica.ResponsavelAgenciaDigito = TrimOrNull(request.Pessoa.ResponsavelAgenciaDigito);
+            pessoa.PessoaJuridica.ResponsavelContaNumero = DigitsOrNull(request.Pessoa.ResponsavelContaNumero);
+            pessoa.PessoaJuridica.ResponsavelContaDigito = TrimOrNull(request.Pessoa.ResponsavelContaDigito);
+            pessoa.PessoaJuridica.ResponsavelContaTipo = request.Pessoa.ResponsavelContaTipo;
+            pessoa.PessoaJuridica.ResponsavelTitularNome = TrimOrNull(request.Pessoa.ResponsavelTitularNome);
+            pessoa.PessoaJuridica.ResponsavelTitularDocumento = DigitsOrNull(request.Pessoa.ResponsavelTitularDocumento);
+            pessoa.PessoaJuridica.ResponsavelPixTipo = request.Pessoa.ResponsavelPixTipo;
+            pessoa.PessoaJuridica.ResponsavelPixChave = NormalizePixChave(request.Pessoa.ResponsavelPixChave, request.Pessoa.ResponsavelPixTipo);
+            pessoa.PessoaJuridica.ResponsavelRepassePreferencial = request.Pessoa.ResponsavelRepassePreferencial;
             pessoa.PessoaJuridica.ResponsavelObservacoes = TrimOrNull(request.Pessoa.ResponsavelObservacoes);
         }
 
@@ -1347,6 +1436,18 @@ public sealed class RentalManagementService(
                 EmpresaEstado: fisica.EmpresaEstado,
                 EmpresaCep: FormatCepForDisplay(fisica.EmpresaCep),
                 DadosBancarios: fisica.DadosBancarios,
+                BancoCodigo: fisica.BancoCodigo,
+                BancoNome: fisica.BancoNome,
+                AgenciaNumero: fisica.AgenciaNumero,
+                AgenciaDigito: fisica.AgenciaDigito,
+                ContaNumero: fisica.ContaNumero,
+                ContaDigito: fisica.ContaDigito,
+                ContaTipo: fisica.ContaTipo,
+                TitularNome: fisica.TitularNome,
+                TitularDocumento: FormatCpfCnpjByLength(fisica.TitularDocumento),
+                PixTipo: fisica.PixTipo,
+                PixChave: FormatPixChaveForDisplay(fisica.PixChave, fisica.PixTipo),
+                RepassePreferencial: fisica.RepassePreferencial,
                 ConjugeNome: fisica.ConjugeNome,
                 ConjugeRg: FormatRgForDisplay(fisica.ConjugeRg),
                 ConjugeCpf: FormatCpf(fisica.ConjugeCpf),
@@ -1421,6 +1522,18 @@ public sealed class RentalManagementService(
             ResponsavelNomeEmpresaTrabalho: juridica?.ResponsavelNomeEmpresaTrabalho,
             ResponsavelTelefoneEmpresaTrabalho: FormatPhoneForDisplay(juridica?.ResponsavelTelefoneEmpresaTrabalho),
             ResponsavelDadosBancarios: juridica?.ResponsavelDadosBancarios,
+            ResponsavelBancoCodigo: juridica?.ResponsavelBancoCodigo,
+            ResponsavelBancoNome: juridica?.ResponsavelBancoNome,
+            ResponsavelAgenciaNumero: juridica?.ResponsavelAgenciaNumero,
+            ResponsavelAgenciaDigito: juridica?.ResponsavelAgenciaDigito,
+            ResponsavelContaNumero: juridica?.ResponsavelContaNumero,
+            ResponsavelContaDigito: juridica?.ResponsavelContaDigito,
+            ResponsavelContaTipo: juridica?.ResponsavelContaTipo,
+            ResponsavelTitularNome: juridica?.ResponsavelTitularNome,
+            ResponsavelTitularDocumento: FormatCpfCnpjByLength(juridica?.ResponsavelTitularDocumento),
+            ResponsavelPixTipo: juridica?.ResponsavelPixTipo,
+            ResponsavelPixChave: FormatPixChaveForDisplay(juridica?.ResponsavelPixChave, juridica?.ResponsavelPixTipo),
+            ResponsavelRepassePreferencial: juridica?.ResponsavelRepassePreferencial,
             ResponsavelObservacoes: juridica?.ResponsavelObservacoes);
     }
 
@@ -1506,6 +1619,7 @@ public sealed class RentalManagementService(
         imovel.SaneparMatricula = TrimOrNull(request.SaneparMatricula);
         imovel.CopelMatricula = TrimOrNull(request.CopelMatricula);
         imovel.IptuMatricula = TrimOrNull(request.IptuMatricula);
+        imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);
         imovel.TipoImovel = TrimOrNull(request.TipoImovel);
         imovel.Descricao = TrimOrNull(request.Descricao);
         imovel.DescricaoInterna = TrimOrNull(request.DescricaoInterna) ?? TrimOrNull(request.Descricao);
@@ -1560,6 +1674,7 @@ public sealed class RentalManagementService(
             imovel.SaneparMatricula,
             imovel.CopelMatricula,
             imovel.IptuMatricula,
+            imovel.ColetaLixo,
             imovel.TipoImovel,
             imovel.Descricao,
             imovel.ValorVenda,
@@ -1700,6 +1815,26 @@ public sealed class RentalManagementService(
 
     private static string? TrimOrNull(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
+    private static void AddStreetSuggestion(ISet<string> suggestions, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            suggestions.Add(value.Trim());
+        }
+    }
+
+    private static string? NormalizePixChave(string? value, PixChaveTipo? tipo)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return tipo is PixChaveTipo.Cpf or PixChaveTipo.Cnpj or PixChaveTipo.Telefone
+            ? DigitsOrNull(value)
+            : value.Trim();
+    }
+
     private static string? DigitsOrNull(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -1753,6 +1888,26 @@ public sealed class RentalManagementService(
             _ => $"{digits[..2]}.{digits.Substring(2, 3)}.{digits.Substring(5, 3)}/{digits.Substring(8, 4)}-{digits[12..]}"
         };
     }
+
+    private static string? FormatCpfCnpjByLength(string? value)
+    {
+        var digits = DigitsOrNull(value);
+        if (digits is null)
+        {
+            return null;
+        }
+
+        return digits.Length > 11 ? FormatCnpj(digits) : FormatCpf(digits);
+    }
+
+    private static string? FormatPixChaveForDisplay(string? value, PixChaveTipo? tipo) =>
+        tipo switch
+        {
+            PixChaveTipo.Cpf => FormatCpf(value),
+            PixChaveTipo.Cnpj => FormatCnpj(value),
+            PixChaveTipo.Telefone => FormatPhoneForDisplay(value),
+            _ => value
+        };
 
     private static string? FormatPhoneForDisplay(string? value)
     {

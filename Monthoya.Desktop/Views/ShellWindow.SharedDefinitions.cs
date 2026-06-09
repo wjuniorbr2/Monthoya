@@ -114,24 +114,24 @@ public partial class ShellWindow
         Diagnostics
     }
 
-    private sealed record UserRoleOption(string Label, UserRole Role);
-    private sealed record TipoPessoaOption(string Label, TipoPessoa Tipo);
-    private sealed record ImovelFinalidadeOption(string Label, ImovelFinalidade Finalidade);
-    private sealed record ImovelStatusOption(string Label, ImovelStatus Status);
-    private sealed record ImovelFinalidadeFilterOption(string Label, ImovelFinalidade? Finalidade);
-    private sealed record ImovelStatusFilterOption(string Label, string Status);
-    private sealed record ImovelPublicacaoFilterOption(string Label, string Publicacao);
-    private sealed record ImovelChavePosseOption(string Label, ImovelChavePosse Posse);
-    private sealed record ImovelEnderecoPublicoModoOption(string Label, ImovelEnderecoPublicoModo Modo);
-    private sealed record ImovelMediaCategoryOption(string Label, ImovelMediaCategory Category);
-    private sealed record VistoriaTipoOption(string Label, VistoriaTipo Tipo);
-    private sealed record VistoriaStatusOption(string Label, VistoriaStatus Status);
-    private sealed record ChavesStatusFilterOption(string Label, string Status);
-    private sealed record NotificationCategoryOption(string Label, NotificationCategory? Category);
-    private sealed record NotificationPriorityOption(string Label, NotificationPriority? Priority);
-    private sealed record PessoaDocumentoTipoOption(string Label, string Tipo);
-    private sealed record PessoaDocumentoDonoOption(string Label, string Tipo);
-    private sealed record PessoaStatusFilterOption(string Label, string Status);
+    private sealed record UserRoleOption(string Label, UserRole Role) { public override string ToString() => Label; }
+    private sealed record TipoPessoaOption(string Label, TipoPessoa Tipo) { public override string ToString() => Label; }
+    private sealed record ImovelFinalidadeOption(string Label, ImovelFinalidade Finalidade) { public override string ToString() => Label; }
+    private sealed record ImovelStatusOption(string Label, ImovelStatus Status) { public override string ToString() => Label; }
+    private sealed record ImovelFinalidadeFilterOption(string Label, ImovelFinalidade? Finalidade) { public override string ToString() => Label; }
+    private sealed record ImovelStatusFilterOption(string Label, string Status) { public override string ToString() => Label; }
+    private sealed record ImovelPublicacaoFilterOption(string Label, string Publicacao) { public override string ToString() => Label; }
+    private sealed record ImovelChavePosseOption(string Label, ImovelChavePosse Posse) { public override string ToString() => Label; }
+    private sealed record ImovelEnderecoPublicoModoOption(string Label, ImovelEnderecoPublicoModo Modo) { public override string ToString() => Label; }
+    private sealed record ImovelMediaCategoryOption(string Label, ImovelMediaCategory Category) { public override string ToString() => Label; }
+    private sealed record VistoriaTipoOption(string Label, VistoriaTipo Tipo) { public override string ToString() => Label; }
+    private sealed record VistoriaStatusOption(string Label, VistoriaStatus Status) { public override string ToString() => Label; }
+    private sealed record ChavesStatusFilterOption(string Label, string Status) { public override string ToString() => Label; }
+    private sealed record NotificationCategoryOption(string Label, NotificationCategory? Category) { public override string ToString() => Label; }
+    private sealed record NotificationPriorityOption(string Label, NotificationPriority? Priority) { public override string ToString() => Label; }
+    private sealed record PessoaDocumentoTipoOption(string Label, string Tipo) { public override string ToString() => Label; }
+    private sealed record PessoaDocumentoDonoOption(string Label, string Tipo) { public override string ToString() => Label; }
+    private sealed record PessoaStatusFilterOption(string Label, string Status) { public override string ToString() => Label; }
     private sealed record ModuleDefinition(string Title, string Subtitle, string Notice, string ActionText);
 
     private static readonly IReadOnlyList<UserRoleOption> UserRoleOptions =

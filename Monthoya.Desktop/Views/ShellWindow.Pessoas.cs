@@ -12,36 +12,10 @@ public partial class ShellWindow
     private async Task LoadPessoasAsync()
     {
         _pessoas = await _rentalManagementService.GetPessoasAsync();
-        _streetSuggestions = await LoadStreetSuggestionsAsync();
+        _streetSuggestions = await _rentalManagementService.GetStreetSuggestionsAsync();
         ApplyPessoasFilter();
 
         ImovelProprietarioBox.ItemsSource = _pessoas.Where(x => x.Status == "Ativo").ToList();
-    }
-
-    private async Task<IReadOnlyList<string>> LoadStreetSuggestionsAsync()
-    {
-        var ruas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var pessoa in _pessoas)
-        {
-            var details = await _rentalManagementService.GetPessoaAsync(pessoa.Id);
-            AddSuggestion(ruas, details?.Dados.Rua);
-            AddSuggestion(ruas, details?.Dados.ResponsavelRua);
-        }
-
-        foreach (var imovel in await _rentalManagementService.GetImoveisAsync())
-        {
-            AddSuggestion(ruas, imovel.Endereco.Split(',')[0]);
-        }
-
-        return ruas.Order(StringComparer.CurrentCultureIgnoreCase).ToList();
-    }
-
-    private static void AddSuggestion(ISet<string> suggestions, string? value)
-    {
-        if (!string.IsNullOrWhiteSpace(value))
-        {
-            suggestions.Add(value.Trim());
-        }
     }
 
     private async void ReloadPessoasButton_Click(object sender, RoutedEventArgs e) => await LoadPessoasAsync();
@@ -189,6 +163,18 @@ public partial class ShellWindow
             EmpresaEstado: _pessoaTrabalhoEstadoBox?.Text,
             EmpresaCep: _pessoaTrabalhoCepBox?.Text,
             DadosBancarios: PessoaDadosBancariosBox.Text,
+            BancoCodigo: GetBankCode(_pessoaBancoBox, _pessoaBancoCodigoBox),
+            BancoNome: GetBankName(_pessoaBancoBox, _pessoaBancoNomeBox),
+            AgenciaNumero: _pessoaAgenciaNumeroBox?.Text,
+            AgenciaDigito: _pessoaAgenciaDigitoBox?.Text,
+            ContaNumero: _pessoaContaNumeroBox?.Text,
+            ContaDigito: _pessoaContaDigitoBox?.Text,
+            ContaTipo: GetSelectedEnum<ContaBancariaTipo>(_pessoaContaTipoBox),
+            TitularNome: _pessoaTitularNomeBox?.Text,
+            TitularDocumento: _pessoaTitularDocumentoBox?.Text,
+            PixTipo: GetSelectedEnum<PixChaveTipo>(_pessoaPixTipoBox),
+            PixChave: _pessoaPixChaveBox?.Text,
+            RepassePreferencial: GetSelectedEnum<MetodoRepassePreferencial>(_pessoaRepassePreferencialBox),
             ConjugeNome: PessoaConjugeNomeBox.Text,
             ConjugeRg: PessoaConjugeRgBox.Text,
             ConjugeCpf: PessoaConjugeCpfBox.Text,
@@ -246,8 +232,67 @@ public partial class ShellWindow
             ResponsavelNomeEmpresaTrabalho: PessoaResponsavelNomeEmpresaTrabalhoBox.Text,
             ResponsavelTelefoneEmpresaTrabalho: PessoaResponsavelTelefoneEmpresaTrabalhoBox.Text,
             ResponsavelDadosBancarios: PessoaResponsavelDadosBancariosBox.Text,
+            ResponsavelBancoCodigo: GetBankCode(_pessoaResponsavelBancoBox, _pessoaResponsavelBancoCodigoBox),
+            ResponsavelBancoNome: GetBankName(_pessoaResponsavelBancoBox, _pessoaResponsavelBancoNomeBox),
+            ResponsavelAgenciaNumero: _pessoaResponsavelAgenciaNumeroBox?.Text,
+            ResponsavelAgenciaDigito: _pessoaResponsavelAgenciaDigitoBox?.Text,
+            ResponsavelContaNumero: _pessoaResponsavelContaNumeroBox?.Text,
+            ResponsavelContaDigito: _pessoaResponsavelContaDigitoBox?.Text,
+            ResponsavelContaTipo: GetSelectedEnum<ContaBancariaTipo>(_pessoaResponsavelContaTipoBox),
+            ResponsavelTitularNome: _pessoaResponsavelTitularNomeBox?.Text,
+            ResponsavelTitularDocumento: _pessoaResponsavelTitularDocumentoBox?.Text,
+            ResponsavelPixTipo: GetSelectedEnum<PixChaveTipo>(_pessoaResponsavelPixTipoBox),
+            ResponsavelPixChave: _pessoaResponsavelPixChaveBox?.Text,
+            ResponsavelRepassePreferencial: GetSelectedEnum<MetodoRepassePreferencial>(_pessoaResponsavelRepassePreferencialBox),
             ResponsavelObservacoes: _pessoaResponsavelObservacoesBox?.Text);
     }
+
+    private static T? GetSelectedEnum<T>(ComboBox? comboBox) where T : struct, Enum =>
+        comboBox?.SelectedValue is T value ? value : null;
+
+    private static string? GetBankCode(ComboBox? bankBox, TextBox? fallbackCodeBox)
+    {
+        var text = bankBox?.Text?.Trim();
+        if (bankBox?.SelectedItem is BankOption bank && IsBankTextMatch(text, bank))
+        {
+            return bank.Code;
+        }
+
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(text, @"^\s*(\d{3})\b");
+            if (match.Success)
+            {
+                return match.Groups[1].Value;
+            }
+        }
+
+        return string.IsNullOrWhiteSpace(fallbackCodeBox?.Text) ? null : fallbackCodeBox.Text.Trim();
+    }
+
+    private static string? GetBankName(ComboBox? bankBox, TextBox? fallbackNameBox)
+    {
+        var text = bankBox?.Text?.Trim();
+        if (bankBox?.SelectedItem is BankOption bank && IsBankTextMatch(text, bank))
+        {
+            return bank.Name;
+        }
+
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(text, @"^\s*\d{3}\s*-\s*(.+)$");
+            return match.Success ? match.Groups[1].Value.Trim() : text;
+        }
+
+        return string.IsNullOrWhiteSpace(fallbackNameBox?.Text) ? null : fallbackNameBox.Text.Trim();
+    }
+
+    private static bool IsBankTextMatch(string? text, BankOption bank) =>
+        string.IsNullOrWhiteSpace(text)
+        || text.Equals(bank.ToString(), StringComparison.OrdinalIgnoreCase)
+        || text.Equals(bank.Name, StringComparison.OrdinalIgnoreCase)
+        || text.Equals(bank.Code, StringComparison.OrdinalIgnoreCase)
+        || text.Equals(bank.SearchText, StringComparison.OrdinalIgnoreCase);
 
     private bool? GetPessoaPossuiTrabalho()
     {
@@ -476,7 +521,16 @@ public partial class ShellWindow
             _pessoaTrabalhoBairroBox,
             _pessoaTrabalhoEstadoBox,
             _pessoaTrabalhoCidadeBox,
-            _pessoaTrabalhoCepBox);
+            _pessoaTrabalhoCepBox,
+            _pessoaAgenciaNumeroBox,
+            _pessoaAgenciaDigitoBox,
+            _pessoaContaNumeroBox,
+            _pessoaContaDigitoBox,
+            _pessoaTitularNomeBox,
+            _pessoaTitularDocumentoBox,
+            _pessoaPixChaveBox);
+        ClearBankComboBox(_pessoaBancoBox, _pessoaBancoCodigoBox, _pessoaBancoNomeBox);
+        ClearComboBoxes(_pessoaContaTipoBox, _pessoaPixTipoBox, _pessoaRepassePreferencialBox);
         PessoaDadosBancariosBox.Clear();
         PessoaConjugeNomeBox.Clear();
         PessoaConjugeRgBox.Clear();
@@ -524,7 +578,16 @@ public partial class ShellWindow
             _pessoaInscricaoEstadualBox,
             _pessoaInscricaoMunicipalBox,
             _pessoaResponsavelCargoBox,
+            _pessoaResponsavelAgenciaNumeroBox,
+            _pessoaResponsavelAgenciaDigitoBox,
+            _pessoaResponsavelContaNumeroBox,
+            _pessoaResponsavelContaDigitoBox,
+            _pessoaResponsavelTitularNomeBox,
+            _pessoaResponsavelTitularDocumentoBox,
+            _pessoaResponsavelPixChaveBox,
             _pessoaResponsavelObservacoesBox);
+        ClearBankComboBox(_pessoaResponsavelBancoBox, _pessoaResponsavelBancoCodigoBox, _pessoaResponsavelBancoNomeBox);
+        ClearComboBoxes(_pessoaResponsavelContaTipoBox, _pessoaResponsavelPixTipoBox, _pessoaResponsavelRepassePreferencialBox);
         if (_pessoaDataAberturaBox is not null)
         {
             _pessoaDataAberturaBox.SelectedDate = null;
@@ -625,6 +688,17 @@ public partial class ShellWindow
         SetText(_pessoaTrabalhoCidadeBox, dados.EmpresaCidade);
         SetText(_pessoaTrabalhoCepBox, dados.EmpresaCep);
         PessoaDadosBancariosBox.Text = dados.DadosBancarios ?? string.Empty;
+        SetBankSelection(_pessoaBancoBox, _pessoaBancoCodigoBox, _pessoaBancoNomeBox, dados.BancoCodigo, dados.BancoNome);
+        SetText(_pessoaAgenciaNumeroBox, dados.AgenciaNumero);
+        SetText(_pessoaAgenciaDigitoBox, dados.AgenciaDigito);
+        SetText(_pessoaContaNumeroBox, dados.ContaNumero);
+        SetText(_pessoaContaDigitoBox, dados.ContaDigito);
+        SetComboValue(_pessoaContaTipoBox, dados.ContaTipo);
+        SetText(_pessoaTitularNomeBox, dados.TitularNome);
+        SetText(_pessoaTitularDocumentoBox, dados.TitularDocumento);
+        SetComboValue(_pessoaPixTipoBox, dados.PixTipo);
+        SetText(_pessoaPixChaveBox, dados.PixChave);
+        SetComboValue(_pessoaRepassePreferencialBox, dados.RepassePreferencial);
         PessoaConjugeNomeBox.Text = dados.ConjugeNome ?? string.Empty;
         PessoaConjugeRgBox.Text = dados.ConjugeRg ?? string.Empty;
         PessoaConjugeCpfBox.Text = dados.ConjugeCpf ?? string.Empty;
@@ -699,6 +773,17 @@ public partial class ShellWindow
         PessoaResponsavelNomeEmpresaTrabalhoBox.Text = dados.ResponsavelNomeEmpresaTrabalho ?? string.Empty;
         PessoaResponsavelTelefoneEmpresaTrabalhoBox.Text = dados.ResponsavelTelefoneEmpresaTrabalho ?? string.Empty;
         PessoaResponsavelDadosBancariosBox.Text = dados.ResponsavelDadosBancarios ?? string.Empty;
+        SetBankSelection(_pessoaResponsavelBancoBox, _pessoaResponsavelBancoCodigoBox, _pessoaResponsavelBancoNomeBox, dados.ResponsavelBancoCodigo, dados.ResponsavelBancoNome);
+        SetText(_pessoaResponsavelAgenciaNumeroBox, dados.ResponsavelAgenciaNumero);
+        SetText(_pessoaResponsavelAgenciaDigitoBox, dados.ResponsavelAgenciaDigito);
+        SetText(_pessoaResponsavelContaNumeroBox, dados.ResponsavelContaNumero);
+        SetText(_pessoaResponsavelContaDigitoBox, dados.ResponsavelContaDigito);
+        SetComboValue(_pessoaResponsavelContaTipoBox, dados.ResponsavelContaTipo);
+        SetText(_pessoaResponsavelTitularNomeBox, dados.ResponsavelTitularNome);
+        SetText(_pessoaResponsavelTitularDocumentoBox, dados.ResponsavelTitularDocumento);
+        SetComboValue(_pessoaResponsavelPixTipoBox, dados.ResponsavelPixTipo);
+        SetText(_pessoaResponsavelPixChaveBox, dados.ResponsavelPixChave);
+        SetComboValue(_pessoaResponsavelRepassePreferencialBox, dados.ResponsavelRepassePreferencial);
         SetText(_pessoaResponsavelObservacoesBox, dados.ResponsavelObservacoes);
         PessoaErrorText.Text = string.Empty;
         TogglePessoaTypePanels();
@@ -756,8 +841,70 @@ public partial class ShellWindow
         {
             _pessoaConjugeWorkComboBox.IsEnabled = isEditing;
         }
+        foreach (var comboBox in GetPessoaBankComboBoxes())
+        {
+            comboBox.IsEnabled = isEditing;
+        }
+        foreach (var button in GetPessoaBankActionButtons())
+        {
+            button.IsEnabled = isEditing;
+        }
 
         UpdatePessoaDocumentoEditorAvailability();
+    }
+
+    private static void SetBankSelection(ComboBox? bankBox, TextBox? codeBox, TextBox? nameBox, string? code, string? name)
+    {
+        SetText(codeBox, code);
+        SetText(nameBox, name);
+        if (bankBox is null)
+        {
+            return;
+        }
+
+        var bank = BrazilianBankCatalog.FirstOrDefault(x =>
+            (!string.IsNullOrWhiteSpace(code) && x.Code == code.Trim())
+            || (!string.IsNullOrWhiteSpace(name) && x.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+        if (bank is not null)
+        {
+            bankBox.SelectedItem = bank;
+            return;
+        }
+
+        bankBox.SelectedIndex = -1;
+        bankBox.Text = string.Join(" - ", new[] { code, name }.Where(x => !string.IsNullOrWhiteSpace(x)));
+    }
+
+    private static void ClearBankComboBox(ComboBox? bankBox, TextBox? codeBox, TextBox? nameBox)
+    {
+        if (bankBox is not null)
+        {
+            bankBox.SelectedIndex = -1;
+            bankBox.Text = string.Empty;
+        }
+
+        codeBox?.Clear();
+        nameBox?.Clear();
+    }
+
+    private static void SetComboValue<T>(ComboBox? comboBox, T? value) where T : struct, Enum
+    {
+        if (comboBox is not null)
+        {
+            comboBox.SelectedValue = value;
+        }
+    }
+
+    private static void ClearComboBoxes(params ComboBox?[] comboBoxes)
+    {
+        foreach (var comboBox in comboBoxes)
+        {
+            if (comboBox is not null)
+            {
+                comboBox.SelectedIndex = -1;
+            }
+        }
     }
 
     private void UpdatePessoaDocumentoEditorAvailability()
@@ -882,6 +1029,13 @@ public partial class ShellWindow
             _pessoaTrabalhoEstadoBox,
             _pessoaTrabalhoCidadeBox,
             _pessoaTrabalhoCepBox,
+            _pessoaAgenciaNumeroBox,
+            _pessoaAgenciaDigitoBox,
+            _pessoaContaNumeroBox,
+            _pessoaContaDigitoBox,
+            _pessoaTitularNomeBox,
+            _pessoaTitularDocumentoBox,
+            _pessoaPixChaveBox,
             _pessoaConjugeEmailBox,
             _pessoaConjugeDadosBancariosBox,
             _pessoaConjugeObservacoesBox,
@@ -908,6 +1062,13 @@ public partial class ShellWindow
             _pessoaInscricaoEstadualBox,
             _pessoaInscricaoMunicipalBox,
             _pessoaResponsavelCargoBox,
+            _pessoaResponsavelAgenciaNumeroBox,
+            _pessoaResponsavelAgenciaDigitoBox,
+            _pessoaResponsavelContaNumeroBox,
+            _pessoaResponsavelContaDigitoBox,
+            _pessoaResponsavelTitularNomeBox,
+            _pessoaResponsavelTitularDocumentoBox,
+            _pessoaResponsavelPixChaveBox,
             _pessoaResponsavelObservacoesBox
         })
         {
@@ -933,6 +1094,44 @@ public partial class ShellWindow
         PessoaDocumentosTitleText.Text = "Documentos anexos";
         SetPessoaEditMode(true, isNew: true);
         SaveActiveTabState();
+    }
+
+    private IEnumerable<ComboBox> GetPessoaBankComboBoxes()
+    {
+        foreach (var comboBox in new[]
+        {
+            _pessoaBancoBox,
+            _pessoaContaTipoBox,
+            _pessoaPixTipoBox,
+            _pessoaRepassePreferencialBox,
+            _pessoaResponsavelBancoBox,
+            _pessoaResponsavelContaTipoBox,
+            _pessoaResponsavelPixTipoBox,
+            _pessoaResponsavelRepassePreferencialBox
+        })
+        {
+            if (comboBox is not null)
+            {
+                yield return comboBox;
+            }
+        }
+    }
+
+    private IEnumerable<Button> GetPessoaBankActionButtons()
+    {
+        foreach (var button in new[]
+        {
+            _pessoaUsarDadosPessoaBancoButton,
+            _pessoaUsarPixButton,
+            _pessoaUsarDadosResponsavelBancoButton,
+            _pessoaResponsavelUsarPixButton
+        })
+        {
+            if (button is not null)
+            {
+                yield return button;
+            }
+        }
     }
 
     private void EditPessoaButton_Click(object sender, RoutedEventArgs e)

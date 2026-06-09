@@ -3,6 +3,9 @@ namespace Monthoya.Core.Entities;
 public enum TipoPessoa { Fisica = 0, Juridica = 1 }
 public enum PessoaRoleTipo { Proprietario = 0, Locatario = 1, Fiador = 2 }
 public enum RegistroStatus { Ativo = 0, Inativo = 1 }
+public enum ContaBancariaTipo { Corrente = 0, Poupanca = 1, Pagamento = 2, Outro = 3 }
+public enum PixChaveTipo { Cpf = 0, Cnpj = 1, Email = 2, Telefone = 3, Aleatoria = 4, Outro = 5 }
+public enum MetodoRepassePreferencial { Pix = 0, TransferenciaBancaria = 1, Manual = 2 }
 public enum ImovelFinalidade { Locacao = 0, Venda = 1, Ambos = 2 }
 public enum ImovelStatus { Disponivel = 0, Reservado = 1, Locado = 2, Vendido = 3, Inativo = 4 }
 public enum ImovelEnderecoPublicoModo { BairroCidade = 0, EnderecoAproximado = 1, EnderecoCompleto = 2 }
@@ -95,6 +98,18 @@ public sealed class PessoaFisica
     public string? EmpresaEstado { get; set; }
     public string? EmpresaCep { get; set; }
     public string? DadosBancarios { get; set; }
+    public string? BancoCodigo { get; set; }
+    public string? BancoNome { get; set; }
+    public string? AgenciaNumero { get; set; }
+    public string? AgenciaDigito { get; set; }
+    public string? ContaNumero { get; set; }
+    public string? ContaDigito { get; set; }
+    public ContaBancariaTipo? ContaTipo { get; set; }
+    public string? TitularNome { get; set; }
+    public string? TitularDocumento { get; set; }
+    public PixChaveTipo? PixTipo { get; set; }
+    public string? PixChave { get; set; }
+    public MetodoRepassePreferencial? RepassePreferencial { get; set; }
     public string? ConjugeNome { get; set; }
     public string? ConjugeRg { get; set; }
     public string? ConjugeCpf { get; set; }
@@ -166,6 +181,18 @@ public sealed class PessoaJuridica
     public string? ResponsavelNomeEmpresaTrabalho { get; set; }
     public string? ResponsavelTelefoneEmpresaTrabalho { get; set; }
     public string? ResponsavelDadosBancarios { get; set; }
+    public string? ResponsavelBancoCodigo { get; set; }
+    public string? ResponsavelBancoNome { get; set; }
+    public string? ResponsavelAgenciaNumero { get; set; }
+    public string? ResponsavelAgenciaDigito { get; set; }
+    public string? ResponsavelContaNumero { get; set; }
+    public string? ResponsavelContaDigito { get; set; }
+    public ContaBancariaTipo? ResponsavelContaTipo { get; set; }
+    public string? ResponsavelTitularNome { get; set; }
+    public string? ResponsavelTitularDocumento { get; set; }
+    public PixChaveTipo? ResponsavelPixTipo { get; set; }
+    public string? ResponsavelPixChave { get; set; }
+    public MetodoRepassePreferencial? ResponsavelRepassePreferencial { get; set; }
     public string? ResponsavelObservacoes { get; set; }
 }
 
@@ -203,6 +230,7 @@ public sealed class Imovel : BaseEntity
     public string? SaneparMatricula { get; set; }
     public string? CopelMatricula { get; set; }
     public string? IptuMatricula { get; set; }
+    public string? ColetaLixo { get; set; }
     public string? TipoImovel { get; set; }
     public string? Descricao { get; set; }
     public string? DescricaoInterna { get; set; }

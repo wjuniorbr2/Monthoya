@@ -14,11 +14,9 @@ public partial class ShellWindow
 
     private static bool RegisterPessoasFastLoad()
     {
-        EventManager.RegisterClassHandler(
-            typeof(ShellWindow),
-            LoadedEvent,
-            new RoutedEventHandler(OnShellWindowLoadedForPessoasFastLoad));
-
+        // Keep Pessoas navigation on the normal serialized tab/page transition path.
+        // The old preview fast-open loaded Pessoas after UpdateActiveTabAsync released
+        // the navigation guard, so quick menu clicks could overlap DbContext queries.
         return true;
     }
 

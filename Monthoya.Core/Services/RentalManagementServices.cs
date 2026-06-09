@@ -6,6 +6,7 @@ public interface IRentalManagementService
 {
     Task<IReadOnlyList<PessoaSummary>> GetPessoasAsync(CancellationToken cancellationToken = default);
     Task<PessoaDetails?> GetPessoaAsync(Guid pessoaId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<string>> GetStreetSuggestionsAsync(CancellationToken cancellationToken = default);
     Task<PessoaSummary> CreatePessoaAsync(CreatePessoaRequest request, CancellationToken cancellationToken = default);
     Task<PessoaSummary> UpdatePessoaAsync(UpdatePessoaRequest request, CancellationToken cancellationToken = default);
     Task SetPessoaActiveAsync(Guid pessoaId, bool isActive, CancellationToken cancellationToken = default);
@@ -81,6 +82,18 @@ public sealed record CreatePessoaRequest(
     string? EmpresaEstado = null,
     string? EmpresaCep = null,
     string? DadosBancarios = null,
+    string? BancoCodigo = null,
+    string? BancoNome = null,
+    string? AgenciaNumero = null,
+    string? AgenciaDigito = null,
+    string? ContaNumero = null,
+    string? ContaDigito = null,
+    ContaBancariaTipo? ContaTipo = null,
+    string? TitularNome = null,
+    string? TitularDocumento = null,
+    PixChaveTipo? PixTipo = null,
+    string? PixChave = null,
+    MetodoRepassePreferencial? RepassePreferencial = null,
     string? ConjugeNome = null,
     string? ConjugeRg = null,
     string? ConjugeCpf = null,
@@ -138,6 +151,18 @@ public sealed record CreatePessoaRequest(
     string? ResponsavelNomeEmpresaTrabalho = null,
     string? ResponsavelTelefoneEmpresaTrabalho = null,
     string? ResponsavelDadosBancarios = null,
+    string? ResponsavelBancoCodigo = null,
+    string? ResponsavelBancoNome = null,
+    string? ResponsavelAgenciaNumero = null,
+    string? ResponsavelAgenciaDigito = null,
+    string? ResponsavelContaNumero = null,
+    string? ResponsavelContaDigito = null,
+    ContaBancariaTipo? ResponsavelContaTipo = null,
+    string? ResponsavelTitularNome = null,
+    string? ResponsavelTitularDocumento = null,
+    PixChaveTipo? ResponsavelPixTipo = null,
+    string? ResponsavelPixChave = null,
+    MetodoRepassePreferencial? ResponsavelRepassePreferencial = null,
     string? ResponsavelObservacoes = null);
 
 public sealed record CreatePessoaDocumentoRequest(
@@ -177,6 +202,7 @@ public sealed record CreateImovelRequest(
     string? SaneparMatricula = null,
     string? CopelMatricula = null,
     string? IptuMatricula = null,
+    string? ColetaLixo = null,
     string? TipoImovel = null,
     string? Descricao = null,
     decimal? ValorVenda = null,

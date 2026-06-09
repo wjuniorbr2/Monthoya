@@ -9,8 +9,6 @@ public sealed class NotificationService(
     IEmailNotificationSender emailSender,
     IWhatsAppNotificationSender whatsAppSender) : INotificationService
 {
-    private readonly SemaphoreSlim _dbContextLock = new(1, 1);
-
     public Task<int> GetUnreadCountAsync(Guid userId, CancellationToken cancellationToken = default) =>
         ExecuteWithDbContextLockAsync(
             () => dbContext.NotificationRecipients
@@ -252,28 +250,14 @@ public sealed class NotificationService(
 
     private async Task<T> ExecuteWithDbContextLockAsync<T>(Func<Task<T>> operation, CancellationToken cancellationToken)
     {
-        await _dbContextLock.WaitAsync(cancellationToken);
-        try
-        {
-            return await operation();
-        }
-        finally
-        {
-            _dbContextLock.Release();
-        }
+        await using var dbContextOperation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        return await operation();
     }
 
     private async Task ExecuteWithDbContextLockAsync(Func<Task> operation, CancellationToken cancellationToken)
     {
-        await _dbContextLock.WaitAsync(cancellationToken);
-        try
-        {
-            await operation();
-        }
-        finally
-        {
-            _dbContextLock.Release();
-        }
+        await using var dbContextOperation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        await operation();
     }
 
     private async Task<IReadOnlyList<Guid>> GetKeyOverdueRecipientIdsAsync(CancellationToken cancellationToken)

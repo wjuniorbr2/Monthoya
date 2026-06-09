@@ -525,6 +525,7 @@ public partial class ShellWindow
             SaneparMatricula: ImovelSaneparBox.Text,
             CopelMatricula: ImovelCopelBox.Text,
             IptuMatricula: ImovelIptuBox.Text,
+            ColetaLixo: ImovelColetaLixoBox.Text,
             TipoImovel: ImovelTipoBox.Text,
             Descricao: ImovelDescricaoBox.Text,
             ValorVenda: ParseNullableDecimal(ImovelValorVendaBox.Text),
@@ -577,6 +578,7 @@ public partial class ShellWindow
             ImovelSaneparBox.Text,
             ImovelCopelBox.Text,
             ImovelIptuBox.Text,
+            ImovelColetaLixoBox.Text,
             ImovelValorAluguelBox.Text,
             ImovelValorVendaBox.Text,
             ImovelValorCondominioBox.Text,
@@ -629,6 +631,7 @@ public partial class ShellWindow
         ImovelSaneparBox.Text = state.Sanepar;
         ImovelCopelBox.Text = state.Copel;
         ImovelIptuBox.Text = state.Iptu;
+        ImovelColetaLixoBox.Text = state.ColetaLixo;
         ImovelValorAluguelBox.Text = state.ValorAluguel;
         ImovelValorVendaBox.Text = state.ValorVenda;
         ImovelValorCondominioBox.Text = state.ValorCondominio;
@@ -680,6 +683,7 @@ public partial class ShellWindow
         ImovelSaneparBox.Text = dados.SaneparMatricula ?? string.Empty;
         ImovelCopelBox.Text = dados.CopelMatricula ?? string.Empty;
         ImovelIptuBox.Text = dados.IptuMatricula ?? string.Empty;
+        ImovelColetaLixoBox.Text = dados.ColetaLixo ?? string.Empty;
         ImovelValorAluguelBox.Text = FormatNullableDecimal(dados.ValorAluguel);
         ImovelValorVendaBox.Text = FormatNullableDecimal(dados.ValorVenda);
         ImovelValorCondominioBox.Text = FormatNullableDecimal(dados.ValorCondominio);
@@ -769,6 +773,7 @@ public partial class ShellWindow
         yield return ImovelSaneparBox;
         yield return ImovelCopelBox;
         yield return ImovelIptuBox;
+        yield return ImovelColetaLixoBox;
         yield return ImovelValorAluguelBox;
         yield return ImovelValorVendaBox;
         yield return ImovelValorCondominioBox;
@@ -843,6 +848,7 @@ public partial class ShellWindow
         ImovelSaneparBox.Clear();
         ImovelCopelBox.Clear();
         ImovelIptuBox.Clear();
+        ImovelColetaLixoBox.Clear();
         ImovelValorAluguelBox.Clear();
         ImovelValorVendaBox.Clear();
         ImovelValorCondominioBox.Clear();
@@ -1065,6 +1071,7 @@ public partial class ShellWindow
         string Sanepar,
         string Copel,
         string Iptu,
+        string ColetaLixo,
         string ValorAluguel,
         string ValorVenda,
         string ValorCondominio,
@@ -1110,6 +1117,7 @@ public partial class ShellWindow
             "",
             "Paranavaí",
             "PR",
+            "",
             "",
             "",
             "",

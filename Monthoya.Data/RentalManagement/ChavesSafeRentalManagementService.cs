@@ -10,6 +10,7 @@ public sealed class ChavesSafeRentalManagementService(
 {
     public Task<IReadOnlyList<PessoaSummary>> GetPessoasAsync(CancellationToken cancellationToken = default) => inner.GetPessoasAsync(cancellationToken);
     public Task<PessoaDetails?> GetPessoaAsync(Guid pessoaId, CancellationToken cancellationToken = default) => inner.GetPessoaAsync(pessoaId, cancellationToken);
+    public Task<IReadOnlyList<string>> GetStreetSuggestionsAsync(CancellationToken cancellationToken = default) => inner.GetStreetSuggestionsAsync(cancellationToken);
     public Task<PessoaSummary> CreatePessoaAsync(CreatePessoaRequest request, CancellationToken cancellationToken = default) => inner.CreatePessoaAsync(request, cancellationToken);
     public Task<PessoaSummary> UpdatePessoaAsync(UpdatePessoaRequest request, CancellationToken cancellationToken = default) => inner.UpdatePessoaAsync(request, cancellationToken);
     public Task SetPessoaActiveAsync(Guid pessoaId, bool isActive, CancellationToken cancellationToken = default) => inner.SetPessoaActiveAsync(pessoaId, isActive, cancellationToken);
