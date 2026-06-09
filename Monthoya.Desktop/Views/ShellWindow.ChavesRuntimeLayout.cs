@@ -147,7 +147,7 @@ public partial class ShellWindow
         fields.Children.Add(CreateRelacaoField());
         fields.Children.Add(CreateLabeledField("Telefone", ChavesRetiradoPorTelefoneBox, 135));
         fields.Children.Add(CreateLabeledField("Documento", ChavesRetiradoPorDocumentoBox, 145));
-        fields.Children.Add(CreateLabeledField("Motivo", ChavesMotivoBox, 155));
+        fields.Children.Add(CreateLabeledField("Motivo", ChavesMotivoBox, 280));
         fields.Children.Add(CreatePrevisaoField());
         fields.Children.Add(CreateLabeledField("Observações", ChavesObservacoesBox, 330));
 
@@ -190,7 +190,7 @@ public partial class ShellWindow
     {
         _chavesRelacaoComboBox = new ComboBox
         {
-            Width = 110,
+            Width = 150,
             Margin = new Thickness(0, 3, 0, 0),
             IsEditable = true,
             ItemsSource = new[]
@@ -210,7 +210,7 @@ public partial class ShellWindow
         _chavesRelacaoComboBox.LostFocus += (_, _) =>
             ChavesRetiradoPorRelacaoBox.Text = _chavesRelacaoComboBox.Text;
 
-        var panel = new StackPanel { Width = 110, Margin = new Thickness(0, 0, 14, 3) };
+        var panel = new StackPanel { Width = 150, Margin = new Thickness(0, 0, 14, 3) };
         panel.Children.Add(new TextBlock { Text = "Relação", FontWeight = FontWeights.SemiBold });
         panel.Children.Add(_chavesRelacaoComboBox);
         return panel;
@@ -218,11 +218,11 @@ public partial class ShellWindow
 
     private UIElement CreatePrevisaoField()
     {
-        ChavesPrevisaoBox.Width = 125;
+        ChavesPrevisaoBox.Width = 150;
         ChavesPrevisaoBox.Margin = new Thickness(0, 3, 6, 0);
         _chavesPrevisaoHoraBox = new TextBox
         {
-            Width = 70,
+            Width = 104,
             Margin = new Thickness(0, 3, 0, 0),
             Text = "18:00",
             ToolTip = "Horário previsto de devolução"
@@ -232,7 +232,7 @@ public partial class ShellWindow
         row.Children.Add(ChavesPrevisaoBox);
         row.Children.Add(_chavesPrevisaoHoraBox);
 
-        var panel = new StackPanel { Width = 210, Margin = new Thickness(12, 0, 14, 3) };
+        var panel = new StackPanel { Width = 270, Margin = new Thickness(0, 0, 14, 3) };
         panel.Children.Add(new TextBlock { Text = "Previsão de devolução", FontWeight = FontWeights.SemiBold });
         panel.Children.Add(row);
         return panel;

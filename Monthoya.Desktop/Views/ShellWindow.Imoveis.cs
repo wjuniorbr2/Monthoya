@@ -150,7 +150,7 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ImovelErrorText.Text = ex.Message;
+            ImovelErrorText.Text = GetImovelExceptionMessage(ex);
         }
     }
 
@@ -388,6 +388,14 @@ public partial class ShellWindow
         {
             ImovelImagemErrorText.Text = ex.Message;
         }
+    }
+
+    private static string GetImovelExceptionMessage(Exception ex)
+    {
+        var baseException = ex.GetBaseException();
+        return baseException is not null && !string.Equals(baseException.Message, ex.Message, StringComparison.Ordinal)
+            ? $"{ex.Message} Detalhe: {baseException.Message}"
+            : ex.Message;
     }
 
     private async Task SavePendingImovelMediaAsync(Guid imovelId)
@@ -870,8 +878,10 @@ public partial class ShellWindow
         ImovelPublicarAppBox.IsChecked = false;
         ImovelDestaqueBox.IsChecked = false;
         ImovelMostrarEnderecoCompletoBox.IsChecked = false;
-        ImovelStatusBox.SelectedValue = ImovelStatus.Disponivel;
-        ImovelFinalidadeBox.SelectedValue = ImovelFinalidade.Locacao;
+        ImovelStatusBox.SelectedIndex = -1;
+        ImovelStatusBox.Text = string.Empty;
+        ImovelFinalidadeBox.SelectedIndex = -1;
+        ImovelFinalidadeBox.Text = string.Empty;
         ImovelChavePosseBox.SelectedValue = ImovelChavePosse.NaoCadastrada;
         ImovelEnderecoPublicoModoBox.SelectedValue = ImovelEnderecoPublicoModo.BairroCidade;
         ImovelChaveCodigoBox.Clear();

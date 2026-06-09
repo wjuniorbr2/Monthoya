@@ -34,6 +34,7 @@ public partial class ShellWindow : Window
     private IReadOnlyList<VistoriaSummary> _imovelVistorias = [];
     private IReadOnlyList<ImovelChaveMovimentoSummary> _chaveMovimentos = [];
     private IReadOnlyList<NotificationSummary> _notifications = [];
+    private IReadOnlyList<NotificationSummary> _notificationHistory = [];
     private IReadOnlyList<UserSummary> _notificationUsers = [];
     private IReadOnlyList<object> _moduleItems = [];
     private Guid? _selectedPessoaId;
@@ -46,6 +47,12 @@ public partial class ShellWindow : Window
     private bool _isRestoringTabState;
     private bool _isAutoCompletingText;
     private bool _isPageTransitionRunning;
+    private bool _isLoadingNotifications;
+    private bool _isRefreshingNotifications;
+    private bool _isLoadingNotificationDetails;
+    private bool _isAcknowledgingNotification;
+    private bool _isChangingNotificationSelection;
+    private bool _isNotificationHistoryVisible;
     private IReadOnlyList<string> _streetSuggestions = [];
     private Popup? _addressSuggestionPopup;
     private ListBox? _addressSuggestionList;
@@ -100,7 +107,7 @@ public partial class ShellWindow : Window
         ImovelFinalidadeBox.ItemsSource = ImovelFinalidadeOptions;
         ImovelFinalidadeBox.SelectedValuePath = "Finalidade";
         ImovelFinalidadeBox.DisplayMemberPath = "Label";
-        ImovelFinalidadeBox.SelectedValue = ImovelFinalidade.Locacao;
+        ImovelFinalidadeBox.SelectedIndex = -1;
         ImoveisFinalidadeFilterBox.ItemsSource = ImoveisFinalidadeFilterOptions;
         ImoveisFinalidadeFilterBox.SelectedValuePath = "Finalidade";
         ImoveisFinalidadeFilterBox.DisplayMemberPath = "Label";
@@ -117,7 +124,7 @@ public partial class ShellWindow : Window
         ImovelStatusBox.ItemsSource = ImovelStatusOptions;
         ImovelStatusBox.SelectedValuePath = "Status";
         ImovelStatusBox.DisplayMemberPath = "Label";
-        ImovelStatusBox.SelectedValue = ImovelStatus.Disponivel;
+        ImovelStatusBox.SelectedIndex = -1;
         ImovelChavePosseBox.ItemsSource = ImovelChavePosseOptions;
         ImovelChavePosseBox.SelectedValuePath = "Posse";
         ImovelChavePosseBox.DisplayMemberPath = "Label";

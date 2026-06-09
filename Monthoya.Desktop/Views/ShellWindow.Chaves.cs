@@ -223,7 +223,6 @@ public partial class ShellWindow
                     previsaoDevolucao,
                     ChavesObservacoesBox.Text),
                 timeout.Token);
-
             await LoadChavesAsync();
             ShowChavesDialogAndReset("Retirada registrada com sucesso.", "Chaves", MessageBoxImage.Information);
         }
@@ -301,8 +300,10 @@ public partial class ShellWindow
                     ChavesDevolucaoObservacoesBox.Text,
                     devolucao),
                 timeout.Token);
+            await _notificationService.ArchiveKeyOverdueNotificationAsync(item.MovimentoId.Value, timeout.Token);
 
             await LoadChavesAsync();
+            await RefreshNotificationBellAsync();
             ShowChavesDialogAndReset("Devolução registrada com sucesso.", "Chaves", MessageBoxImage.Information);
         }
         catch (OperationCanceledException)

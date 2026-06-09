@@ -46,6 +46,7 @@ public sealed record NotificationSummary(
     Guid Id,
     string Title,
     string Body,
+    string BodyPreview,
     string Category,
     NotificationCategory CategoryValue,
     string Priority,
@@ -84,6 +85,7 @@ public interface INotificationService
     Task<int> GetUnreadCountAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<NotificationSummary>> GetRecentForUserAsync(Guid userId, int take, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<NotificationSummary>> GetAllForUserAsync(Guid userId, NotificationFilter filter, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<NotificationSummary>> GetHistoryForUserAsync(Guid userId, NotificationFilter filter, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<NotificationSummary>> GetRequiredUnreadAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<NotificationDetails?> GetDetailsAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default);
     Task<NotificationSummary> CreateManualMessageAsync(CreateManualNotificationRequest request, CancellationToken cancellationToken = default);
@@ -92,6 +94,7 @@ public interface INotificationService
     Task MarkAllAsReadAsync(Guid userId, CancellationToken cancellationToken = default);
     Task AcknowledgeAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default);
     Task DismissAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default);
+    Task ArchiveKeyOverdueNotificationAsync(Guid keyMovementId, CancellationToken cancellationToken = default);
     Task ProcessDueScheduledNotificationsAsync(CancellationToken cancellationToken = default);
     Task CheckAndCreateKeyOverdueNotificationsAsync(CancellationToken cancellationToken = default);
 }

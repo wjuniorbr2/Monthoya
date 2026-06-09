@@ -53,7 +53,7 @@ public partial class ShellWindow
 
         _chavesPrevisaoHoraComboBox = new ComboBox
         {
-            Width = 76,
+            Width = 104,
             Margin = new Thickness(0, 6, 0, 0),
             IsEditable = true,
             ToolTip = "Digite o horário ou escolha uma hora da lista",

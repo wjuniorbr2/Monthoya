@@ -48,14 +48,14 @@ public partial class ShellWindow
 
         _chavesDevolucaoDataBox = new DatePicker
         {
-            Width = 125,
+            Width = 150,
             Margin = new Thickness(0, 6, 6, 0),
             SelectedDate = DateTime.Today
         };
 
         _chavesDevolucaoHoraBox = new ComboBox
         {
-            Width = 76,
+            Width = 104,
             Margin = new Thickness(0, 6, 0, 0),
             IsEditable = true,
             ItemsSource = Enumerable.Range(0, 24).Select(hour => $"{hour:00}:00").ToList(),
@@ -72,7 +72,7 @@ public partial class ShellWindow
 
         var container = new StackPanel
         {
-            Width = 210,
+            Width = 270,
             Margin = new Thickness(0, 0, 14, 12)
         };
         container.Children.Add(new TextBlock

@@ -419,7 +419,7 @@ public partial class ShellWindow
 
         _pessoaPrimarySectionHeader = SectionHeader("DADOS PESSOAIS:");
         MoveFieldToWrapPanel(formStack, row, "Nome / Razão social", PessoaNomeBox, 260);
-        MoveFieldToWrapPanel(formStack, row, "CPF/CNPJ", PessoaDocumentoBox, 170);
+        MoveFieldToWrapPanel(formStack, row, "CPF/CNPJ", PessoaDocumentoBox, 190);
         _pessoaMainRgField = MoveFieldToWrapPanel(PessoaFisicaFieldsPanel, row, "RG", PessoaRgBox, 150);
         MoveFieldToWrapPanel(formStack, row, "Telefone", PessoaTelefoneBox, 160);
         MoveFieldToWrapPanel(formStack, row, "E-mail", PessoaEmailBox, 260);
@@ -453,7 +453,7 @@ public partial class ShellWindow
 
     private void CreateDynamicPessoaControls()
     {
-        _pessoaCnpjEmpresaTrabalhoBox ??= NewTextBox(170);
+        _pessoaCnpjEmpresaTrabalhoBox ??= NewTextBox(190);
         _pessoaEmailEmpresaTrabalhoBox ??= NewTextBox(260);
         _pessoaCargoTrabalhoBox ??= NewTextBox(160);
         _pessoaRendaTrabalhoBox ??= NewTextBox(120);
@@ -476,13 +476,13 @@ public partial class ShellWindow
         _pessoaConjugeOutrasInformacoesBox ??= NewMultilineBox(360, 64);
         _pessoaConjugeWorkComboBox ??= new ComboBox
         {
-            Width = 150,
+            Width = 180,
             Margin = new Thickness(0, 6, 0, 0),
             ItemsSource = new[] { "Não possui trabalho", "Possui trabalho" },
             SelectedIndex = -1
         };
         _pessoaConjugeNomeEmpresaTrabalhoBox ??= NewTextBox(260);
-        _pessoaConjugeCnpjEmpresaTrabalhoBox ??= NewTextBox(170);
+        _pessoaConjugeCnpjEmpresaTrabalhoBox ??= NewTextBox(190);
         _pessoaConjugeTelefoneEmpresaTrabalhoBox ??= NewTextBox(160);
         _pessoaConjugeEmailEmpresaTrabalhoBox ??= NewTextBox(260);
         _pessoaConjugeCargoTrabalhoBox ??= NewTextBox(160);
@@ -582,7 +582,7 @@ public partial class ShellWindow
         _pessoaFisicaWorkSection.Children.Add(SectionHeader("DADOS DO TRABALHO:"));
         _pessoaFisicaWorkSection.Children.Add(WrapFields(
             ("Nome da empresa", PessoaNomeEmpresaTrabalhoBox, 260),
-            ("CNPJ", _pessoaCnpjEmpresaTrabalhoBox!, 170),
+            ("CNPJ", _pessoaCnpjEmpresaTrabalhoBox!, 190),
             ("Telefone", PessoaTelefoneEmpresaTrabalhoBox, 160),
             ("E-mail", _pessoaEmailEmpresaTrabalhoBox!, 260),
             ("Cargo", _pessoaCargoTrabalhoBox!, 160),
@@ -604,9 +604,9 @@ public partial class ShellWindow
         _pessoaConjugeSection = new StackPanel { Tag = "PessoaDetailedFields", Margin = new Thickness(0, 10, 0, 12) };
         _pessoaConjugeSection.Children.Add(SectionHeader("DADOS DO CÔNJUGE:"));
         _pessoaConjugeSection.Children.Add(WrapFields(
-            ("Trabalho", _pessoaConjugeWorkComboBox!, 150),
+            ("Trabalho", _pessoaConjugeWorkComboBox!, 180),
             ("Nome", PessoaConjugeNomeBox, 260),
-            ("CPF", PessoaConjugeCpfBox, 170),
+            ("CPF", PessoaConjugeCpfBox, 190),
             ("RG", PessoaConjugeRgBox, 150),
             ("Telefone", PessoaConjugeTelefoneBox, 160),
             ("E-mail", _pessoaConjugeEmailBox!, 260),
@@ -622,7 +622,7 @@ public partial class ShellWindow
         _pessoaConjugeWorkSection.Children.Add(SectionHeader("DADOS DO TRABALHO (CÔNJUGE):"));
         _pessoaConjugeWorkSection.Children.Add(WrapFields(
             ("Nome da empresa", _pessoaConjugeNomeEmpresaTrabalhoBox!, 260),
-            ("CNPJ", _pessoaConjugeCnpjEmpresaTrabalhoBox!, 170),
+            ("CNPJ", _pessoaConjugeCnpjEmpresaTrabalhoBox!, 190),
             ("Telefone", _pessoaConjugeTelefoneEmpresaTrabalhoBox!, 160),
             ("E-mail", _pessoaConjugeEmailEmpresaTrabalhoBox!, 260),
             ("Cargo", _pessoaConjugeCargoTrabalhoBox!, 160),
@@ -658,7 +658,7 @@ public partial class ShellWindow
         var responsibleRow = new WrapPanel { Tag = "PessoaDetailedFields", Margin = new Thickness(0, 0, 0, 12) };
         MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "Nome do responsável", PessoaResponsavelNomeBox, 260);
         responsibleRow.Children.Insert(0, FieldStack("Cargo", _pessoaResponsavelCargoBox!, 160));
-        MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "CPF do responsável", PessoaResponsavelCpfBox, 170);
+        MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "CPF do responsável", PessoaResponsavelCpfBox, 190);
         MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "RG do responsável", PessoaResponsavelRgBox, 150);
         MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "Telefone do responsável", PessoaResponsavelTelefoneBox, 160);
         MoveFieldToWrapPanel(PessoaJuridicaFieldsPanel, responsibleRow, "E-mail do responsável", PessoaResponsavelEmailBox, 260);
@@ -945,6 +945,7 @@ public partial class ShellWindow
             || estadoCivil.Contains("União", StringComparison.OrdinalIgnoreCase);
         if (_pessoaConjugeSection is not null)
         {
+            EnsureFieldLabel(PessoaConjugeCpfBox, "CPF");
             _pessoaConjugeSection.Visibility = showConjuge ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -1567,7 +1568,7 @@ public partial class ShellWindow
     {
         _pessoaWorkComboBox ??= new ComboBox
         {
-            Width = 150,
+            Width = 180,
             Margin = new Thickness(0, 6, 0, 0),
             ItemsSource = new[] { "Não possui trabalho", "Possui trabalho" },
             SelectedIndex = -1
@@ -1704,7 +1705,7 @@ public partial class ShellWindow
     {
         SetCompact(PessoaTipoBox, 140);
         SetCompact(PessoaNomeBox, 260);
-        SetCompact(PessoaDocumentoBox, 170);
+        SetCompact(PessoaDocumentoBox, 190);
         SetCompact(PessoaRgBox, 150);
         SetCompact(PessoaTelefoneBox, 160);
         SetCompact(PessoaEmailBox, 260);
@@ -1716,7 +1717,7 @@ public partial class ShellWindow
         SetCompact(PessoaEstadoBox, 80);
         SetCompact(PessoaNumeroBox, 90);
         SetCompact(PessoaDataNascimentoBox, 140);
-        SetCompact(PessoaConjugeCpfBox, 170);
+        SetCompact(PessoaConjugeCpfBox, 190);
         SetCompact(PessoaConjugeRgBox, 150);
         SetCompact(PessoaConjugeTelefoneBox, 160);
         SetCompact(PessoaConjugeDataNascimentoBox, 140);
@@ -1727,7 +1728,7 @@ public partial class ShellWindow
         SetCompact(PessoaEmpresaCepBox, 120);
         SetCompact(PessoaEmpresaEstadoBox, 80);
         SetCompact(PessoaEmpresaNumeroBox, 90);
-        SetCompact(PessoaResponsavelCpfBox, 170);
+        SetCompact(PessoaResponsavelCpfBox, 190);
         SetCompact(PessoaResponsavelRgBox, 150);
         SetCompact(PessoaResponsavelTelefoneBox, 160);
         SetCompact(PessoaResponsavelCepBox, 120);
@@ -1736,12 +1737,34 @@ public partial class ShellWindow
         SetCompact(PessoaResponsavelDataNascimentoBox, 140);
         SetCompact(PessoaTelefoneEmpresaTrabalhoBox, 160);
         SetCompact(PessoaResponsavelTelefoneEmpresaTrabalhoBox, 160);
+        EnsureFieldLabel(PessoaConjugeCpfBox, "CPF");
     }
 
     private static void SetCompact(Control control, double width)
     {
         control.Width = width;
         control.HorizontalAlignment = HorizontalAlignment.Left;
+    }
+
+    private static void EnsureFieldLabel(Control control, string labelText)
+    {
+        if (control.Parent is not StackPanel parent)
+        {
+            return;
+        }
+
+        var label = parent.Children.OfType<TextBlock>().FirstOrDefault();
+        if (label is null)
+        {
+            parent.Children.Insert(0, new TextBlock { Text = labelText, FontWeight = FontWeights.SemiBold });
+        }
+        else
+        {
+            label.Text = labelText;
+            label.Visibility = Visibility.Visible;
+        }
+
+        control.Margin = new Thickness(0, 6, 0, 0);
     }
 }
 

@@ -133,7 +133,7 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ImovelErrorText.Text = ex.Message;
+            ImovelErrorText.Text = GetImovelExceptionMessage(ex);
         }
     }
 

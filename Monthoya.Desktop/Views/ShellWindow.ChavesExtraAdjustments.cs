@@ -47,7 +47,7 @@ public partial class ShellWindow
 
         ChavesRetiradoPorTelefoneBox.Width = 130;
         ChavesRetiradoPorTelefoneBox.HorizontalAlignment = HorizontalAlignment.Left;
-        ChavesMotivoBox.Width = 230;
+        ChavesMotivoBox.Width = 280;
         ChavesObservacoesBox.Width = 300;
 
         ApplyChavesPrimaryButtonStyle(SaveChaveRetiradaButton);
@@ -149,20 +149,20 @@ public partial class ShellWindow
     {
         if (_chavesRelacaoComboBox is not null)
         {
-            _chavesRelacaoComboBox.Width = 112;
+            _chavesRelacaoComboBox.Width = 150;
             _chavesRelacaoComboBox.SelectionChanged -= ChavesRelacaoComboBox_SelectionChangedForButtonState;
             _chavesRelacaoComboBox.SelectionChanged += ChavesRelacaoComboBox_SelectionChangedForButtonState;
             _chavesRelacaoComboBox.LostFocus -= ChavesRelacaoComboBox_LostFocusForButtonState;
             _chavesRelacaoComboBox.LostFocus += ChavesRelacaoComboBox_LostFocusForButtonState;
             if (GetFieldContainer(_chavesRelacaoComboBox) is FrameworkElement relationContainer)
             {
-                relationContainer.Width = 112;
+                relationContainer.Width = 150;
             }
         }
 
         if (_chavesPrevisaoHoraBox is not null)
         {
-            _chavesPrevisaoHoraBox.Width = 62;
+            _chavesPrevisaoHoraBox.Width = 104;
             _chavesPrevisaoHoraBox.PreviewTextInput -= ChavesPrevisaoHoraBox_PreviewTextInput;
             _chavesPrevisaoHoraBox.PreviewTextInput += ChavesPrevisaoHoraBox_PreviewTextInput;
             _chavesPrevisaoHoraBox.TextChanged -= ChavesPrevisaoHoraBox_TextChanged;
@@ -174,6 +174,16 @@ public partial class ShellWindow
         if (GetFieldContainer(ChavesRetiradoPorTelefoneBox) is FrameworkElement phoneContainer)
         {
             phoneContainer.Width = 130;
+        }
+
+        if (GetFieldContainer(ChavesMotivoBox) is FrameworkElement reasonContainer)
+        {
+            reasonContainer.Width = 280;
+        }
+
+        if (GetFieldContainer(ChavesPrevisaoBox) is FrameworkElement dateContainer)
+        {
+            dateContainer.Width = 270;
         }
     }
 

@@ -9,245 +9,289 @@ public sealed class NotificationService(
     IEmailNotificationSender emailSender,
     IWhatsAppNotificationSender whatsAppSender) : INotificationService
 {
-    public Task<int> GetUnreadCountAsync(Guid userId, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(
-            () => dbContext.NotificationRecipients
-                .AsNoTracking()
-                .CountAsync(x => x.UserId == userId && x.ReadAtUtc == null && x.DismissedAtUtc == null && !x.NotificationMessage!.IsArchived, cancellationToken),
+    public async Task<int> GetUnreadCountAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        return await dbContext.NotificationRecipients
+            .AsNoTracking()
+            .CountAsync(x => x.UserId == userId && x.ReadAtUtc == null && x.DismissedAtUtc == null && !x.NotificationMessage!.IsArchived, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<NotificationSummary>> GetRecentForUserAsync(Guid userId, int take, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var filter = new NotificationFilter();
+        return (await QueryForUser(userId, filter)
+            .OrderByDescending(x => x.NotificationMessage!.CreatedAtUtc)
+            .Take(Math.Clamp(take, 1, 50))
+            .ToListAsync(cancellationToken))
+            .Select(ToSummary)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<NotificationSummary>> GetAllForUserAsync(Guid userId, NotificationFilter filter, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        return (await ApplyFilter(QueryForUser(userId, filter), filter)
+            .OrderByDescending(x => x.NotificationMessage!.CreatedAtUtc)
+            .ToListAsync(cancellationToken))
+            .Select(ToSummary)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<NotificationSummary>> GetHistoryForUserAsync(Guid userId, NotificationFilter filter, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        return (await ApplyFilter(QueryHistoryForUser(userId), filter)
+            .OrderByDescending(x => x.NotificationMessage!.CreatedAtUtc)
+            .ToListAsync(cancellationToken))
+            .Select(ToSummary)
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<NotificationSummary>> GetRequiredUnreadAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        return (await QueryForUser(userId, new NotificationFilter(UnreadOnly: true))
+            .Where(x => x.NotificationMessage!.RequiresAcknowledgement && x.AcknowledgedAtUtc == null)
+            .OrderByDescending(x => x.NotificationMessage!.Priority)
+            .ThenBy(x => x.NotificationMessage!.CreatedAtUtc)
+            .ToListAsync(cancellationToken))
+            .Select(ToSummary)
+            .ToList();
+    }
+
+    public async Task<NotificationDetails?> GetDetailsAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var recipient = await QueryForUserIncludingHistory(userId)
+            .SingleOrDefaultAsync(x => x.NotificationMessageId == notificationId, cancellationToken);
+
+        if (recipient is null)
+        {
+            return null;
+        }
+
+        return new NotificationDetails(
+            ToSummary(recipient),
+            recipient.NotificationMessage!.Deliveries
+                .OrderBy(x => x.Channel)
+                .Select(ToDeliverySummary)
+                .ToList());
+    }
+
+    public async Task<NotificationSummary> CreateManualMessageAsync(CreateManualNotificationRequest request, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var message = await CreateNotificationAsync(
+            title: request.Title,
+            body: request.Body,
+            recipientUserIds: request.RecipientUserIds,
+            category: request.Category,
+            priority: request.Priority,
+            createdByUserId: request.CreatedByUserId,
+            requiresAcknowledgement: request.RequiresAcknowledgement,
+            isSystemGenerated: false,
+            sendEmail: request.SendEmail,
+            sendWhatsApp: request.SendWhatsApp,
+            scheduledForUtc: request.ScheduledForUtc,
+            triggeredAtUtc: request.ScheduledForUtc is null || request.ScheduledForUtc <= DateTimeOffset.UtcNow ? DateTimeOffset.UtcNow : null,
+            relatedEntityType: request.RelatedEntityType,
+            relatedEntityId: request.RelatedEntityId,
+            actionLabel: request.ActionLabel,
+            actionTarget: request.ActionTarget,
             cancellationToken);
 
-    public Task<IReadOnlyList<NotificationSummary>> GetRecentForUserAsync(Guid userId, int take, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
-        {
-            var filter = new NotificationFilter();
-            return (IReadOnlyList<NotificationSummary>)(await QueryForUser(userId, filter)
-                .OrderByDescending(x => x.NotificationMessage!.CreatedAtUtc)
-                .Take(Math.Clamp(take, 1, 50))
-                .ToListAsync(cancellationToken))
-                .Select(ToSummary)
-                .ToList();
-        }, cancellationToken);
+        return await GetFirstRecipientSummaryAsync(message.Id, request.RecipientUserIds, cancellationToken);
+    }
 
-    public Task<IReadOnlyList<NotificationSummary>> GetAllForUserAsync(Guid userId, NotificationFilter filter, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
-        {
-            return (IReadOnlyList<NotificationSummary>)(await ApplyFilter(QueryForUser(userId, filter), filter)
-                .OrderByDescending(x => x.NotificationMessage!.CreatedAtUtc)
-                .ToListAsync(cancellationToken))
-                .Select(ToSummary)
-                .ToList();
-        }, cancellationToken);
+    public async Task<NotificationSummary> CreateSystemNotificationAsync(CreateSystemNotificationRequest request, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var message = await CreateNotificationAsync(
+            request.Title,
+            request.Body,
+            request.RecipientUserIds,
+            request.Category,
+            request.Priority,
+            createdByUserId: null,
+            request.RequiresAcknowledgement,
+            isSystemGenerated: true,
+            request.SendEmail,
+            request.SendWhatsApp,
+            request.ScheduledForUtc,
+            request.TriggeredAtUtc ?? (request.ScheduledForUtc is null || request.ScheduledForUtc <= DateTimeOffset.UtcNow ? DateTimeOffset.UtcNow : null),
+            request.RelatedEntityType,
+            request.RelatedEntityId,
+            request.ActionLabel,
+            request.ActionTarget,
+            cancellationToken);
 
-    public Task<IReadOnlyList<NotificationSummary>> GetRequiredUnreadAsync(Guid userId, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
-        {
-            return (IReadOnlyList<NotificationSummary>)(await QueryForUser(userId, new NotificationFilter(UnreadOnly: true))
-                .Where(x => x.NotificationMessage!.RequiresAcknowledgement && x.AcknowledgedAtUtc == null)
-                .OrderByDescending(x => x.NotificationMessage!.Priority)
-                .ThenBy(x => x.NotificationMessage!.CreatedAtUtc)
-                .ToListAsync(cancellationToken))
-                .Select(ToSummary)
-                .ToList();
-        }, cancellationToken);
+        return await GetFirstRecipientSummaryAsync(message.Id, request.RecipientUserIds, cancellationToken);
+    }
 
-    public Task<NotificationDetails?> GetDetailsAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
-        {
-            var recipient = await QueryForUser(userId, new NotificationFilter())
-                .SingleOrDefaultAsync(x => x.NotificationMessageId == notificationId, cancellationToken);
+    public async Task MarkAsReadAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var recipient = await GetRecipientAsync(notificationId, userId, cancellationToken);
+        recipient.ReadAtUtc ??= DateTimeOffset.UtcNow;
+        recipient.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 
-            if (recipient is null)
+    public async Task MarkAllAsReadAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var unread = await dbContext.NotificationRecipients
+            .Where(x => x.UserId == userId && x.ReadAtUtc == null && x.DismissedAtUtc == null && !x.NotificationMessage!.IsArchived)
+            .ToListAsync(cancellationToken);
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var recipient in unread)
+        {
+            recipient.ReadAtUtc = now;
+            recipient.UpdatedAtUtc = now;
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task AcknowledgeAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var recipient = await GetRecipientAsync(notificationId, userId, cancellationToken);
+        var now = DateTimeOffset.UtcNow;
+        recipient.ReadAtUtc ??= now;
+        recipient.AcknowledgedAtUtc ??= now;
+        recipient.UpdatedAtUtc = now;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DismissAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var recipient = await GetRecipientAsync(notificationId, userId, cancellationToken);
+        var now = DateTimeOffset.UtcNow;
+        recipient.ReadAtUtc ??= now;
+        recipient.DismissedAtUtc ??= now;
+        recipient.UpdatedAtUtc = now;
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task ArchiveKeyOverdueNotificationAsync(Guid keyMovementId, CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var messages = await dbContext.NotificationMessages
+            .Include(x => x.Recipients)
+            .Where(x => x.Category == NotificationCategory.KeyOverdue
+                && x.RelatedEntityType == "ImovelChaveMovimento"
+                && x.RelatedEntityId == keyMovementId
+                && !x.IsArchived)
+            .ToListAsync(cancellationToken);
+
+        if (messages.Count == 0)
+        {
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var message in messages)
+        {
+            message.IsArchived = true;
+            message.UpdatedAtUtc = now;
+
+            foreach (var recipient in message.Recipients)
             {
-                return null;
-            }
-
-            return new NotificationDetails(
-                ToSummary(recipient),
-                recipient.NotificationMessage!.Deliveries
-                    .OrderBy(x => x.Channel)
-                    .Select(ToDeliverySummary)
-                    .ToList());
-        }, cancellationToken);
-
-    public Task<NotificationSummary> CreateManualMessageAsync(CreateManualNotificationRequest request, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
-        {
-            var message = await CreateNotificationAsync(
-                title: request.Title,
-                body: request.Body,
-                recipientUserIds: request.RecipientUserIds,
-                category: request.Category,
-                priority: request.Priority,
-                createdByUserId: request.CreatedByUserId,
-                requiresAcknowledgement: request.RequiresAcknowledgement,
-                isSystemGenerated: false,
-                sendEmail: request.SendEmail,
-                sendWhatsApp: request.SendWhatsApp,
-                scheduledForUtc: request.ScheduledForUtc,
-                triggeredAtUtc: request.ScheduledForUtc is null || request.ScheduledForUtc <= DateTimeOffset.UtcNow ? DateTimeOffset.UtcNow : null,
-                relatedEntityType: request.RelatedEntityType,
-                relatedEntityId: request.RelatedEntityId,
-                actionLabel: request.ActionLabel,
-                actionTarget: request.ActionTarget,
-                cancellationToken);
-
-            return await GetFirstRecipientSummaryAsync(message.Id, request.RecipientUserIds, cancellationToken);
-        }, cancellationToken);
-
-    public Task<NotificationSummary> CreateSystemNotificationAsync(CreateSystemNotificationRequest request, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
-        {
-            var message = await CreateNotificationAsync(
-                request.Title,
-                request.Body,
-                request.RecipientUserIds,
-                request.Category,
-                request.Priority,
-                createdByUserId: null,
-                request.RequiresAcknowledgement,
-                isSystemGenerated: true,
-                request.SendEmail,
-                request.SendWhatsApp,
-                request.ScheduledForUtc,
-                request.TriggeredAtUtc ?? (request.ScheduledForUtc is null || request.ScheduledForUtc <= DateTimeOffset.UtcNow ? DateTimeOffset.UtcNow : null),
-                request.RelatedEntityType,
-                request.RelatedEntityId,
-                request.ActionLabel,
-                request.ActionTarget,
-                cancellationToken);
-
-            return await GetFirstRecipientSummaryAsync(message.Id, request.RecipientUserIds, cancellationToken);
-        }, cancellationToken);
-
-    public Task MarkAsReadAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
-        {
-            var recipient = await GetRecipientAsync(notificationId, userId, cancellationToken);
-            recipient.ReadAtUtc ??= DateTimeOffset.UtcNow;
-            recipient.UpdatedAtUtc = DateTimeOffset.UtcNow;
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }, cancellationToken);
-
-    public Task MarkAllAsReadAsync(Guid userId, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
-        {
-            var unread = await dbContext.NotificationRecipients
-                .Where(x => x.UserId == userId && x.ReadAtUtc == null && x.DismissedAtUtc == null)
-                .ToListAsync(cancellationToken);
-
-            var now = DateTimeOffset.UtcNow;
-            foreach (var recipient in unread)
-            {
-                recipient.ReadAtUtc = now;
+                recipient.ReadAtUtc ??= now;
+                recipient.DismissedAtUtc ??= now;
                 recipient.UpdatedAtUtc = now;
             }
+        }
 
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
+    }
 
-    public Task AcknowledgeAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
+    public async Task ProcessDueScheduledNotificationsAsync(CancellationToken cancellationToken = default)
+    {
+        await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
+        var now = DateTimeOffset.UtcNow;
+        var due = await dbContext.NotificationMessages
+            .Where(x => x.ScheduledForUtc != null && x.ScheduledForUtc <= now && x.TriggeredAtUtc == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var message in due)
         {
-            var recipient = await GetRecipientAsync(notificationId, userId, cancellationToken);
-            var now = DateTimeOffset.UtcNow;
-            recipient.ReadAtUtc ??= now;
-            recipient.AcknowledgedAtUtc ??= now;
-            recipient.UpdatedAtUtc = now;
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }, cancellationToken);
+            message.TriggeredAtUtc = now;
+            message.UpdatedAtUtc = now;
+        }
 
-    public Task DismissAsync(Guid notificationId, Guid userId, CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        foreach (var message in due)
         {
-            var recipient = await GetRecipientAsync(notificationId, userId, cancellationToken);
-            var now = DateTimeOffset.UtcNow;
-            recipient.ReadAtUtc ??= now;
-            recipient.DismissedAtUtc ??= now;
-            recipient.UpdatedAtUtc = now;
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }, cancellationToken);
+            await ProcessPendingDeliveriesAsync(message.Id, cancellationToken);
+        }
+    }
 
-    public Task ProcessDueScheduledNotificationsAsync(CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
+    public async Task CheckAndCreateKeyOverdueNotificationsAsync(CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var overdueMovements = await dbContext.ImovelChaveMovimentos
+            .AsNoTracking()
+            .Include(x => x.Imovel)!.ThenInclude(x => x!.Proprietario)
+            .Where(x => x.DevolvidoEm == null
+                && x.PrevisaoDevolucaoEm != null
+                && x.PrevisaoDevolucaoEm < now)
+            .ToListAsync(cancellationToken);
+
+        if (overdueMovements.Count == 0)
         {
-            var now = DateTimeOffset.UtcNow;
-            var due = await dbContext.NotificationMessages
-                .Where(x => x.ScheduledForUtc != null && x.ScheduledForUtc <= now && x.TriggeredAtUtc == null)
-                .ToListAsync(cancellationToken);
+            return;
+        }
 
-            foreach (var message in due)
-            {
-                message.TriggeredAtUtc = now;
-                message.UpdatedAtUtc = now;
-            }
-
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            foreach (var message in due)
-            {
-                await ProcessPendingDeliveriesAsync(message.Id, cancellationToken);
-            }
-        }, cancellationToken);
-
-    public Task CheckAndCreateKeyOverdueNotificationsAsync(CancellationToken cancellationToken = default) =>
-        ExecuteWithDbContextLockAsync(async () =>
+        var recipientIds = await GetKeyOverdueRecipientIdsAsync(cancellationToken);
+        if (recipientIds.Count == 0)
         {
-            var now = DateTimeOffset.UtcNow;
-            var overdueMovements = await dbContext.ImovelChaveMovimentos
+            return;
+        }
+
+                foreach (var movimento in overdueMovements)
+        {
+            var alreadyExists = await dbContext.NotificationMessages
                 .AsNoTracking()
-                .Include(x => x.Imovel)!.ThenInclude(x => x!.Proprietario)
-                .Where(x => x.DevolvidoEm == null
-                    && x.PrevisaoDevolucaoEm != null
-                    && x.PrevisaoDevolucaoEm < now)
-                .ToListAsync(cancellationToken);
-
-            if (overdueMovements.Count == 0)
-            {
-                return;
-            }
-
-            var recipientIds = await GetKeyOverdueRecipientIdsAsync(cancellationToken);
-            if (recipientIds.Count == 0)
-            {
-                return;
-            }
-
-            foreach (var movimento in overdueMovements)
-            {
-                var alreadyExists = await dbContext.NotificationMessages
-                    .AsNoTracking()
-                    .AnyAsync(x => x.Category == NotificationCategory.KeyOverdue
-                        && x.RelatedEntityType == "ImovelChaveMovimento"
-                        && x.RelatedEntityId == movimento.Id
-                        && !x.IsArchived,
-                        cancellationToken);
-
-                if (alreadyExists)
-                {
-                    continue;
-                }
-
-                await CreateNotificationAsync(
-                    "Chave com devolução em atraso",
-                    BuildKeyOverdueBody(movimento, now),
-                    recipientIds,
-                    NotificationCategory.KeyOverdue,
-                    NotificationPriority.High,
-                    createdByUserId: null,
-                    requiresAcknowledgement: true,
-                    isSystemGenerated: true,
-                    sendEmail: false,
-                    sendWhatsApp: false,
-                    scheduledForUtc: null,
-                    triggeredAtUtc: now,
-                    relatedEntityType: "ImovelChaveMovimento",
-                    relatedEntityId: movimento.Id,
-                    actionLabel: "Abrir tela de chaves",
-                    actionTarget: $"chaves:{movimento.Id}",
+                .AnyAsync(x => x.Category == NotificationCategory.KeyOverdue
+                    && x.RelatedEntityType == "ImovelChaveMovimento"
+                    && x.RelatedEntityId == movimento.Id
+                    && !x.IsArchived,
                     cancellationToken);
-            }
-        }, cancellationToken);
 
+            if (alreadyExists)
+            {
+                continue;
+            }
+
+            await CreateNotificationAsync(
+                "Chave com devolução em atraso",
+                BuildKeyOverdueBody(movimento, now),
+                recipientIds,
+                NotificationCategory.KeyOverdue,
+                NotificationPriority.High,
+                createdByUserId: null,
+                requiresAcknowledgement: false,
+                isSystemGenerated: true,
+                sendEmail: false,
+                sendWhatsApp: false,
+                scheduledForUtc: null,
+                triggeredAtUtc: now,
+                relatedEntityType: "ImovelChaveMovimento",
+                relatedEntityId: movimento.Id,
+                actionLabel: "Abrir chaves",
+                actionTarget: "chaves",
+                cancellationToken);
+        }
+    }
+
+        
     private async Task<T> ExecuteWithDbContextLockAsync<T>(Func<Task<T>> operation, CancellationToken cancellationToken)
     {
         await using var dbContextOperation = await DbContextOperationGate.EnterAsync(cancellationToken);
@@ -292,7 +336,7 @@ public sealed class NotificationService(
             ? $"{Math.Floor(atraso.TotalDays)} dia(s)"
             : $"{Math.Max(1, Math.Floor(atraso.TotalHours))} hora(s)";
 
-        return string.Join(Environment.NewLine, new[]
+        var lines = new List<string>
         {
             $"Código da chave: {movimento.ChaveCodigo ?? imovel?.ChaveCodigo ?? "-"}",
             $"Imóvel: {endereco}",
@@ -303,7 +347,14 @@ public sealed class NotificationService(
             $"Previsão de devolução: {FormatDateTime(previsao)}",
             $"Tempo em atraso: {atrasoTexto}",
             $"Motivo: {movimento.Motivo ?? "-"}"
-        });
+        };
+
+        if (!string.IsNullOrWhiteSpace(movimento.Observacoes))
+        {
+            lines.Add($"ObservaÃ§Ãµes: {movimento.Observacoes}");
+        }
+
+        return string.Join(Environment.NewLine, lines);
     }
 
     private async Task<NotificationMessage> CreateNotificationAsync(
@@ -436,7 +487,21 @@ public sealed class NotificationService(
         return dbContext.NotificationRecipients
             .AsNoTracking()
             .Include(x => x.NotificationMessage)!.ThenInclude(x => x!.Deliveries)
-            .Where(x => x.UserId == userId && !x.NotificationMessage!.IsArchived);
+            .Where(x => x.UserId == userId && x.DismissedAtUtc == null && !x.NotificationMessage!.IsArchived);
+    }
+
+    private IQueryable<NotificationRecipient> QueryForUserIncludingHistory(Guid userId)
+    {
+        return dbContext.NotificationRecipients
+            .AsNoTracking()
+            .Include(x => x.NotificationMessage)!.ThenInclude(x => x!.Deliveries)
+            .Where(x => x.UserId == userId);
+    }
+
+    private IQueryable<NotificationRecipient> QueryHistoryForUser(Guid userId)
+    {
+        return QueryForUserIncludingHistory(userId)
+            .Where(x => x.ReadAtUtc != null || x.DismissedAtUtc != null || x.NotificationMessage!.IsArchived);
     }
 
     private static IQueryable<NotificationRecipient> ApplyFilter(IQueryable<NotificationRecipient> query, NotificationFilter filter)
@@ -486,6 +551,7 @@ public sealed class NotificationService(
             message.Id,
             message.Title,
             message.Body,
+            BuildBodyPreview(message, recipient),
             GetCategoryLabel(message.Category),
             message.Category,
             GetPriorityLabel(message.Priority),
@@ -516,6 +582,42 @@ public sealed class NotificationService(
             delivery.Attempts,
             delivery.LastAttemptAtUtc,
             delivery.ErrorMessage);
+
+    private static string BuildBodyPreview(NotificationMessage message, NotificationRecipient recipient)
+    {
+        if (message.Category == NotificationCategory.KeyOverdue)
+        {
+            var code = ExtractBodyValue(message.Body, "Código da chave:", "CÃ³digo da chave:");
+            var property = ExtractBodyValue(message.Body, "Imóvel:", "ImÃ³vel:");
+            var street = property.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? property;
+            return $"Cód.: {FallbackDash(code)} | {FallbackDash(street)}";
+        }
+
+        var firstLine = message.Body
+            .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault() ?? message.Body;
+
+        return firstLine.Length <= 110 ? firstLine : string.Concat(firstLine.AsSpan(0, 107), "...");
+    }
+
+    private static string ExtractBodyValue(string body, params string[] labels)
+    {
+        foreach (var line in body.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            foreach (var label in labels)
+            {
+                if (line.StartsWith(label, StringComparison.OrdinalIgnoreCase))
+                {
+                    return line[label.Length..].Trim();
+                }
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static string FallbackDash(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
 
     private static string BuildDeliverySummary(IEnumerable<NotificationDelivery> deliveries) =>
         string.Join(", ", deliveries
