@@ -25,7 +25,6 @@
 
             <DropShadowEffect x:Key="CardShadow" BlurRadius="18" ShadowDepth="5" Direction="270" Opacity="0.22" Color="#0A1E3F" />
             <DropShadowEffect x:Key="SoftShadow" BlurRadius="16" ShadowDepth="4" Direction="270" Opacity="0.24" Color="#071B44" />
-            <DropShadowEffect x:Key="FieldShadow" BlurRadius="7" ShadowDepth="2" Direction="315" Opacity="0.13" Color="#10233F" />
             <DropShadowEffect x:Key="TabShadow" BlurRadius="12" ShadowDepth="3" Direction="270" Opacity="0.12" Color="#10233F" />
             <DropShadowEffect x:Key="NavTextOutline" BlurRadius="1.8" ShadowDepth="0" Opacity="0.95" Color="#000711" />
             <DropShadowEffect x:Key="FieldShadow" BlurRadius="5" ShadowDepth="2" Direction="315" Opacity="0.11" Color="#0A1E3F" />
