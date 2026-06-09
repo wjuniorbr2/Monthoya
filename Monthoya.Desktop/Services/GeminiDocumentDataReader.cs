@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -53,12 +53,12 @@ internal static class GeminiDocumentDataReader
         var settings = LocalAiSettingsStore.Load();
         if (string.IsNullOrWhiteSpace(settings.GeminiApiKey))
         {
-            throw new InvalidOperationException("OCR inteligente não configurado. Abra Configurações e informe a chave da API Gemini.");
+            throw new InvalidOperationException("OCR inteligente nÃ£o configurado. Abra ConfiguraÃ§Ãµes e informe a chave da API Gemini.");
         }
 
         if (!File.Exists(filePath))
         {
-            throw new InvalidOperationException("O arquivo do documento não foi encontrado no computador.");
+            throw new InvalidOperationException("O arquivo do documento nÃ£o foi encontrado no computador.");
         }
 
         var mimeType = GuessMimeType(filePath);
@@ -87,18 +87,18 @@ internal static class GeminiDocumentDataReader
         var responseText = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Gemini retornou erro: {(int)response.StatusCode} - {responseText}");
+            throw new InvalidOperationException(GeminiFriendlyErrorMessages.FromGeminiResponse((int)response.StatusCode, responseText));
         }
 
         var geminiResponse = JsonSerializer.Deserialize<GeminiGenerateContentResponse>(responseText, JsonOptions);
         var json = geminiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault(part => !string.IsNullOrWhiteSpace(part.Text))?.Text;
         if (string.IsNullOrWhiteSpace(json))
         {
-            throw new InvalidOperationException("Gemini não retornou dados do documento.");
+            throw new InvalidOperationException("Gemini nÃ£o retornou dados do documento.");
         }
 
         return ParseStoredJson(json)
-            ?? throw new InvalidOperationException("Não foi possível interpretar o retorno do Gemini.");
+            ?? throw new InvalidOperationException("NÃ£o foi possÃ­vel interpretar o retorno do Gemini.");
     }
 
     internal static GeminiDocumentData? ParseStoredJson(string? json)
@@ -319,3 +319,4 @@ internal static class GeminiDocumentDataReader
         string? Income,
         [property: JsonPropertyName("employment_duration")] string? EmploymentDuration);
 }
+
