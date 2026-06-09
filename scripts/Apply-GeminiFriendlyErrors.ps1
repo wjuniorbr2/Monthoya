@@ -8,29 +8,19 @@ if (-not (Test-Path $path)) {
 
 $content = Get-Content $path -Raw
 
-$old = @'
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException($"Gemini retornou erro: {(int)response.StatusCode} - {responseText}");
-        }
-'@
-
-$new = @'
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new InvalidOperationException(GeminiFriendlyErrorMessages.FromGeminiResponse((int)response.StatusCode, responseText));
-        }
-'@
-
 if ($content -like '*GeminiFriendlyErrorMessages.FromGeminiResponse*') {
     Write-Host 'Gemini friendly error handling is already connected.'
     exit 0
 }
 
-if (-not $content.Contains($old)) {
-    throw 'Expected Gemini raw error block was not found. The file may have changed.'
+$pattern = 'throw\s+new\s+InvalidOperationException\s*\(\s*\$"Gemini retornou erro:\s*\{\(int\)response\.StatusCode\}\s*-\s*\{responseText\}"\s*\)\s*;'
+$replacement = 'throw new InvalidOperationException(GeminiFriendlyErrorMessages.FromGeminiResponse((int)response.StatusCode, responseText));'
+
+$updated = [regex]::Replace($content, $pattern, $replacement)
+
+if ($updated -eq $content) {
+    throw 'Expected Gemini raw error throw was not found. Send the output of: Select-String -Path Monthoya.Desktop/Services/GeminiDocumentDataReader.cs -Pattern "Gemini retornou erro|InvalidOperationException"'
 }
 
-$content = $content.Replace($old, $new)
-Set-Content -Path $path -Value $content -Encoding UTF8
+Set-Content -Path $path -Value $updated -Encoding UTF8
 Write-Host 'Updated GeminiDocumentDataReader.cs to use friendly Gemini error messages.'
