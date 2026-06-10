@@ -142,14 +142,52 @@ Update-FileText 'Monthoya.Desktop/Views/ShellWindow.Imoveis.cs' {
     return $text
 }
 
-# 5) Desktop XAML: show the two IPTU fields under utility registrations.
+# 5) Desktop XAML: split the IPTU registry fields and move Coleta de lixo to values after IPTU.
 Update-FileText 'Monthoya.Desktop/Views/ShellWindow.xaml' {
     param($text)
-    Replace-Required $text `
-        '<StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuBox" Margin="0,6,0,0" /></StackPanel>' `
+
+    $text = Replace-Required $text `
+        '<WrapPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Aluguel" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorAluguelBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Venda" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorVendaBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Condomínio" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorCondominioBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Quartos" FontWeight="SemiBold" /><TextBox x:Name="ImovelQuartosBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Suítes" FontWeight="SemiBold" /><TextBox x:Name="ImovelSuitesBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Banheiros" FontWeight="SemiBold" /><TextBox x:Name="ImovelBanheirosBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Garagens" FontWeight="SemiBold" /><TextBox x:Name="ImovelVagasBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área construída" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaConstruidaBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área terreno" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaTerrenoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <CheckBox x:Name="ImovelMobiliadoBox" Content="Mobiliado" Margin="0,24,18,12" />
+                                                    <CheckBox x:Name="ImovelAceitaPetsBox" Content="Aceita pets" Margin="0,24,18,12" />
+                                                </WrapPanel>' `
+        '<WrapPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Aluguel" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorAluguelBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Venda" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorVendaBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Condomínio" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorCondominioBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>
+                                                </WrapPanel>
+                                                <WrapPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Quartos" FontWeight="SemiBold" /><TextBox x:Name="ImovelQuartosBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Suítes" FontWeight="SemiBold" /><TextBox x:Name="ImovelSuitesBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Banheiros" FontWeight="SemiBold" /><TextBox x:Name="ImovelBanheirosBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Garagens" FontWeight="SemiBold" /><TextBox x:Name="ImovelVagasBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área construída" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaConstruidaBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área terreno" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaTerrenoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <CheckBox x:Name="ImovelMobiliadoBox" Content="Mobiliado" Margin="0,24,18,12" />
+                                                    <CheckBox x:Name="ImovelAceitaPetsBox" Content="Aceita pets" Margin="0,24,18,12" />
+                                                </WrapPanel>' `
+        'values and characteristics layout'
+
+    $text = Replace-Required $text `
+        '<StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="220" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>' `
         '<StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Inscrição imobiliária" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuInscricaoBox" Margin="0,6,0,0" /></StackPanel>
                                                     <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Cadastro do imóvel" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuCadastroBox" Margin="0,6,0,0" /></StackPanel>' `
-        'XAML IPTU fields'
+        'utility registry IPTU fields'
+
+    return $text
 }
 
 # 6) EF snapshot: update the current snapshot so future migrations do not keep the old column as a shadow property.
