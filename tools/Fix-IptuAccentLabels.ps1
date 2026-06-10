@@ -12,16 +12,20 @@ if (-not (Test-Path $path)) {
 $text = Get-Content -Path $path -Raw -Encoding UTF8
 $original = $text
 
-# Use XML numeric entities so WPF renders accents correctly even if the file encoding is later changed.
+# Use XML numeric entities so WPF renders accents correctly regardless of file encoding.
 $correctInscricao = 'Inscri&#xE7;&#xE3;o imobili&#xE1;ria'
 $correctCadastro = 'Cadastro do im&#xF3;vel'
 
-# Replace common mojibake variants and any direct accented/plain variants inside the TextBlock labels.
+# Build replacement strings safely for PowerShell.
+$replacementInscricao = 'Text="' + $correctInscricao + '"'
+$replacementCadastro = 'Text="' + $correctCadastro + '"'
+
+# Replace mojibake/direct/plain variants inside the TextBlock labels.
 $text = $text -replace 'Text="Inscri[^"
 ]*imobili[^"
-]*ria"', "Text=\"$correctInscricao\""
+]*ria"', $replacementInscricao
 $text = $text -replace 'Text="Cadastro do im[^"
-]*vel"', "Text=\"$correctCadastro\""
+]*vel"', $replacementCadastro
 
 if ($text -eq $original) {
     Write-Host "No IPTU accent label fixes were needed in $path"
