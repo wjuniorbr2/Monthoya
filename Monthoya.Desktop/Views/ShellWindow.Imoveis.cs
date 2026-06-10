@@ -532,7 +532,8 @@ public partial class ShellWindow
             Cep: ImovelCepBox.Text,
             SaneparMatricula: ImovelSaneparBox.Text,
             CopelMatricula: ImovelCopelBox.Text,
-            IptuMatricula: ImovelIptuBox.Text,
+            IptuInscricaoImobiliaria: ImovelIptuInscricaoBox.Text,
+            IptuCadastroImovel: ImovelIptuCadastroBox.Text,
             ColetaLixo: ImovelColetaLixoBox.Text,
             TipoImovel: ImovelTipoBox.Text,
             Descricao: ImovelDescricaoBox.Text,
@@ -585,7 +586,8 @@ public partial class ShellWindow
             ImovelTipoBox.Text,
             ImovelSaneparBox.Text,
             ImovelCopelBox.Text,
-            ImovelIptuBox.Text,
+            ImovelIptuInscricaoBox.Text,
+            ImovelIptuCadastroBox.Text,
             ImovelColetaLixoBox.Text,
             ImovelValorAluguelBox.Text,
             ImovelValorVendaBox.Text,
@@ -638,7 +640,8 @@ public partial class ShellWindow
         ImovelTipoBox.Text = state.TipoImovel;
         ImovelSaneparBox.Text = state.Sanepar;
         ImovelCopelBox.Text = state.Copel;
-        ImovelIptuBox.Text = state.Iptu;
+        ImovelIptuInscricaoBox.Text = state.IptuInscricaoImobiliaria;
+        ImovelIptuCadastroBox.Text = state.IptuCadastroImovel;
         ImovelColetaLixoBox.Text = state.ColetaLixo;
         ImovelValorAluguelBox.Text = state.ValorAluguel;
         ImovelValorVendaBox.Text = state.ValorVenda;
@@ -690,7 +693,8 @@ public partial class ShellWindow
         ImovelTipoBox.Text = dados.TipoImovel ?? string.Empty;
         ImovelSaneparBox.Text = dados.SaneparMatricula ?? string.Empty;
         ImovelCopelBox.Text = dados.CopelMatricula ?? string.Empty;
-        ImovelIptuBox.Text = dados.IptuMatricula ?? string.Empty;
+        ImovelIptuInscricaoBox.Text = dados.IptuInscricaoImobiliaria ?? string.Empty;
+        ImovelIptuCadastroBox.Text = dados.IptuCadastroImovel ?? string.Empty;
         ImovelColetaLixoBox.Text = dados.ColetaLixo ?? string.Empty;
         ImovelValorAluguelBox.Text = FormatNullableDecimal(dados.ValorAluguel);
         ImovelValorVendaBox.Text = FormatNullableDecimal(dados.ValorVenda);
@@ -780,7 +784,8 @@ public partial class ShellWindow
         yield return ImovelLongitudeBox;
         yield return ImovelSaneparBox;
         yield return ImovelCopelBox;
-        yield return ImovelIptuBox;
+        yield return ImovelIptuInscricaoBox;
+        yield return ImovelIptuCadastroBox;
         yield return ImovelColetaLixoBox;
         yield return ImovelValorAluguelBox;
         yield return ImovelValorVendaBox;
@@ -855,7 +860,8 @@ public partial class ShellWindow
         ImovelTipoBox.Text = string.Empty;
         ImovelSaneparBox.Clear();
         ImovelCopelBox.Clear();
-        ImovelIptuBox.Clear();
+        ImovelIptuInscricaoBox.Clear();
+        ImovelIptuCadastroBox.Clear();
         ImovelColetaLixoBox.Clear();
         ImovelValorAluguelBox.Clear();
         ImovelValorVendaBox.Clear();
@@ -1080,7 +1086,8 @@ public partial class ShellWindow
         string TipoImovel,
         string Sanepar,
         string Copel,
-        string Iptu,
+    string IptuInscricaoImobiliaria,
+    string IptuCadastroImovel,
         string ColetaLixo,
         string ValorAluguel,
         string ValorVenda,
@@ -1117,55 +1124,57 @@ public partial class ShellWindow
         string ChaveObservacoes) : IShellPageState
     {
         public static ImoveisPageState Default { get; } = new(
-            "",
-            null,
-            null,
-            ImovelFinalidade.Locacao,
-            "",
-            "",
-            "",
-            "",
-            "Paranavaí",
-            "PR",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ImovelStatus.Disponivel,
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            false,
-            false,
-            "",
-            "",
-            "",
-            false,
-            false,
-            false,
-            false,
-            ImovelEnderecoPublicoModo.BairroCidade,
-            ImovelChavePosse.NaoCadastrada,
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            false,
-            "");
+            SearchText: "",
+            SelectedImovelId: null,
+            ProprietarioId: null,
+            Finalidade: ImovelFinalidade.Locacao,
+            Rua: "",
+            Numero: "",
+            Complemento: "",
+            Bairro: "",
+            Cidade: "ParanavaÃ­",
+            Estado: "PR",
+            Cep: "",
+            TipoImovel: "",
+            Sanepar: "",
+            Copel: "",
+            IptuInscricaoImobiliaria: "",
+            IptuCadastroImovel: "",
+            ColetaLixo: "",
+            ValorAluguel: "",
+            ValorVenda: "",
+            ValorCondominio: "",
+            ValorIptu: "",
+            Latitude: "",
+            Longitude: "",
+            Status: ImovelStatus.Disponivel,
+            Quartos: "",
+            Suites: "",
+            Banheiros: "",
+            Vagas: "",
+            AreaConstruida: "",
+            AreaTerreno: "",
+            Mobiliado: false,
+            AceitaPets: false,
+            Descricao: "",
+            DescricaoPublica: "",
+            Observacoes: "",
+            PublicarSite: false,
+            PublicarApp: false,
+            Destaque: false,
+            MostrarEnderecoCompleto: false,
+            ModoEnderecoPublico: ImovelEnderecoPublicoModo.BairroCidade,
+            ChavePosse: ImovelChavePosse.NaoCadastrada,
+            ChaveCodigo: "",
+            ChaveQuemTem: "",
+            ChaveTelefone: "",
+            ChaveContatoNome: "",
+            ChaveContatoDocumento: "",
+            ChaveLocal: "",
+            ChaveHorario: "",
+            ChaveAutorizacao: false,
+            ChaveObservacoes: ""
+        );
     }
 }
 

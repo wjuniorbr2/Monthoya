@@ -1,4 +1,4 @@
-namespace Monthoya.Core.Entities;
+﻿namespace Monthoya.Core.Entities;
 
 public enum TipoPessoa { Fisica = 0, Juridica = 1 }
 public enum PessoaRoleTipo { Proprietario = 0, Locatario = 1, Fiador = 2 }
@@ -229,8 +229,9 @@ public sealed class Imovel : BaseEntity
     public string? Cep { get; set; }
     public string? SaneparMatricula { get; set; }
     public string? CopelMatricula { get; set; }
-    public string? IptuMatricula { get; set; }
-    public string? ColetaLixo { get; set; }
+    public string? IptuInscricaoImobiliaria { get; set; }
+    public string? IptuCadastroImovel { get; set; }
+public string? ColetaLixo { get; set; }
     public string? TipoImovel { get; set; }
     public string? Descricao { get; set; }
     public string? DescricaoInterna { get; set; }

@@ -1010,6 +1010,9 @@
                                                     <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Venda" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorVendaBox" Margin="0,6,0,0" /></StackPanel>
                                                     <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Condomínio" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorCondominioBox" Margin="0,6,0,0" /></StackPanel>
                                                     <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>
+                                                </WrapPanel>
+                                                <WrapPanel>
                                                     <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Quartos" FontWeight="SemiBold" /><TextBox x:Name="ImovelQuartosBox" Margin="0,6,0,0" /></StackPanel>
                                                     <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Suítes" FontWeight="SemiBold" /><TextBox x:Name="ImovelSuitesBox" Margin="0,6,0,0" /></StackPanel>
                                                     <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Banheiros" FontWeight="SemiBold" /><TextBox x:Name="ImovelBanheirosBox" Margin="0,6,0,0" /></StackPanel>
@@ -1023,8 +1026,8 @@
                                                 <WrapPanel>
                                                     <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula Sanepar" FontWeight="SemiBold" /><TextBox x:Name="ImovelSaneparBox" Margin="0,6,0,0" /></StackPanel>
                                                     <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula Copel" FontWeight="SemiBold" /><TextBox x:Name="ImovelCopelBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="220" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Inscri&#xE7;&#xE3;o imobili&#xE1;ria" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuInscricaoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Cadastro do im&#xF3;vel" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuCadastroBox" Margin="0,6,0,0" /></StackPanel>
                                                 </WrapPanel>
                                             </StackPanel>
                                         </TabItem>

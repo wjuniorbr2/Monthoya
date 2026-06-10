@@ -1618,8 +1618,9 @@ public sealed class RentalManagementService(
         imovel.Cep = TrimOrNull(request.Cep);
         imovel.SaneparMatricula = TrimOrNull(request.SaneparMatricula);
         imovel.CopelMatricula = TrimOrNull(request.CopelMatricula);
-        imovel.IptuMatricula = TrimOrNull(request.IptuMatricula);
-        imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);
+        imovel.IptuInscricaoImobiliaria = TrimOrNull(request.IptuInscricaoImobiliaria);
+        imovel.IptuCadastroImovel = TrimOrNull(request.IptuCadastroImovel);
+imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);
         imovel.TipoImovel = TrimOrNull(request.TipoImovel);
         imovel.Descricao = TrimOrNull(request.Descricao);
         imovel.DescricaoInterna = TrimOrNull(request.DescricaoInterna) ?? TrimOrNull(request.Descricao);
@@ -1673,8 +1674,9 @@ public sealed class RentalManagementService(
             imovel.Cep,
             imovel.SaneparMatricula,
             imovel.CopelMatricula,
-            imovel.IptuMatricula,
-            imovel.ColetaLixo,
+            imovel.IptuInscricaoImobiliaria,
+            imovel.IptuCadastroImovel,
+imovel.ColetaLixo,
             imovel.TipoImovel,
             imovel.Descricao,
             imovel.ValorVenda,

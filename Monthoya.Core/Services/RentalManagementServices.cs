@@ -1,4 +1,4 @@
-using Monthoya.Core.Entities;
+﻿using Monthoya.Core.Entities;
 
 namespace Monthoya.Core.Services;
 
@@ -201,8 +201,9 @@ public sealed record CreateImovelRequest(
     string? Cep = null,
     string? SaneparMatricula = null,
     string? CopelMatricula = null,
-    string? IptuMatricula = null,
-    string? ColetaLixo = null,
+    string? IptuInscricaoImobiliaria = null,
+    string? IptuCadastroImovel = null,
+string? ColetaLixo = null,
     string? TipoImovel = null,
     string? Descricao = null,
     decimal? ValorVenda = null,
