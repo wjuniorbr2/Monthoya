@@ -1202,18 +1202,20 @@ public partial class ShellWindow
     }
 
     private PessoasPageState CapturePessoasPageState() =>
-        new(
-            PessoasSearchBox.Text,
-            PessoaStatusFilterBox.SelectedValue as string ?? "ativo",
-            _selectedPessoaId,
-            _isPessoaEditing,
-            _selectedPessoaId is null,
-            PessoaDocumentoTipoBox.SelectedValue as string ?? "cpf",
-            PessoaDocumentoDonoBox.SelectedValue as string ?? "",
-            PessoaDocumentoNomeBox.Text,
-            PessoaDocumentoArquivoBox.Text,
-            ToDateOnly(PessoaDocumentoValidadeBox.SelectedDate),
-            PessoaDocumentoObservacoesBox.Text);
+        new()
+        {
+            SearchText = PessoasSearchBox.Text,
+            StatusFilter = PessoaStatusFilterBox.SelectedValue as string ?? "ativo",
+            SelectedPessoaId = _selectedPessoaId,
+            IsEditing = _isPessoaEditing,
+            IsNew = _selectedPessoaId is null,
+            DocumentoTipo = PessoaDocumentoTipoBox.SelectedValue as string ?? "cpf",
+            DocumentoDono = PessoaDocumentoDonoBox.SelectedValue as string ?? "",
+            DocumentoNome = PessoaDocumentoNomeBox.Text,
+            DocumentoArquivo = PessoaDocumentoArquivoBox.Text,
+            DocumentoValidade = ToDateOnly(PessoaDocumentoValidadeBox.SelectedDate),
+            DocumentoObservacoes = PessoaDocumentoObservacoesBox.Text
+        };
 
     private async Task RestorePessoasPageStateAsync(PessoasPageState state)
     {
@@ -1287,6 +1289,7 @@ public partial class ShellWindow
         return window.ShowDialog() == true ? passwordBox.Password : null;
     }
 }
+
 
 
 
