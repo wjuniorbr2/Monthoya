@@ -35,13 +35,16 @@ function Replace-Required {
     )
 
     if ($Text.Contains($New)) {
+        Write-Host "Already applied: $Description"
         return $Text
     }
 
     if (-not $Text.Contains($Old)) {
-        throw "Could not find expected text for: $Description"
+        Write-Warning "Skipping: $Description. Expected old text was not found; this part may already be changed locally."
+        return $Text
     }
 
+    Write-Host "Applying: $Description"
     return $Text.Replace($Old, $New)
 }
 
