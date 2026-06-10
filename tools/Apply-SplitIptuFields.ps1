@@ -48,40 +48,37 @@ function Replace-Required {
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
 Set-Location $root
 
-# 1) Domain entity: keep IptuMatricula as legacy/backward-compatible field and add the two new IPTU identifiers.
+# 1) Entity: replace the single IPTU field with the two real fields.
 Update-FileText 'Monthoya.Core/Entities/RentalManagementEntities.cs' {
     param($text)
     Replace-Required $text `
         '    public string? IptuMatricula { get; set; }
     public string? ColetaLixo { get; set; }' `
-        '    public string? IptuMatricula { get; set; }
-    public string? IptuInscricaoImobiliaria { get; set; }
+        '    public string? IptuInscricaoImobiliaria { get; set; }
     public string? IptuCadastroImovel { get; set; }
     public string? ColetaLixo { get; set; }' `
         'Imovel IPTU entity fields'
 }
 
-# 2) Service contract/request: add the new request fields while preserving the old parameter for compatibility.
+# 2) Request contract: remove old IptuMatricula and expose only the two new fields.
 Update-FileText 'Monthoya.Core/Services/RentalManagementServices.cs' {
     param($text)
     Replace-Required $text `
         '    string? IptuMatricula = null,
     string? ColetaLixo = null,' `
-        '    string? IptuMatricula = null,
-    string? IptuInscricaoImobiliaria = null,
+        '    string? IptuInscricaoImobiliaria = null,
     string? IptuCadastroImovel = null,
     string? ColetaLixo = null,' `
         'CreateImovelRequest IPTU fields'
 }
 
-# 3) Data service: persist the new fields, using the old IPTU value as fallback for inscrição imobiliária.
+# 3) Data service: persist/read only the new fields.
 Update-FileText 'Monthoya.Data/RentalManagement/RentalManagementService.cs' {
     param($text)
     $text = Replace-Required $text `
         '        imovel.IptuMatricula = TrimOrNull(request.IptuMatricula);
         imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);' `
-        '        imovel.IptuMatricula = TrimOrNull(request.IptuMatricula);
-        imovel.IptuInscricaoImobiliaria = TrimOrNull(request.IptuInscricaoImobiliaria) ?? TrimOrNull(request.IptuMatricula);
+        '        imovel.IptuInscricaoImobiliaria = TrimOrNull(request.IptuInscricaoImobiliaria);
         imovel.IptuCadastroImovel = TrimOrNull(request.IptuCadastroImovel);
         imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);' `
         'ApplyImovelRequest IPTU persistence'
@@ -91,7 +88,6 @@ Update-FileText 'Monthoya.Data/RentalManagement/RentalManagementService.cs' {
             imovel.IptuMatricula,
             imovel.ColetaLixo,' `
         '            imovel.CopelMatricula,
-            imovel.IptuMatricula,
             imovel.IptuInscricaoImobiliaria,
             imovel.IptuCadastroImovel,
             imovel.ColetaLixo,' `
@@ -100,7 +96,7 @@ Update-FileText 'Monthoya.Data/RentalManagement/RentalManagementService.cs' {
     return $text
 }
 
-# 4) Desktop form code: replace one visible IPTU box with two fields.
+# 4) Desktop form code: replace the one IPTU box with two fields.
 Update-FileText 'Monthoya.Desktop/Views/ShellWindow.Imoveis.cs' {
     param($text)
     $text = Replace-Required $text `
@@ -130,7 +126,7 @@ Update-FileText 'Monthoya.Desktop/Views/ShellWindow.Imoveis.cs' {
     $text = Replace-Required $text `
         '        ImovelIptuBox.Text = dados.IptuMatricula ?? string.Empty;
         ImovelColetaLixoBox.Text = dados.ColetaLixo ?? string.Empty;' `
-        '        ImovelIptuInscricaoBox.Text = dados.IptuInscricaoImobiliaria ?? dados.IptuMatricula ?? string.Empty;
+        '        ImovelIptuInscricaoBox.Text = dados.IptuInscricaoImobiliaria ?? string.Empty;
         ImovelIptuCadastroBox.Text = dados.IptuCadastroImovel ?? string.Empty;
         ImovelColetaLixoBox.Text = dados.ColetaLixo ?? string.Empty;' `
         'SetImovelForm IPTU values'
@@ -146,7 +142,7 @@ Update-FileText 'Monthoya.Desktop/Views/ShellWindow.Imoveis.cs' {
     return $text
 }
 
-# 5) Desktop XAML: show the two IPTU fields under the utility registrations area.
+# 5) Desktop XAML: show the two IPTU fields under utility registrations.
 Update-FileText 'Monthoya.Desktop/Views/ShellWindow.xaml' {
     param($text)
     Replace-Required $text `
@@ -156,10 +152,23 @@ Update-FileText 'Monthoya.Desktop/Views/ShellWindow.xaml' {
         'XAML IPTU fields'
 }
 
-# 6) Add a lightweight EF migration that adds the two new columns and copies the old IPTU value to the new inscrição field.
+# 6) EF snapshot: update the current snapshot so future migrations do not keep the old column as a shadow property.
+Update-FileText 'Monthoya.Data/Migrations/MonthoyaDbContextModelSnapshot.cs' {
+    param($text)
+    Replace-Required $text `
+        '                    b.Property<string>("IptuMatricula")
+                        .HasColumnType("TEXT");' `
+        '                    b.Property<string>("IptuCadastroImovel")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IptuInscricaoImobiliaria")
+                        .HasColumnType("TEXT");' `
+        'Model snapshot IPTU properties'
+}
+
+# 7) Migration: add the two new columns and drop the old one.
 $migrationPath = 'Monthoya.Data/Migrations/20260610143000_AddSplitIptuFields.cs'
-if (-not (Test-Path $migrationPath)) {
-    @'
+@'
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -182,11 +191,19 @@ public partial class AddSplitIptuFields : Migration
             type: "TEXT",
             nullable: true);
 
-        migrationBuilder.Sql("UPDATE \"Imoveis\" SET \"IptuInscricaoImobiliaria\" = \"IptuMatricula\" WHERE \"IptuInscricaoImobiliaria\" IS NULL AND \"IptuMatricula\" IS NOT NULL");
+        migrationBuilder.DropColumn(
+            name: "IptuMatricula",
+            table: "Imoveis");
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)
     {
+        migrationBuilder.AddColumn<string>(
+            name: "IptuMatricula",
+            table: "Imoveis",
+            type: "TEXT",
+            nullable: true);
+
         migrationBuilder.DropColumn(
             name: "IptuCadastroImovel",
             table: "Imoveis");
@@ -197,13 +214,10 @@ public partial class AddSplitIptuFields : Migration
     }
 }
 '@ | Set-Content -Path $migrationPath -Encoding UTF8 -NoNewline
-    Write-Host "Created: $migrationPath"
-} else {
-    Write-Host "Migration already exists: $migrationPath"
-}
+Write-Host "Created/updated: $migrationPath"
 
 Write-Host ''
-Write-Host 'Patch applied locally. Review the diff, then run the app/database migration as usual.'
+Write-Host 'Clean IPTU split patch applied locally. Review the diff, then run the app/database migration as usual.'
 
 if (-not $SkipBuild) {
     dotnet build Monthoya.sln
