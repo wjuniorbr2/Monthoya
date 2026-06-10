@@ -22,9 +22,19 @@ public sealed class RentalManagementService(
     {
         var pessoas = await dbContext.Pessoas
             .AsNoTracking()
-            .Include(x => x.PessoaFisica)
-            .Include(x => x.PessoaJuridica)
             .OrderBy(x => x.NomeDisplay)
+            .Select(x => new
+            {
+                x.Id,
+                x.NomeDisplay,
+                x.TipoPessoa,
+                x.Telefone,
+                x.Email,
+                x.Status,
+                Documento = x.TipoPessoa == TipoPessoa.Fisica
+                    ? (x.PessoaFisica != null ? x.PessoaFisica.Cpf : null)
+                    : (x.PessoaJuridica != null ? x.PessoaJuridica.Cnpj : null)
+            })
             .ToListAsync(cancellationToken);
 
         var proprietarioSet = (await dbContext.Imoveis
@@ -57,9 +67,9 @@ public sealed class RentalManagementService(
             return new PessoaSummary(
                 x.Id,
                 x.NomeDisplay,
-                x.TipoPessoa == TipoPessoa.Fisica ? "Física" : "Jurídica",
+                x.TipoPessoa == TipoPessoa.Fisica ? "FÃ­sica" : "JurÃ­dica",
                 GetPessoaRolesLabel(isProprietario, isLocatario, isFiador),
-                FormatCpfCnpjForDisplay(x.TipoPessoa, x.TipoPessoa == TipoPessoa.Fisica ? x.PessoaFisica?.Cpf : x.PessoaJuridica?.Cnpj),
+                FormatCpfCnpjForDisplay(x.TipoPessoa, x.Documento),
                 FormatPhoneForDisplay(x.Telefone),
                 x.Email,
                 x.Status == RegistroStatus.Ativo ? "Ativo" : "Inativo",
