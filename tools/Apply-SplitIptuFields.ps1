@@ -43,7 +43,7 @@ function Remove-LineContaining([string]$Text, [string]$Needle) {
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
 Set-Location $root
 
-# 1) Entity: remove the old IPTU registration field and keep the two real registry fields.
+# 1) Entity: remove old IPTU registration field and keep the two real registry fields.
 $path = 'Monthoya.Core/Entities/RentalManagementEntities.cs'
 $text = Read-Text $path
 $original = $text
@@ -98,34 +98,36 @@ $text = Read-Text $path
 $original = $text
 $text = Remove-LineContaining $text 'ImovelColetaLixoBox'
 
+$iptuRegistrationReplacement = @'
+                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Inscrição imobiliária" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuInscricaoBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Cadastro do imóvel" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuCadastroBox" Margin="0,6,0,0" /></StackPanel>
+'@
+$iptuRegistrationReplacement = $iptuRegistrationReplacement.Replace('\"', '"').TrimEnd()
+
 if ($text.Contains('ImovelIptuBox')) {
-    $text = Replace-LineContaining $text 'ImovelIptuBox' '                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Inscrição imobiliária" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuInscricaoBox" Margin="0,6,0,0" /></StackPanel>`r`n                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Cadastro do imóvel" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuCadastroBox" Margin="0,6,0,0" /></StackPanel>'
+    $text = Replace-LineContaining $text 'ImovelIptuBox' $iptuRegistrationReplacement
 } elseif (-not $text.Contains('ImovelIptuInscricaoBox')) {
     throw 'Could not find old IPTU utility field or new IPTU fields in ShellWindow.xaml.'
 }
 
 if (-not $text.Contains('ImovelColetaLixoBox')) {
-    $iptuValueLine = '                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>'
-    $replacement = $iptuValueLine + "`r`n" + '                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>' + "`r`n" + '                                                </WrapPanel>' + "`r`n" + '                                                <WrapPanel>'
+    $iptuValueLine = '                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>'.Replace('\"', '"')
+    $valueReplacement = @'
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>
+                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>
+                                                </WrapPanel>
+                                                <WrapPanel>
+'@
+    $valueReplacement = $valueReplacement.Replace('\"', '"').TrimEnd()
     if ($text.Contains($iptuValueLine)) {
-        $text = $text.Replace($iptuValueLine, $replacement)
+        $text = $text.Replace($iptuValueLine, $valueReplacement)
     } else {
         throw 'Could not find IPTU value field in ShellWindow.xaml.'
     }
 }
 Save-IfChanged $path $original $text
 
-# 6) EF snapshot: remove old property and add the two new ones if missing.
-$path = 'Monthoya.Data/Migrations/MonthoyaDbContextModelSnapshot.cs'
-$text = Read-Text $path
-$original = $text
-$text = $text -replace '(?ms)\s*b\.Property<string>\("IptuMatricula"\)\s*\.HasColumnType\("TEXT"\);', ''
-if (-not $text.Contains('IptuInscricaoImobiliaria')) {
-    $text = $text -replace '(?ms)(\s*b\.Property<string>\("InscricaoEnergetica"\)\s*\.HasColumnType\("TEXT"\);)', "`$1`r`n`r`n                    b.Property<string>(\"IptuCadastroImovel\")`r`n                        .HasColumnType(\"TEXT\");`r`n`r`n                    b.Property<string>(\"IptuInscricaoImobiliaria\")`r`n                        .HasColumnType(\"TEXT\");"
-}
-Save-IfChanged $path $original $text
-
-# 7) Migration: add the two new columns and drop the old one.
+# 6) Migration: add the two new columns and drop the old one. Snapshot is intentionally left for EF tooling to refresh later.
 $migrationPath = 'Monthoya.Data/Migrations/20260610143000_AddSplitIptuFields.cs'
 @'
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -172,7 +174,7 @@ public partial class AddSplitIptuFields : Migration
             table: "Imoveis");
     }
 }
-'@ | Set-Content -Path $migrationPath -Encoding UTF8 -NoNewline
+'@.Replace('\"', '"') | Set-Content -Path $migrationPath -Encoding UTF8 -NoNewline
 Write-Host "Updated: $migrationPath"
 
 Write-Host ''
