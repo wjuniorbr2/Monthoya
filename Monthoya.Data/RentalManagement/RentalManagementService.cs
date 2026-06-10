@@ -664,22 +664,41 @@ public sealed class RentalManagementService(
     {
         var imoveis = await dbContext.Imoveis
             .AsNoTracking()
-            .Include(x => x.Proprietario)
             .OrderBy(x => x.Rua)
+            .ThenBy(x => x.Numero)
+            .Select(x => new
+            {
+                x.Id,
+                x.Rua,
+                x.Numero,
+                x.Bairro,
+                Proprietario = x.Proprietario != null ? x.Proprietario.NomeDisplay : "-",
+                x.TipoImovel,
+                x.Finalidade,
+                x.Status,
+                x.ChavePosse,
+                x.PublicarNoSite,
+                x.PublicarNoApp,
+                x.Destaque,
+                x.ValorAluguel,
+                x.ValorVenda,
+                x.ChaveCodigo
+            })
             .ToListAsync(cancellationToken);
 
         return imoveis.Select(x => new ImovelSummary(
             x.Id,
             $"{x.Rua}, {x.Numero}".Trim().Trim(','),
             x.Bairro,
-            x.Proprietario?.NomeDisplay ?? "-",
+            x.Proprietario,
             x.TipoImovel,
             GetImovelFinalidadeLabel(x.Finalidade),
             GetImovelStatusLabel(x.Status),
             GetImovelChavePosseLabel(x.ChavePosse),
-            GetImovelPublicacaoLabel(x),
+            GetImovelPublicacaoLabel(x.PublicarNoSite, x.PublicarNoApp, x.Destaque),
             x.ValorAluguel,
-            x.ValorVenda)).ToList();
+            x.ValorVenda,
+            x.ChaveCodigo)).ToList();
     }
 
     public async Task<ImovelDetails?> GetImovelAsync(Guid imovelId, CancellationToken cancellationToken = default)
@@ -766,7 +785,6 @@ public sealed class RentalManagementService(
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         var query = dbContext.ImovelChaveMovimentos
             .AsNoTracking()
-            .Include(x => x.Imovel)
             .AsQueryable();
 
         if (imovelId.HasValue)
@@ -777,6 +795,26 @@ public sealed class RentalManagementService(
         var now = DateTimeOffset.UtcNow;
         var movimentos = await query
             .OrderByDescending(x => x.CreatedAtUtc)
+            .Select(x => new
+            {
+                x.Id,
+                x.ImovelId,
+                ImovelRua = x.Imovel != null ? x.Imovel.Rua : null,
+                ImovelNumero = x.Imovel != null ? x.Imovel.Numero : null,
+                x.Tipo,
+                x.Status,
+                x.ChaveCodigo,
+                x.RetiradoPorNome,
+                x.RetiradoPorTelefone,
+                x.RetiradoPorDocumento,
+                x.RetiradoPorRelacao,
+                x.Motivo,
+                x.RetiradoEm,
+                x.PrevisaoDevolucaoEm,
+                x.DevolvidoEm,
+                x.DevolvidoParaNome,
+                x.Observacoes
+            })
             .ToListAsync(cancellationToken);
 
         return movimentos.Select(x =>
@@ -791,7 +829,7 @@ public sealed class RentalManagementService(
             return new ImovelChaveMovimentoSummary(
                 x.Id,
                 x.ImovelId,
-                x.Imovel is null ? "-" : $"{x.Imovel.Rua}, {x.Imovel.Numero}".Trim().Trim(','),
+                string.IsNullOrWhiteSpace(x.ImovelRua) ? "-" : $"{x.ImovelRua}, {x.ImovelNumero}".Trim().Trim(','),
                 GetImovelChaveMovimentoTipoLabel(x.Tipo),
                 status,
                 x.ChaveCodigo,
@@ -1573,21 +1611,24 @@ public sealed class RentalManagementService(
             _ => "Pessoa"
         };
 
-    private static string GetImovelPublicacaoLabel(Imovel imovel)
+    private static string GetImovelPublicacaoLabel(Imovel imovel) =>
+        GetImovelPublicacaoLabel(imovel.PublicarNoSite, imovel.PublicarNoApp, imovel.Destaque);
+
+    private static string GetImovelPublicacaoLabel(bool publicarNoSite, bool publicarNoApp, bool destaque)
     {
-        if (imovel.PublicarNoSite && imovel.PublicarNoApp)
+        if (publicarNoSite && publicarNoApp)
         {
-            return imovel.Destaque ? "Site/App - destaque" : "Site/App";
+            return destaque ? "Site/App - destaque" : "Site/App";
         }
 
-        if (imovel.PublicarNoSite)
+        if (publicarNoSite)
         {
-            return imovel.Destaque ? "Site - destaque" : "Site";
+            return destaque ? "Site - destaque" : "Site";
         }
 
-        if (imovel.PublicarNoApp)
+        if (publicarNoApp)
         {
-            return imovel.Destaque ? "App - destaque" : "App";
+            return destaque ? "App - destaque" : "App";
         }
 
         return "Privado";
