@@ -93,7 +93,33 @@ public sealed class RentalManagementService(
             return null;
         }
 
-        var summary = (await GetPessoasCoreAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
+        var isProprietario = await dbContext.Imoveis
+            .AsNoTracking()
+            .AnyAsync(x => x.Status != ImovelStatus.Inativo && x.ProprietarioId == pessoa.Id, cancellationToken);
+        var isLocatario = await dbContext.Locacoes
+            .AsNoTracking()
+            .AnyAsync(x => x.Status == LocacaoStatus.Ativa && x.LocatarioId == pessoa.Id, cancellationToken);
+        var isFiador = await dbContext.LocacaoFiadores
+            .AsNoTracking()
+            .AnyAsync(x => x.FiadorId == pessoa.Id && x.Locacao != null && x.Locacao.Status == LocacaoStatus.Ativa, cancellationToken);
+
+        var documento = pessoa.TipoPessoa == TipoPessoa.Fisica
+            ? pessoa.PessoaFisica?.Cpf
+            : pessoa.PessoaJuridica?.Cnpj;
+
+        var summary = new PessoaSummary(
+            pessoa.Id,
+            pessoa.NomeDisplay,
+            pessoa.TipoPessoa == TipoPessoa.Fisica ? "FÃ­sica" : "JurÃ­dica",
+            GetPessoaRolesLabel(isProprietario, isLocatario, isFiador),
+            FormatCpfCnpjForDisplay(pessoa.TipoPessoa, documento),
+            FormatPhoneForDisplay(pessoa.Telefone),
+            pessoa.Email,
+            pessoa.Status == RegistroStatus.Ativo ? "Ativo" : "Inativo",
+            isProprietario,
+            isLocatario,
+            isFiador);
+
         return new PessoaDetails(summary, ToPessoaRequest(pessoa));
     }
 
@@ -724,7 +750,20 @@ public sealed class RentalManagementService(
             return null;
         }
 
-        var summary = (await GetImoveisCoreAsync(cancellationToken)).Single(x => x.Id == imovel.Id);
+        var summary = new ImovelSummary(
+            imovel.Id,
+            $"{imovel.Rua}, {imovel.Numero}".Trim().Trim(','),
+            imovel.Bairro,
+            imovel.Proprietario?.NomeDisplay ?? "-",
+            imovel.TipoImovel,
+            GetImovelFinalidadeLabel(imovel.Finalidade),
+            GetImovelStatusLabel(imovel.Status),
+            GetImovelChavePosseLabel(imovel.ChavePosse),
+            GetImovelPublicacaoLabel(imovel),
+            imovel.ValorAluguel,
+            imovel.ValorVenda,
+            imovel.ChaveCodigo);
+
         return new ImovelDetails(summary, ToImovelRequest(imovel));
     }
 
