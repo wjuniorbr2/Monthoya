@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
 namespace Monthoya.Data.Notifications;
 
-public sealed class NotificationService(
+public sealed partial class NotificationService(
     MonthoyaDbContext dbContext,
     IEmailNotificationSender emailSender,
     IWhatsAppNotificationSender whatsAppSender) : INotificationService
@@ -271,7 +271,7 @@ public sealed class NotificationService(
             }
 
             await CreateNotificationAsync(
-                "Chave com devolução em atraso",
+                "Chave com devoluÃ§Ã£o em atraso",
                 BuildKeyOverdueBody(movimento, now),
                 recipientIds,
                 NotificationCategory.KeyOverdue,
@@ -338,20 +338,20 @@ public sealed class NotificationService(
 
         var lines = new List<string>
         {
-            $"Código da chave: {movimento.ChaveCodigo ?? imovel?.ChaveCodigo ?? "-"}",
-            $"Imóvel: {endereco}",
-            $"Proprietário: {imovel?.Proprietario?.NomeDisplay ?? "-"}",
+            $"CÃ³digo da chave: {movimento.ChaveCodigo ?? imovel?.ChaveCodigo ?? "-"}",
+            $"ImÃ³vel: {endereco}",
+            $"ProprietÃ¡rio: {imovel?.Proprietario?.NomeDisplay ?? "-"}",
             $"Retirado por: {movimento.RetiradoPorNome ?? "-"}",
             $"Telefone: {movimento.RetiradoPorTelefone ?? "-"}",
             $"Retirado em: {FormatDateTime(movimento.RetiradoEm)}",
-            $"Previsão de devolução: {FormatDateTime(previsao)}",
+            $"PrevisÃ£o de devoluÃ§Ã£o: {FormatDateTime(previsao)}",
             $"Tempo em atraso: {atrasoTexto}",
             $"Motivo: {movimento.Motivo ?? "-"}"
         };
 
         if (!string.IsNullOrWhiteSpace(movimento.Observacoes))
         {
-            lines.Add($"ObservaÃ§Ãµes: {movimento.Observacoes}");
+            lines.Add($"ObservaÃƒÂ§ÃƒÂµes: {movimento.Observacoes}");
         }
 
         return string.Join(Environment.NewLine, lines);
@@ -378,18 +378,18 @@ public sealed class NotificationService(
     {
         if (string.IsNullOrWhiteSpace(title))
         {
-            throw new InvalidOperationException("Informe o título da notificação.");
+            throw new InvalidOperationException("Informe o tÃ­tulo da notificaÃ§Ã£o.");
         }
 
         if (string.IsNullOrWhiteSpace(body))
         {
-            throw new InvalidOperationException("Informe a mensagem da notificação.");
+            throw new InvalidOperationException("Informe a mensagem da notificaÃ§Ã£o.");
         }
 
         var recipients = recipientUserIds.Distinct().Where(x => x != Guid.Empty).ToList();
         if (recipients.Count == 0)
         {
-            throw new InvalidOperationException("Selecione pelo menos um destinatário.");
+            throw new InvalidOperationException("Selecione pelo menos um destinatÃ¡rio.");
         }
 
         var users = await dbContext.Users
@@ -398,7 +398,7 @@ public sealed class NotificationService(
 
         if (users.Count == 0)
         {
-            throw new InvalidOperationException("Nenhum destinatário ativo foi encontrado.");
+            throw new InvalidOperationException("Nenhum destinatÃ¡rio ativo foi encontrado.");
         }
 
         var message = new NotificationMessage
@@ -479,7 +479,7 @@ public sealed class NotificationService(
     {
         return await dbContext.NotificationRecipients
             .SingleOrDefaultAsync(x => x.NotificationMessageId == notificationId && x.UserId == userId, cancellationToken)
-            ?? throw new InvalidOperationException("Notificação não encontrada para este usuário.");
+            ?? throw new InvalidOperationException("NotificaÃ§Ã£o nÃ£o encontrada para este usuÃ¡rio.");
     }
 
     private IQueryable<NotificationRecipient> QueryForUser(Guid userId, NotificationFilter filter)
@@ -546,7 +546,7 @@ public sealed class NotificationService(
 
     private static NotificationSummary ToSummary(NotificationRecipient recipient)
     {
-        var message = recipient.NotificationMessage ?? throw new InvalidOperationException("Notificação sem mensagem.");
+        var message = recipient.NotificationMessage ?? throw new InvalidOperationException("NotificaÃ§Ã£o sem mensagem.");
         return new NotificationSummary(
             message.Id,
             message.Title,
@@ -587,10 +587,10 @@ public sealed class NotificationService(
     {
         if (message.Category == NotificationCategory.KeyOverdue)
         {
-            var code = ExtractBodyValue(message.Body, "Código da chave:", "CÃ³digo da chave:");
-            var property = ExtractBodyValue(message.Body, "Imóvel:", "ImÃ³vel:");
+            var code = ExtractBodyValue(message.Body, "CÃ³digo da chave:", "CÃƒÂ³digo da chave:");
+            var property = ExtractBodyValue(message.Body, "ImÃ³vel:", "ImÃƒÂ³vel:");
             var street = property.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? property;
-            return $"Cód.: {FallbackDash(code)} | {FallbackDash(street)}";
+            return $"CÃ³d.: {FallbackDash(code)} | {FallbackDash(street)}";
         }
 
         var firstLine = message.Body
@@ -600,76 +600,6 @@ public sealed class NotificationService(
         return firstLine.Length <= 110 ? firstLine : string.Concat(firstLine.AsSpan(0, 107), "...");
     }
 
-    private static string ExtractBodyValue(string body, params string[] labels)
-    {
-        foreach (var line in body.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-        {
-            foreach (var label in labels)
-            {
-                if (line.StartsWith(label, StringComparison.OrdinalIgnoreCase))
-                {
-                    return line[label.Length..].Trim();
-                }
-            }
-        }
-
-        return string.Empty;
-    }
-
-    private static string FallbackDash(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
-
-    private static string BuildDeliverySummary(IEnumerable<NotificationDelivery> deliveries) =>
-        string.Join(", ", deliveries
-            .OrderBy(x => x.Channel)
-            .GroupBy(x => x.Channel)
-            .Select(group => $"{GetChannelLabel(group.Key)}: {GetDeliveryStatusLabel(group.OrderByDescending(x => x.UpdatedAtUtc ?? x.CreatedAtUtc).First().Status)}"));
-
-    private static string GetCategoryLabel(NotificationCategory category) =>
-        category switch
-        {
-            NotificationCategory.ManualMessage => "Mensagem manual",
-            NotificationCategory.SystemAlert => "Alerta do sistema",
-            NotificationCategory.ScheduledReminder => "Lembrete agendado",
-            NotificationCategory.TaskRequired => "Ação necessária",
-            NotificationCategory.Info => "Informação",
-            NotificationCategory.Warning => "Aviso",
-            NotificationCategory.AdminAnnouncement => "Comunicado administrativo",
-            NotificationCategory.KeyOverdue => "Chave em atraso",
-            _ => category.ToString()
-        };
-
-    private static string GetPriorityLabel(NotificationPriority priority) =>
-        priority switch
-        {
-            NotificationPriority.Low => "Baixa",
-            NotificationPriority.Normal => "Normal",
-            NotificationPriority.High => "Alta",
-            NotificationPriority.Critical => "Crítica",
-            _ => priority.ToString()
-        };
-
-    private static string GetChannelLabel(NotificationChannel channel) =>
-        channel switch
-        {
-            NotificationChannel.InApp => "No sistema",
-            NotificationChannel.Email => "E-mail",
-            NotificationChannel.WhatsApp => "WhatsApp",
-            _ => channel.ToString()
-        };
-
-    private static string GetDeliveryStatusLabel(NotificationDeliveryStatus status) =>
-        status switch
-        {
-            NotificationDeliveryStatus.Pending => "Pendente",
-            NotificationDeliveryStatus.Sent => "Enviado",
-            NotificationDeliveryStatus.Failed => "Falhou",
-            NotificationDeliveryStatus.Skipped => "Ignorado",
-            _ => status.ToString()
-        };
-
-    private static string FormatDateTime(DateTimeOffset? value) =>
-        value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-";
 
     private async Task ProcessPendingDeliveriesAsync(Guid messageId, CancellationToken cancellationToken)
     {
