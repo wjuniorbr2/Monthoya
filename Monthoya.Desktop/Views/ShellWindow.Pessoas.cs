@@ -1262,33 +1262,6 @@ public partial class ShellWindow
         UpdatePessoaDocumentoEditorAvailability();
     }
 
-    private sealed record PessoasPageState(
-        string SearchText,
-        string StatusFilter,
-        Guid? SelectedPessoaId,
-        bool IsEditing,
-        bool IsNew,
-        string DocumentoTipo,
-        string DocumentoDono,
-        string DocumentoNome,
-        string DocumentoArquivo,
-        DateOnly? DocumentoValidade,
-        string DocumentoObservacoes) : IShellPageState
-    {
-        public static PessoasPageState Default { get; } = new(
-            "",
-            "ativo",
-            null,
-            true,
-            true,
-            "cpf",
-            "",
-            "",
-            "",
-            null,
-            "");
-    }
-
     private static string? PromptPassword(string message)
     {
         var window = new Window
@@ -1314,5 +1287,6 @@ public partial class ShellWindow
         return window.ShowDialog() == true ? passwordBox.Password : null;
     }
 }
+
 
 
