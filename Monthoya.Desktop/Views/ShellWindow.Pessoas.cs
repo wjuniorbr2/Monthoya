@@ -12,12 +12,24 @@ public partial class ShellWindow
     private async Task LoadPessoasAsync()
     {
         _pessoas = await _rentalManagementService.GetPessoasAsync();
-        _streetSuggestions = await _rentalManagementService.GetStreetSuggestionsAsync();
+        _ = LoadPessoasStreetSuggestionsInBackgroundAsync();
         ApplyPessoasFilter();
 
         ImovelProprietarioBox.ItemsSource = _pessoas.Where(x => x.Status == "Ativo").ToList();
     }
 
+
+    private async Task LoadPessoasStreetSuggestionsInBackgroundAsync()
+    {
+        try
+        {
+            _streetSuggestions = await _rentalManagementService.GetStreetSuggestionsAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Street suggestions failed: {ex.Message}");
+        }
+    }
     private async void ReloadPessoasButton_Click(object sender, RoutedEventArgs e) => await LoadPessoasAsync();
 
     private void PessoasSearchBox_TextChanged(object sender, TextChangedEventArgs e)
