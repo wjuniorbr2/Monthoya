@@ -4,109 +4,59 @@ namespace Monthoya.Desktop.Views;
 
 public partial class ShellWindow
 {
-private sealed record ImoveisPageState(
-        string SearchText,
-        Guid? SelectedImovelId,
-        Guid? ProprietarioId,
-        ImovelFinalidade Finalidade,
-        string Rua,
-        string Numero,
-        string Complemento,
-        string Bairro,
-        string Cidade,
-        string Estado,
-        string Cep,
-        string TipoImovel,
-        string Sanepar,
-        string Copel,
-    string IptuInscricaoImobiliaria,
-    string IptuCadastroImovel,
-        string ColetaLixo,
-        string ValorAluguel,
-        string ValorVenda,
-        string ValorCondominio,
-        string ValorIptu,
-        string Latitude,
-        string Longitude,
-        ImovelStatus Status,
-        string Quartos,
-        string Suites,
-        string Banheiros,
-        string Vagas,
-        string AreaConstruida,
-        string AreaTerreno,
-        bool? Mobiliado,
-        bool? AceitaPets,
-        string Descricao,
-        string DescricaoPublica,
-        string Observacoes,
-        bool PublicarSite,
-        bool PublicarApp,
-        bool Destaque,
-        bool MostrarEnderecoCompleto,
-        ImovelEnderecoPublicoModo ModoEnderecoPublico,
-        ImovelChavePosse ChavePosse,
-        string ChaveCodigo,
-        string ChaveQuemTem,
-        string ChaveTelefone,
-        string ChaveContatoNome,
-        string ChaveContatoDocumento,
-        string ChaveLocal,
-        string ChaveHorario,
-        bool ChaveAutorizacao,
-        string ChaveObservacoes) : IShellPageState
+    private sealed class ImoveisPageState : IShellPageState
     {
-        public static ImoveisPageState Default { get; } = new(
-            SearchText: "",
-            SelectedImovelId: null,
-            ProprietarioId: null,
-            Finalidade: ImovelFinalidade.Locacao,
-            Rua: "",
-            Numero: "",
-            Complemento: "",
-            Bairro: "",
-            Cidade: "ParanavaÃ­",
-            Estado: "PR",
-            Cep: "",
-            TipoImovel: "",
-            Sanepar: "",
-            Copel: "",
-            IptuInscricaoImobiliaria: "",
-            IptuCadastroImovel: "",
-            ColetaLixo: "",
-            ValorAluguel: "",
-            ValorVenda: "",
-            ValorCondominio: "",
-            ValorIptu: "",
-            Latitude: "",
-            Longitude: "",
-            Status: ImovelStatus.Disponivel,
-            Quartos: "",
-            Suites: "",
-            Banheiros: "",
-            Vagas: "",
-            AreaConstruida: "",
-            AreaTerreno: "",
-            Mobiliado: false,
-            AceitaPets: false,
-            Descricao: "",
-            DescricaoPublica: "",
-            Observacoes: "",
-            PublicarSite: false,
-            PublicarApp: false,
-            Destaque: false,
-            MostrarEnderecoCompleto: false,
-            ModoEnderecoPublico: ImovelEnderecoPublicoModo.BairroCidade,
-            ChavePosse: ImovelChavePosse.NaoCadastrada,
-            ChaveCodigo: "",
-            ChaveQuemTem: "",
-            ChaveTelefone: "",
-            ChaveContatoNome: "",
-            ChaveContatoDocumento: "",
-            ChaveLocal: "",
-            ChaveHorario: "",
-            ChaveAutorizacao: false,
-            ChaveObservacoes: ""
-        );
+        public string SearchText { get; init; } = string.Empty;
+        public Guid? SelectedImovelId { get; init; }
+        public Guid? ProprietarioId { get; init; }
+        public ImovelFinalidade Finalidade { get; init; } = ImovelFinalidade.Locacao;
+        public string Rua { get; init; } = string.Empty;
+        public string Numero { get; init; } = string.Empty;
+        public string Complemento { get; init; } = string.Empty;
+        public string Bairro { get; init; } = string.Empty;
+        public string Cidade { get; init; } = "Paranava\u00ED";
+        public string Estado { get; init; } = "PR";
+        public string Cep { get; init; } = string.Empty;
+        public string TipoImovel { get; init; } = string.Empty;
+        public string Sanepar { get; init; } = string.Empty;
+        public string Copel { get; init; } = string.Empty;
+        public string IptuInscricaoImobiliaria { get; init; } = string.Empty;
+        public string IptuCadastroImovel { get; init; } = string.Empty;
+        public string ColetaLixo { get; init; } = string.Empty;
+        public string ValorAluguel { get; init; } = string.Empty;
+        public string ValorVenda { get; init; } = string.Empty;
+        public string ValorCondominio { get; init; } = string.Empty;
+        public string ValorIptu { get; init; } = string.Empty;
+        public string Latitude { get; init; } = string.Empty;
+        public string Longitude { get; init; } = string.Empty;
+        public ImovelStatus Status { get; init; } = ImovelStatus.Disponivel;
+        public string Quartos { get; init; } = string.Empty;
+        public string Suites { get; init; } = string.Empty;
+        public string Banheiros { get; init; } = string.Empty;
+        public string Vagas { get; init; } = string.Empty;
+        public string AreaConstruida { get; init; } = string.Empty;
+        public string AreaTerreno { get; init; } = string.Empty;
+        public bool? Mobiliado { get; init; } = false;
+        public bool? AceitaPets { get; init; } = false;
+        public string Descricao { get; init; } = string.Empty;
+        public string DescricaoPublica { get; init; } = string.Empty;
+        public string Observacoes { get; init; } = string.Empty;
+        public bool PublicarSite { get; init; }
+        public bool PublicarApp { get; init; }
+        public bool Destaque { get; init; }
+        public bool MostrarEnderecoCompleto { get; init; }
+        public ImovelEnderecoPublicoModo ModoEnderecoPublico { get; init; } = ImovelEnderecoPublicoModo.BairroCidade;
+        public ImovelChavePosse ChavePosse { get; init; } = ImovelChavePosse.NaoCadastrada;
+        public string ChaveCodigo { get; init; } = string.Empty;
+        public string ChaveQuemTem { get; init; } = string.Empty;
+        public string ChaveTelefone { get; init; } = string.Empty;
+        public string ChaveContatoNome { get; init; } = string.Empty;
+        public string ChaveContatoDocumento { get; init; } = string.Empty;
+        public string ChaveLocal { get; init; } = string.Empty;
+        public string ChaveHorario { get; init; } = string.Empty;
+        public bool ChaveAutorizacao { get; init; }
+        public string ChaveObservacoes { get; init; } = string.Empty;
+
+        public static ImoveisPageState Default { get; } = new();
     }
 }
