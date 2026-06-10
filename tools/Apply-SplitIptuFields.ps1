@@ -4,208 +4,126 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-function Update-FileText {
-    param(
-        [Parameter(Mandatory=$true)][string]$Path,
-        [Parameter(Mandatory=$true)][scriptblock]$Updater
-    )
-
-    if (-not (Test-Path $Path)) {
-        throw "File not found: $Path"
-    }
-
-    $original = Get-Content -Path $Path -Raw -Encoding UTF8
-    $updated = & $Updater $original
-
-    if ($updated -eq $original) {
-        Write-Host "No changes needed: $Path"
-        return
-    }
-
-    Set-Content -Path $Path -Value $updated -Encoding UTF8 -NoNewline
-    Write-Host "Updated: $Path"
+function Read-Text([string]$Path) {
+    if (-not (Test-Path $Path)) { throw "File not found: $Path" }
+    return Get-Content -Path $Path -Raw -Encoding UTF8
 }
 
-function Replace-Required {
-    param(
-        [Parameter(Mandatory=$true)][string]$Text,
-        [Parameter(Mandatory=$true)][string]$Old,
-        [Parameter(Mandatory=$true)][string]$New,
-        [Parameter(Mandatory=$true)][string]$Description
-    )
-
-    if ($Text.Contains($New)) {
-        Write-Host "Already applied: $Description"
-        return $Text
+function Save-IfChanged([string]$Path, [string]$Original, [string]$Updated) {
+    if ($Original -eq $Updated) {
+        Write-Host "No changes needed: $Path"
+    } else {
+        Set-Content -Path $Path -Value $Updated -Encoding UTF8 -NoNewline
+        Write-Host "Updated: $Path"
     }
+}
 
-    if (-not $Text.Contains($Old)) {
-        Write-Warning "Skipping: $Description. Expected old text was not found; this part may already be changed locally."
-        return $Text
+function Replace-LineContaining([string]$Text, [string]$Needle, [string]$Replacement) {
+    $lines = $Text -split "`r?`n"
+    $changed = $false
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i].Contains($Needle)) {
+            $lines[$i] = $Replacement
+            $changed = $true
+        }
     }
+    if ($changed) { return ($lines -join "`r`n") }
+    return $Text
+}
 
-    Write-Host "Applying: $Description"
-    return $Text.Replace($Old, $New)
+function Remove-LineContaining([string]$Text, [string]$Needle) {
+    $lines = $Text -split "`r?`n"
+    $newLines = @()
+    foreach ($line in $lines) {
+        if (-not $line.Contains($Needle)) { $newLines += $line }
+    }
+    return ($newLines -join "`r`n")
 }
 
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
 Set-Location $root
 
-# 1) Entity: replace the single IPTU field with the two real fields.
-Update-FileText 'Monthoya.Core/Entities/RentalManagementEntities.cs' {
-    param($text)
-    Replace-Required $text `
-        '    public string? IptuMatricula { get; set; }
-    public string? ColetaLixo { get; set; }' `
-        '    public string? IptuInscricaoImobiliaria { get; set; }
-    public string? IptuCadastroImovel { get; set; }
-    public string? ColetaLixo { get; set; }' `
-        'Imovel IPTU entity fields'
+# 1) Entity: remove the old IPTU registration field and keep the two real registry fields.
+$path = 'Monthoya.Core/Entities/RentalManagementEntities.cs'
+$text = Read-Text $path
+$original = $text
+$text = $text -replace '(?m)^\s*public\s+string\?\s+IptuMatricula\s*\{\s*get;\s*set;\s*\}\s*\r?\n?', ''
+if (-not $text.Contains('IptuInscricaoImobiliaria')) {
+    $text = $text -replace '(?m)^(\s*public\s+string\?\s+CopelMatricula\s*\{\s*get;\s*set;\s*\}\s*)$', "`$1`r`n    public string? IptuInscricaoImobiliaria { get; set; }`r`n    public string? IptuCadastroImovel { get; set; }"
+} elseif (-not $text.Contains('IptuCadastroImovel')) {
+    $text = $text -replace '(?m)^(\s*public\s+string\?\s+IptuInscricaoImobiliaria\s*\{\s*get;\s*set;\s*\}\s*)$', "`$1`r`n    public string? IptuCadastroImovel { get; set; }"
 }
+Save-IfChanged $path $original $text
 
 # 2) Request contract: remove old IptuMatricula and expose only the two new fields.
-Update-FileText 'Monthoya.Core/Services/RentalManagementServices.cs' {
-    param($text)
-    Replace-Required $text `
-        '    string? IptuMatricula = null,
-    string? ColetaLixo = null,' `
-        '    string? IptuInscricaoImobiliaria = null,
-    string? IptuCadastroImovel = null,
-    string? ColetaLixo = null,' `
-        'CreateImovelRequest IPTU fields'
+$path = 'Monthoya.Core/Services/RentalManagementServices.cs'
+$text = Read-Text $path
+$original = $text
+$text = $text -replace '(?m)^\s*string\?\s+IptuMatricula\s*=\s*null,\s*\r?\n?', ''
+if (-not $text.Contains('IptuInscricaoImobiliaria')) {
+    $text = $text -replace '(?m)^(\s*string\?\s+CopelMatricula\s*=\s*null,\s*)$', "`$1`r`n    string? IptuInscricaoImobiliaria = null,`r`n    string? IptuCadastroImovel = null,"
+} elseif (-not $text.Contains('IptuCadastroImovel')) {
+    $text = $text -replace '(?m)^(\s*string\?\s+IptuInscricaoImobiliaria\s*=\s*null,\s*)$', "`$1`r`n    string? IptuCadastroImovel = null,"
 }
+Save-IfChanged $path $original $text
 
 # 3) Data service: persist/read only the new fields.
-Update-FileText 'Monthoya.Data/RentalManagement/RentalManagementService.cs' {
-    param($text)
-    $text = Replace-Required $text `
-        '        imovel.IptuMatricula = TrimOrNull(request.IptuMatricula);
-        imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);' `
-        '        imovel.IptuInscricaoImobiliaria = TrimOrNull(request.IptuInscricaoImobiliaria);
-        imovel.IptuCadastroImovel = TrimOrNull(request.IptuCadastroImovel);
-        imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);' `
-        'ApplyImovelRequest IPTU persistence'
+$path = 'Monthoya.Data/RentalManagement/RentalManagementService.cs'
+$text = Read-Text $path
+$original = $text
+$text = $text -replace '(?m)^\s*imovel\.IptuMatricula\s*=\s*TrimOrNull\(request\.IptuMatricula\);\s*\r?\n?', ''
+if (-not $text.Contains('imovel.IptuInscricaoImobiliaria = TrimOrNull(request.IptuInscricaoImobiliaria);')) {
+    $text = $text -replace '(?m)^(\s*imovel\.CopelMatricula\s*=\s*TrimOrNull\(request\.CopelMatricula\);\s*)$', "`$1`r`n        imovel.IptuInscricaoImobiliaria = TrimOrNull(request.IptuInscricaoImobiliaria);`r`n        imovel.IptuCadastroImovel = TrimOrNull(request.IptuCadastroImovel);"
+}
+$text = $text -replace '(?m)^\s*imovel\.IptuMatricula,\s*\r?\n?', ''
+if ($text.Contains('imovel.CopelMatricula,') -and -not $text.Contains('imovel.IptuInscricaoImobiliaria,')) {
+    $text = $text -replace '(?m)^(\s*imovel\.CopelMatricula,\s*)$', "`$1`r`n            imovel.IptuInscricaoImobiliaria,`r`n            imovel.IptuCadastroImovel,"
+}
+Save-IfChanged $path $original $text
 
-    $text = Replace-Required $text `
-        '            imovel.CopelMatricula,
-            imovel.IptuMatricula,
-            imovel.ColetaLixo,' `
-        '            imovel.CopelMatricula,
-            imovel.IptuInscricaoImobiliaria,
-            imovel.IptuCadastroImovel,
-            imovel.ColetaLixo,' `
-        'ToImovelRequest IPTU values'
+# 4) Desktop code-behind: make sure it references the new fields consistently.
+$path = 'Monthoya.Desktop/Views/ShellWindow.Imoveis.cs'
+$text = Read-Text $path
+$original = $text
+$text = $text -replace 'IptuMatricula:\s*ImovelIptuBox\.Text,', "IptuInscricaoImobiliaria: ImovelIptuInscricaoBox.Text,`r`n            IptuCadastroImovel: ImovelIptuCadastroBox.Text,"
+$text = $text -replace '(?m)^\s*ImovelIptuBox\.Text,\s*$', "            ImovelIptuInscricaoBox.Text,`r`n            ImovelIptuCadastroBox.Text,"
+$text = $text -replace 'ImovelIptuBox\.Text\s*=\s*state\.Iptu;', "ImovelIptuInscricaoBox.Text = state.IptuInscricaoImobiliaria;`r`n        ImovelIptuCadastroBox.Text = state.IptuCadastroImovel;"
+$text = $text -replace 'ImovelIptuBox\.Text\s*=\s*dados\.IptuMatricula\s*\?\?\s*string\.Empty;', "ImovelIptuInscricaoBox.Text = dados.IptuInscricaoImobiliaria ?? string.Empty;`r`n        ImovelIptuCadastroBox.Text = dados.IptuCadastroImovel ?? string.Empty;"
+$text = $text -replace '(?m)^\s*string\s+Iptu,\s*$', "    string IptuInscricaoImobiliaria,`r`n    string IptuCadastroImovel,"
+Save-IfChanged $path $original $text
 
-    return $text
+# 5) XAML: split utility IPTU registration and move Coleta de lixo to values, after IPTU.
+$path = 'Monthoya.Desktop/Views/ShellWindow.xaml'
+$text = Read-Text $path
+$original = $text
+$text = Remove-LineContaining $text 'ImovelColetaLixoBox'
+
+if ($text.Contains('ImovelIptuBox')) {
+    $text = Replace-LineContaining $text 'ImovelIptuBox' '                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Inscrição imobiliária" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuInscricaoBox" Margin="0,6,0,0" /></StackPanel>`r`n                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Cadastro do imóvel" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuCadastroBox" Margin="0,6,0,0" /></StackPanel>'
+} elseif (-not $text.Contains('ImovelIptuInscricaoBox')) {
+    throw 'Could not find old IPTU utility field or new IPTU fields in ShellWindow.xaml.'
 }
 
-# 4) Desktop form code: replace the one IPTU box with two fields.
-Update-FileText 'Monthoya.Desktop/Views/ShellWindow.Imoveis.cs' {
-    param($text)
-    $text = Replace-Required $text `
-        '            IptuMatricula: ImovelIptuBox.Text,
-            ColetaLixo: ImovelColetaLixoBox.Text,' `
-        '            IptuInscricaoImobiliaria: ImovelIptuInscricaoBox.Text,
-            IptuCadastroImovel: ImovelIptuCadastroBox.Text,
-            ColetaLixo: ImovelColetaLixoBox.Text,' `
-        'BuildImovelRequestFromForm IPTU values'
-
-    $text = Replace-Required $text `
-        '            ImovelIptuBox.Text,
-            ImovelColetaLixoBox.Text,' `
-        '            ImovelIptuInscricaoBox.Text,
-            ImovelIptuCadastroBox.Text,
-            ImovelColetaLixoBox.Text,' `
-        'CaptureImoveisPageState IPTU values'
-
-    $text = Replace-Required $text `
-        '        ImovelIptuBox.Text = state.Iptu;
-        ImovelColetaLixoBox.Text = state.ColetaLixo;' `
-        '        ImovelIptuInscricaoBox.Text = state.IptuInscricaoImobiliaria;
-        ImovelIptuCadastroBox.Text = state.IptuCadastroImovel;
-        ImovelColetaLixoBox.Text = state.ColetaLixo;' `
-        'RestoreImoveisPageStateAsync IPTU values'
-
-    $text = Replace-Required $text `
-        '        ImovelIptuBox.Text = dados.IptuMatricula ?? string.Empty;
-        ImovelColetaLixoBox.Text = dados.ColetaLixo ?? string.Empty;' `
-        '        ImovelIptuInscricaoBox.Text = dados.IptuInscricaoImobiliaria ?? string.Empty;
-        ImovelIptuCadastroBox.Text = dados.IptuCadastroImovel ?? string.Empty;
-        ImovelColetaLixoBox.Text = dados.ColetaLixo ?? string.Empty;' `
-        'SetImovelForm IPTU values'
-
-    $text = Replace-Required $text `
-        '    string Iptu,
-    string ColetaLixo,' `
-        '    string IptuInscricaoImobiliaria,
-    string IptuCadastroImovel,
-    string ColetaLixo,' `
-        'ImoveisPageState IPTU fields'
-
-    return $text
+if (-not $text.Contains('ImovelColetaLixoBox')) {
+    $iptuValueLine = '                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>'
+    $replacement = $iptuValueLine + "`r`n" + '                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>' + "`r`n" + '                                                </WrapPanel>' + "`r`n" + '                                                <WrapPanel>'
+    if ($text.Contains($iptuValueLine)) {
+        $text = $text.Replace($iptuValueLine, $replacement)
+    } else {
+        throw 'Could not find IPTU value field in ShellWindow.xaml.'
+    }
 }
+Save-IfChanged $path $original $text
 
-# 5) Desktop XAML: split the IPTU registry fields and move Coleta de lixo to values after IPTU.
-Update-FileText 'Monthoya.Desktop/Views/ShellWindow.xaml' {
-    param($text)
-
-    $text = Replace-Required $text `
-        '<WrapPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Aluguel" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorAluguelBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Venda" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorVendaBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Condomínio" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorCondominioBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Quartos" FontWeight="SemiBold" /><TextBox x:Name="ImovelQuartosBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Suítes" FontWeight="SemiBold" /><TextBox x:Name="ImovelSuitesBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Banheiros" FontWeight="SemiBold" /><TextBox x:Name="ImovelBanheirosBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Garagens" FontWeight="SemiBold" /><TextBox x:Name="ImovelVagasBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área construída" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaConstruidaBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área terreno" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaTerrenoBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <CheckBox x:Name="ImovelMobiliadoBox" Content="Mobiliado" Margin="0,24,18,12" />
-                                                    <CheckBox x:Name="ImovelAceitaPetsBox" Content="Aceita pets" Margin="0,24,18,12" />
-                                                </WrapPanel>' `
-        '<WrapPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Aluguel" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorAluguelBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Venda" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorVendaBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Condomínio" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorCondominioBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelValorIptuBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="130" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>
-                                                </WrapPanel>
-                                                <WrapPanel>
-                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Quartos" FontWeight="SemiBold" /><TextBox x:Name="ImovelQuartosBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Suítes" FontWeight="SemiBold" /><TextBox x:Name="ImovelSuitesBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Banheiros" FontWeight="SemiBold" /><TextBox x:Name="ImovelBanheirosBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="90" Margin="0,0,14,12"><TextBlock Text="Garagens" FontWeight="SemiBold" /><TextBox x:Name="ImovelVagasBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área construída" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaConstruidaBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="120" Margin="0,0,14,12"><TextBlock Text="Área terreno" FontWeight="SemiBold" /><TextBox x:Name="ImovelAreaTerrenoBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <CheckBox x:Name="ImovelMobiliadoBox" Content="Mobiliado" Margin="0,24,18,12" />
-                                                    <CheckBox x:Name="ImovelAceitaPetsBox" Content="Aceita pets" Margin="0,24,18,12" />
-                                                </WrapPanel>' `
-        'values and characteristics layout'
-
-    $text = Replace-Required $text `
-        '<StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Matrícula IPTU" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="220" Margin="0,0,14,12"><TextBlock Text="Coleta de lixo" FontWeight="SemiBold" /><TextBox x:Name="ImovelColetaLixoBox" Margin="0,6,0,0" /></StackPanel>' `
-        '<StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Inscrição imobiliária" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuInscricaoBox" Margin="0,6,0,0" /></StackPanel>
-                                                    <StackPanel Width="190" Margin="0,0,14,12"><TextBlock Text="Cadastro do imóvel" FontWeight="SemiBold" /><TextBox x:Name="ImovelIptuCadastroBox" Margin="0,6,0,0" /></StackPanel>' `
-        'utility registry IPTU fields'
-
-    return $text
+# 6) EF snapshot: remove old property and add the two new ones if missing.
+$path = 'Monthoya.Data/Migrations/MonthoyaDbContextModelSnapshot.cs'
+$text = Read-Text $path
+$original = $text
+$text = $text -replace '(?ms)\s*b\.Property<string>\("IptuMatricula"\)\s*\.HasColumnType\("TEXT"\);', ''
+if (-not $text.Contains('IptuInscricaoImobiliaria')) {
+    $text = $text -replace '(?ms)(\s*b\.Property<string>\("InscricaoEnergetica"\)\s*\.HasColumnType\("TEXT"\);)', "`$1`r`n`r`n                    b.Property<string>(\"IptuCadastroImovel\")`r`n                        .HasColumnType(\"TEXT\");`r`n`r`n                    b.Property<string>(\"IptuInscricaoImobiliaria\")`r`n                        .HasColumnType(\"TEXT\");"
 }
-
-# 6) EF snapshot: update the current snapshot so future migrations do not keep the old column as a shadow property.
-Update-FileText 'Monthoya.Data/Migrations/MonthoyaDbContextModelSnapshot.cs' {
-    param($text)
-    Replace-Required $text `
-        '                    b.Property<string>("IptuMatricula")
-                        .HasColumnType("TEXT");' `
-        '                    b.Property<string>("IptuCadastroImovel")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("IptuInscricaoImobiliaria")
-                        .HasColumnType("TEXT");' `
-        'Model snapshot IPTU properties'
-}
+Save-IfChanged $path $original $text
 
 # 7) Migration: add the two new columns and drop the old one.
 $migrationPath = 'Monthoya.Data/Migrations/20260610143000_AddSplitIptuFields.cs'
@@ -255,10 +173,10 @@ public partial class AddSplitIptuFields : Migration
     }
 }
 '@ | Set-Content -Path $migrationPath -Encoding UTF8 -NoNewline
-Write-Host "Created/updated: $migrationPath"
+Write-Host "Updated: $migrationPath"
 
 Write-Host ''
-Write-Host 'Clean IPTU split patch applied locally. Review the diff, then run the app/database migration as usual.'
+Write-Host 'Repair patch finished. Building solution now...'
 
 if (-not $SkipBuild) {
     dotnet build Monthoya.sln
