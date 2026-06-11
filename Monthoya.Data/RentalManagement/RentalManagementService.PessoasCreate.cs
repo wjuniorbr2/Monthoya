@@ -184,7 +184,7 @@ public sealed partial class RentalManagementService
         return new Pessoa
         {
             TipoPessoa = request.TipoPessoa,
-            NomeDisplay = request.NomeDisplay.Trim(),
+            NomeDisplay = request.TipoPessoa == TipoPessoa.Fisica ? NormalizePessoaFisicaNome(request.NomeDisplay) : request.NomeDisplay.Trim(),
             Telefone = DigitsOrNull(request.Telefone),
             Email = request.Email?.Trim(),
             Observacoes = request.Observacoes?.Trim()

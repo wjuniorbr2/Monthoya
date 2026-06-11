@@ -201,7 +201,7 @@ public sealed partial class RentalManagementService
     private void UpdatePessoaBase(Pessoa pessoa, UpdatePessoaRequest request)
     {
         pessoa.TipoPessoa = request.Pessoa.TipoPessoa;
-        pessoa.NomeDisplay = request.Pessoa.NomeDisplay.Trim();
+        pessoa.NomeDisplay = request.Pessoa.TipoPessoa == TipoPessoa.Fisica ? NormalizePessoaFisicaNome(request.Pessoa.NomeDisplay) : request.Pessoa.NomeDisplay.Trim();
         pessoa.Telefone = DigitsOrNull(request.Pessoa.Telefone);
         pessoa.Email = TrimOrNull(request.Pessoa.Email);
         pessoa.Observacoes = TrimOrNull(request.Pessoa.Observacoes);

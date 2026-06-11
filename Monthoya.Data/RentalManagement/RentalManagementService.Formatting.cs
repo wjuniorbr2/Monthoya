@@ -1,4 +1,6 @@
-﻿using System.Text.RegularExpressions;
+using System.Globalization;
+
+using System.Text.RegularExpressions;
 using Monthoya.Core.Entities;
 
 namespace Monthoya.Data.RentalManagement;
@@ -39,6 +41,36 @@ public sealed partial class RentalManagementService
     }
 
 
+    private static string NormalizePessoaFisicaNome(string value)
+    {
+        var normalized = CollapseWhitespace(value);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return normalized;
+        }
+
+        var culture = CultureInfo.GetCultureInfo("pt-BR");
+        var words = normalized.ToLower(culture).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var lowerCaseWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "da", "de", "di", "do", "das", "dos", "e"
+        };
+
+        for (var i = 0; i < words.Length; i++)
+        {
+            if (i > 0 && lowerCaseWords.Contains(words[i]))
+            {
+                continue;
+            }
+
+            words[i] = culture.TextInfo.ToTitleCase(words[i]);
+        }
+
+        return string.Join(' ', words);
+    }
+
+    private static string CollapseWhitespace(string value) =>
+        string.Join(' ', value.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
 
     private static string? NormalizeState(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim().ToUpperInvariant();
