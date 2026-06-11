@@ -29,6 +29,11 @@ public partial class ShellWindow
 
     private bool TryApplyBrazilianDate(DatePicker datePicker)
     {
+        return TryApplyBrazilianDate(datePicker, message => PessoaErrorText.Text = message);
+    }
+
+    private static bool TryApplyBrazilianDate(DatePicker datePicker, Action<string> setError)
+    {
         var text = datePicker.Text?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -38,26 +43,26 @@ public partial class ShellWindow
         var digits = OnlyDigits(text);
         if (digits.Length == 6)
         {
-            PessoaErrorText.Text = "Use o ano com quatro números. Exemplo: 25/04/1998.";
+            setError("Use o ano com quatro números. Exemplo: 25/04/1998.");
             return false;
         }
 
         if (digits.Length != 8)
         {
-            PessoaErrorText.Text = "Data inválida. Use dia/mês/ano no formato brasileiro. Exemplo: 25/04/1998.";
+            setError("Data inválida. Use dia/mês/ano no formato brasileiro. Exemplo: 25/04/1998.");
             return false;
         }
 
         var normalized = $"{digits[..2]}/{digits.Substring(2, 2)}/{digits.Substring(4, 4)}";
         if (!DateTime.TryParseExact(normalized, "dd/MM/yyyy", CultureInfo.GetCultureInfo("pt-BR"), DateTimeStyles.None, out var parsed))
         {
-            PessoaErrorText.Text = "Data inválida. Use dia/mês/ano no formato brasileiro. Exemplo: 25/04/1998.";
+            setError("Data inválida. Use dia/mês/ano no formato brasileiro. Exemplo: 25/04/1998.");
             return false;
         }
 
         datePicker.SelectedDate = parsed;
         datePicker.Text = parsed.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("pt-BR"));
-        PessoaErrorText.Text = string.Empty;
+        setError(string.Empty);
         return true;
     }
 }

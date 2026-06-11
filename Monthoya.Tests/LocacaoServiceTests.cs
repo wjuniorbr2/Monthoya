@@ -73,6 +73,26 @@ public class LocacaoServiceTests
         Assert.Contains("já possui uma locação ativa", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task CreateLocacao_CannotUseSamePersonAsOwnerAndTenant()
+    {
+        await using var dbContext = CreateDbContext();
+        var seed = await SeedRentalActorsAsync(dbContext);
+        var service = new RentalManagementService(dbContext);
+
+        var request = CreateRequest(seed) with
+        {
+            Partes =
+            [
+                new LocacaoParteRequest(seed.OwnerId, TipoParteLocacao.Proprietario, PercentualParticipacao: 100m, RecebeRepasse: true),
+                new LocacaoParteRequest(seed.OwnerId, TipoParteLocacao.Locatario, RecebeCobranca: true)
+            ]
+        };
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateLocacaoAsync(request));
+        Assert.Contains("mesma pessoa", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static MonthoyaDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<MonthoyaDbContext>()

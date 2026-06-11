@@ -1515,9 +1515,21 @@
                                  Margin="0,0,0,18"
                                  TextChanged="ModuleSearchBox_TextChanged"
                                  ToolTip="Pesquisar nesta lista" />
-                        <Border Grid.Row="3" Style="{StaticResource CardBorder}" Padding="0">
-                            <DataGrid x:Name="ModuleGrid" AutoGenerateColumns="True" IsReadOnly="True" BorderThickness="0" SelectionChanged="ModuleGrid_SelectionChanged" />
-                        </Border>
+                        <Grid Grid.Row="3">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="2*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Style="{StaticResource CardBorder}" Padding="0">
+                                <DataGrid x:Name="ModuleGrid" AutoGenerateColumns="True" IsReadOnly="True" BorderThickness="0" SelectionChanged="ModuleGrid_SelectionChanged" />
+                            </Border>
+                            <Border x:Name="ModuleDetailsBorder" Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0,18,0,0" Visibility="Collapsed">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                    <ContentControl x:Name="ModuleDetailsHost" />
+                                </ScrollViewer>
+                            </Border>
+                        </Grid>
                     </Grid>
 
                     <Grid x:Name="DiagnosticsPanel" Visibility="Collapsed">

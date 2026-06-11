@@ -23,6 +23,14 @@ public sealed partial class RentalManagementService
         }
 
         var status = request.Status ?? LocacaoStatus.Rascunho;
+        var proprietarios = request.Partes.Where(x => x.TipoParte == TipoParteLocacao.Proprietario).ToList();
+        var locatarios = request.Partes.Where(x => x.TipoParte == TipoParteLocacao.Locatario).ToList();
+        var proprietarioIds = proprietarios.Select(x => x.PessoaId).ToHashSet();
+        if (locatarios.Any(x => proprietarioIds.Contains(x.PessoaId)))
+        {
+            throw new InvalidOperationException("A mesma pessoa nÃ£o pode ser proprietÃ¡rio e locatÃ¡rio na mesma locaÃ§Ã£o.");
+        }
+
         if (IsActiveLocacaoStatus(status))
         {
             var hasActiveLocacaoForImovel = await dbContext.Locacoes.AnyAsync(
