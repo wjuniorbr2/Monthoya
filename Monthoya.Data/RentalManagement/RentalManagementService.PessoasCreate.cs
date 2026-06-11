@@ -1,4 +1,4 @@
-﻿using Monthoya.Core.Entities;
+using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
 namespace Monthoya.Data.RentalManagement;
@@ -8,19 +8,9 @@ public sealed partial class RentalManagementService
     public async Task<PessoaSummary> CreatePessoaAsync(CreatePessoaRequest request, CancellationToken cancellationToken = default)
     {
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(request.NomeDisplay))
-        {
-            throw new InvalidOperationException("Informe o nome da pessoa.");
-        }
+        ValidateCreatePessoaRequest(request);
 
-        var pessoa = new Pessoa
-        {
-            TipoPessoa = request.TipoPessoa,
-            NomeDisplay = request.NomeDisplay.Trim(),
-            Telefone = DigitsOrNull(request.Telefone),
-            Email = request.Email?.Trim(),
-            Observacoes = request.Observacoes?.Trim()
-        };
+        var pessoa = CreatePessoaBase(request);
 
         if (request.TipoPessoa == TipoPessoa.Fisica)
         {
@@ -168,5 +158,25 @@ public sealed partial class RentalManagementService
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return (await GetPessoasCoreAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
+    }
+
+    private static void ValidateCreatePessoaRequest(CreatePessoaRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.NomeDisplay))
+        {
+            throw new InvalidOperationException("Informe o nome da pessoa.");
+        }
+    }
+
+    private Pessoa CreatePessoaBase(CreatePessoaRequest request)
+    {
+        return new Pessoa
+        {
+            TipoPessoa = request.TipoPessoa,
+            NomeDisplay = request.NomeDisplay.Trim(),
+            Telefone = DigitsOrNull(request.Telefone),
+            Email = request.Email?.Trim(),
+            Observacoes = request.Observacoes?.Trim()
+        };
     }
 }
