@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
@@ -9,28 +9,15 @@ public sealed partial class RentalManagementService
     public async Task<PessoaSummary> UpdatePessoaAsync(UpdatePessoaRequest request, CancellationToken cancellationToken = default)
     {
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
-        if (request.Id == Guid.Empty)
-        {
-            throw new InvalidOperationException("Selecione a pessoa para editar.");
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Pessoa.NomeDisplay))
-        {
-            throw new InvalidOperationException("Informe o nome da pessoa.");
-        }
+        ValidateUpdatePessoaRequest(request);
 
         var pessoa = await dbContext.Pessoas
             .Include(x => x.PessoaFisica)
             .Include(x => x.PessoaJuridica)
             .SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
-            ?? throw new InvalidOperationException("Pessoa não encontrada.");
+            ?? throw new InvalidOperationException("Pessoa n�o encontrada.");
 
-        pessoa.TipoPessoa = request.Pessoa.TipoPessoa;
-        pessoa.NomeDisplay = request.Pessoa.NomeDisplay.Trim();
-        pessoa.Telefone = DigitsOrNull(request.Pessoa.Telefone);
-        pessoa.Email = TrimOrNull(request.Pessoa.Email);
-        pessoa.Observacoes = TrimOrNull(request.Pessoa.Observacoes);
-        pessoa.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        UpdatePessoaBase(pessoa, request);
 
         if (request.Pessoa.TipoPessoa == TipoPessoa.Fisica)
         {
@@ -184,5 +171,28 @@ public sealed partial class RentalManagementService
 
         await dbContext.SaveChangesAsync(cancellationToken);
         return (await GetPessoasCoreAsync(cancellationToken)).Single(x => x.Id == pessoa.Id);
+    }
+
+    private static void ValidateUpdatePessoaRequest(UpdatePessoaRequest request)
+    {
+        if (request.Id == Guid.Empty)
+        {
+            throw new InvalidOperationException("Selecione a pessoa para editar.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Pessoa.NomeDisplay))
+        {
+            throw new InvalidOperationException("Informe o nome da pessoa.");
+        }
+    }
+
+    private void UpdatePessoaBase(Pessoa pessoa, UpdatePessoaRequest request)
+    {
+        pessoa.TipoPessoa = request.Pessoa.TipoPessoa;
+        pessoa.NomeDisplay = request.Pessoa.NomeDisplay.Trim();
+        pessoa.Telefone = DigitsOrNull(request.Pessoa.Telefone);
+        pessoa.Email = TrimOrNull(request.Pessoa.Email);
+        pessoa.Observacoes = TrimOrNull(request.Pessoa.Observacoes);
+        pessoa.UpdatedAtUtc = DateTimeOffset.UtcNow;
     }
 }
