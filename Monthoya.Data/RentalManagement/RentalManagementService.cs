@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
-using Monthoya.Core.Entities;
-using Monthoya.Core.Integrations;
+﻿using Monthoya.Core.Integrations;
 using Monthoya.Core.Services;
 using Monthoya.Data.Storage;
 
@@ -12,24 +9,4 @@ public sealed partial class RentalManagementService(
     IDocumentOcrService? documentOcrService = null,
     IFileStorageService? fileStorageService = null) : IRentalManagementService
 {
-
-
-
-
-
-
-
-
-
-
 }
-
-
-
-
-
-
-
-
-
-
