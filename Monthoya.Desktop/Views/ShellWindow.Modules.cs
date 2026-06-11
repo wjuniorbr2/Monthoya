@@ -51,8 +51,10 @@ public partial class ShellWindow
         var definition = GetModuleDefinition(page);
         ModuleTitleText.Text = definition.Title;
         ModuleSubtitleText.Text = definition.Subtitle;
+        ModuleSubtitleText.Visibility = page == ShellPage.Locacoes ? Visibility.Collapsed : Visibility.Visible;
         SetModuleNotice(page == ShellPage.Locacoes ? string.Empty : definition.Notice);
         ModulePrimaryActionButton.Content = definition.ActionText;
+        ModulePrimaryActionButton.Style = (Style)FindResource(page == ShellPage.Locacoes ? "PrimaryButtonSmall" : "SecondaryButton");
         ModuleOpenButton.Visibility = Visibility.Collapsed;
         ModuleOpenButton.IsEnabled = false;
         ClearModuleDetails();

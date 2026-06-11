@@ -219,19 +219,84 @@ public partial class ShellWindow
 
     private ComboBox CreateComboBox(IEnumerable<object> items, string? displayMemberPath)
     {
+        var itemList = items.ToList();
+        var isSearchable = !string.IsNullOrWhiteSpace(displayMemberPath);
         var comboBox = new ComboBox
         {
-            ItemsSource = items,
-            Margin = new Thickness(0, 6, 0, 12)
+            ItemsSource = itemList,
+            Margin = new Thickness(0, 6, 0, 12),
+            IsEditable = isSearchable,
+            IsTextSearchEnabled = !isSearchable,
+            StaysOpenOnEdit = isSearchable,
+            SelectedIndex = -1
         };
 
-        if (!string.IsNullOrWhiteSpace(displayMemberPath))
+        if (isSearchable)
         {
             comboBox.DisplayMemberPath = displayMemberPath;
+            TextSearch.SetTextPath(comboBox, displayMemberPath!);
+            AttachSearchableComboBox(comboBox, itemList, displayMemberPath!);
         }
 
-        comboBox.SelectedIndex = comboBox.Items.Count > 0 ? 0 : -1;
         return comboBox;
+    }
+
+    private static void AttachSearchableComboBox(ComboBox comboBox, IReadOnlyList<object> sourceItems, string displayMemberPath)
+    {
+        var isFiltering = false;
+
+        comboBox.PreviewTextInput += (_, _) =>
+        {
+            if (comboBox.SelectedItem is not null)
+            {
+                comboBox.SelectedItem = null;
+            }
+        };
+
+        comboBox.Loaded += (_, _) =>
+        {
+            if (comboBox.Template.FindName("PART_EditableTextBox", comboBox) is not TextBox textBox)
+            {
+                return;
+            }
+
+            textBox.TextChanged += (_, _) =>
+            {
+                if (isFiltering || !comboBox.IsKeyboardFocusWithin || comboBox.SelectedItem is not null)
+                {
+                    return;
+                }
+
+                isFiltering = true;
+                var searchText = textBox.Text ?? string.Empty;
+                var filtered = string.IsNullOrWhiteSpace(searchText)
+                    ? sourceItems.ToList()
+                    : sourceItems
+                        .Where(item => GetComboBoxDisplayValue(item, displayMemberPath)
+                            .Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                        .ToList();
+
+                comboBox.ItemsSource = filtered;
+                comboBox.IsDropDownOpen = filtered.Count > 0 && comboBox.IsKeyboardFocusWithin;
+                textBox.SelectionStart = textBox.Text.Length;
+                textBox.SelectionLength = 0;
+                isFiltering = false;
+            };
+        };
+
+        comboBox.SelectionChanged += (_, _) =>
+        {
+            if (comboBox.SelectedItem is not null)
+            {
+                comboBox.ItemsSource = sourceItems;
+            }
+        };
+    }
+
+    private static string GetComboBoxDisplayValue(object item, string displayMemberPath)
+    {
+        var property = item.GetType().GetProperty(displayMemberPath);
+        return property?.GetValue(item)?.ToString() ?? item.ToString() ?? string.Empty;
     }
 
     private static void AddLabeledControl(Panel panel, string label, Control control)
