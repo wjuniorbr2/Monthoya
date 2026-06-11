@@ -52,6 +52,7 @@ public partial class ShellWindow
         ModuleTitleText.Text = definition.Title;
         ModuleSubtitleText.Text = definition.Subtitle;
         ModuleSubtitleText.Visibility = page == ShellPage.Locacoes ? Visibility.Collapsed : Visibility.Visible;
+        ModulePanel.Margin = page == ShellPage.Locacoes ? new Thickness(0, -10, 0, 0) : new Thickness(0);
         SetModuleNotice(page == ShellPage.Locacoes ? string.Empty : definition.Notice);
         ModulePrimaryActionButton.Content = definition.ActionText;
         ModulePrimaryActionButton.Style = (Style)FindResource(page == ShellPage.Locacoes ? "PrimaryButtonSmall" : "SecondaryButton");
@@ -229,3 +230,4 @@ public partial class ShellWindow
         public static ModulePageState Default { get; } = new("", null);
     }
 }
+
