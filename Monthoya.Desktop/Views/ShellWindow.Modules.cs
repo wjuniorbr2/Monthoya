@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
 namespace Monthoya.Desktop.Views;
@@ -96,7 +97,7 @@ public partial class ShellWindow
         }
     }
 
-    private void ModulePrimaryActionButton_Click(object sender, RoutedEventArgs e)
+    private async void ModulePrimaryActionButton_Click(object sender, RoutedEventArgs e)
     {
         if (_activeModulePage == ShellPage.Configuracoes)
         {
@@ -104,9 +105,14 @@ public partial class ShellWindow
             return;
         }
 
+        if (_activeModulePage == ShellPage.Locacoes)
+        {
+            await ShowCreateLocacaoDialogAsync();
+            return;
+        }
+
         var message = _activeModulePage switch
         {
-            ShellPage.Locacoes => "O formulário completo de locação será implementado em uma próxima etapa.",
             ShellPage.Boletos => "Integração bancária ainda não configurada.",
             ShellPage.NotasFiscais => "Integração automática com NFS-e ainda não configurada. Use o fluxo manual/semi-manual.",
             ShellPage.Dimob => "Exportação oficial DIMOB pendente de confirmação do layout vigente da Receita Federal.",
@@ -115,6 +121,209 @@ public partial class ShellWindow
         };
 
         MessageBox.Show(this, message, "Monthoya", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private async Task ShowCreateLocacaoDialogAsync()
+    {
+        IReadOnlyList<ImovelSummary> imoveis;
+        IReadOnlyList<PessoaSummary> pessoas;
+
+        try
+        {
+            imoveis = await _rentalManagementService.GetImoveisAsync();
+            pessoas = await _rentalManagementService.GetPessoasAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"Não foi possível carregar os dados para nova locação. {ex.Message}", "Nova locação", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        if (imoveis.Count == 0)
+        {
+            MessageBox.Show(this, "Cadastre ao menos um imóvel antes de criar uma locação.", "Nova locação", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var pessoasSelecionaveis = pessoas.OrderBy(x => x.Nome).ToList();
+        if (pessoasSelecionaveis.Count == 0)
+        {
+            MessageBox.Show(this, "Cadastre ao menos uma pessoa antes de criar uma locação.", "Nova locação", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new Window
+        {
+            Owner = this,
+            Title = "Nova locação",
+            Width = 720,
+            Height = 680,
+            MinWidth = 640,
+            MinHeight = 580,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Background = Background
+        };
+
+        var root = new Grid { Margin = new Thickness(22) };
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        root.Children.Add(new TextBlock
+        {
+            Text = "Nova locação",
+            FontSize = 24,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 14)
+        });
+
+        var form = new StackPanel();
+        var scroll = new ScrollViewer
+        {
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = form
+        };
+        Grid.SetRow(scroll, 1);
+        root.Children.Add(scroll);
+
+        var imovelBox = CreateComboBox(imoveis, nameof(ImovelSummary.Endereco));
+        var proprietarioBox = CreateComboBox(pessoasSelecionaveis, nameof(PessoaSummary.Nome));
+        var locatarioBox = CreateComboBox(pessoasSelecionaveis, nameof(PessoaSummary.Nome));
+        var tipoBox = CreateComboBox(Enum.GetValues<TipoLocacao>().Cast<object>().ToList(), null);
+        tipoBox.SelectedItem = TipoLocacao.Residencial;
+        var valorBox = new TextBox { Margin = new Thickness(0, 6, 0, 12) };
+        var dataInicioBox = new DatePicker { SelectedDate = DateTime.Today, Margin = new Thickness(0, 6, 0, 12) };
+        var dataCobrancaBox = new DatePicker { SelectedDate = DateTime.Today, Margin = new Thickness(0, 6, 0, 12) };
+        var diaBaseBox = new TextBox { Text = DateTime.Today.Day.ToString(), Margin = new Thickness(0, 6, 0, 12) };
+        var diaVencimentoBox = new TextBox { Text = DateTime.Today.Day.ToString(), Margin = new Thickness(0, 6, 0, 12) };
+        var diaRepasseBox = new TextBox { Text = DateTime.Today.Day.ToString(), Margin = new Thickness(0, 6, 0, 12) };
+        var antecipadoBox = new CheckBox { Content = "Aluguel antecipado", Margin = new Thickness(0, 6, 0, 12) };
+        var observacoesBox = new TextBox
+        {
+            AcceptsReturn = true,
+            Height = 82,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 6, 0, 12)
+        };
+        var errorText = new TextBlock
+        {
+            Foreground = System.Windows.Media.Brushes.Firebrick,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
+        AddLabeledControl(form, "Imóvel", imovelBox);
+        AddLabeledControl(form, "Proprietário principal", proprietarioBox);
+        AddLabeledControl(form, "Locatário principal", locatarioBox);
+        AddLabeledControl(form, "Tipo de locação", tipoBox);
+        AddLabeledControl(form, "Valor aluguel inicial", valorBox);
+        AddLabeledControl(form, "Data início locação", dataInicioBox);
+        AddLabeledControl(form, "Data início cobrança", dataCobrancaBox);
+        AddLabeledControl(form, "Dia base", diaBaseBox);
+        AddLabeledControl(form, "Dia vencimento locatário", diaVencimentoBox);
+        AddLabeledControl(form, "Dia repasse proprietário", diaRepasseBox);
+        form.Children.Add(antecipadoBox);
+        AddLabeledControl(form, "Observações internas", observacoesBox);
+        form.Children.Add(errorText);
+
+        dataInicioBox.SelectedDateChanged += (_, _) =>
+        {
+            if (!dataCobrancaBox.SelectedDate.HasValue)
+            {
+                dataCobrancaBox.SelectedDate = dataInicioBox.SelectedDate;
+            }
+        };
+        dataCobrancaBox.SelectedDateChanged += (_, _) =>
+        {
+            if (dataCobrancaBox.SelectedDate is not DateTime selected)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(diaBaseBox.Text)) diaBaseBox.Text = selected.Day.ToString();
+            if (string.IsNullOrWhiteSpace(diaVencimentoBox.Text)) diaVencimentoBox.Text = diaBaseBox.Text;
+            if (string.IsNullOrWhiteSpace(diaRepasseBox.Text)) diaRepasseBox.Text = diaVencimentoBox.Text;
+        };
+
+        var buttons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 16, 0, 0)
+        };
+        Grid.SetRow(buttons, 2);
+        var saveButton = new Button
+        {
+            Content = "Salvar locação",
+            Style = (Style)FindResource("PrimaryButtonSmall"),
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        var cancelButton = new Button
+        {
+            Content = "Cancelar",
+            Style = (Style)FindResource("SecondaryButton")
+        };
+        cancelButton.Click += (_, _) => dialog.Close();
+        buttons.Children.Add(saveButton);
+        buttons.Children.Add(cancelButton);
+        root.Children.Add(buttons);
+        dialog.Content = root;
+
+        saveButton.Click += async (_, _) =>
+        {
+            errorText.Text = string.Empty;
+            saveButton.IsEnabled = false;
+            try
+            {
+                if (imovelBox.SelectedItem is not ImovelSummary imovel)
+                {
+                    throw new InvalidOperationException("Selecione o imóvel.");
+                }
+
+                if (proprietarioBox.SelectedItem is not PessoaSummary proprietario)
+                {
+                    throw new InvalidOperationException("Selecione o proprietário.");
+                }
+
+                if (locatarioBox.SelectedItem is not PessoaSummary locatario)
+                {
+                    throw new InvalidOperationException("Selecione o locatário.");
+                }
+
+                var valor = ParseNullableDecimal(valorBox.Text)
+                    ?? throw new InvalidOperationException("Informe o valor inicial do aluguel.");
+
+                var request = new CreateLocacaoRequest(
+                    ImovelId: imovel.Id,
+                    Partes:
+                    [
+                        new LocacaoParteRequest(proprietario.Id, TipoParteLocacao.Proprietario, IsPrincipal: true, PercentualParticipacao: 100m, RecebeRepasse: true),
+                        new LocacaoParteRequest(locatario.Id, TipoParteLocacao.Locatario, IsPrincipal: true, RecebeCobranca: true)
+                    ],
+                    TipoLocacao: tipoBox.SelectedItem is TipoLocacao tipo ? tipo : TipoLocacao.Residencial,
+                    Status: LocacaoStatus.Rascunho,
+                    DataInicioLocacao: ToLocacaoDateOnly(dataInicioBox.SelectedDate),
+                    DataInicioCobranca: ToLocacaoDateOnly(dataCobrancaBox.SelectedDate),
+                    DiaBase: ParseRequiredDay(diaBaseBox.Text, "Dia base"),
+                    DiaVencimentoLocatario: ParseRequiredDay(diaVencimentoBox.Text, "Dia vencimento locatário"),
+                    DiaRepasseProprietario: ParseRequiredDay(diaRepasseBox.Text, "Dia repasse proprietário"),
+                    ValorAluguelInicial: valor,
+                    AluguelAntecipado: antecipadoBox.IsChecked == true,
+                    ObservacoesInternas: string.IsNullOrWhiteSpace(observacoesBox.Text) ? null : observacoesBox.Text.Trim());
+
+                await _rentalManagementService.CreateLocacaoAsync(request);
+                dialog.Close();
+                await LoadGenericModuleAsync(ShellPage.Locacoes);
+                MessageBox.Show(this, "Locação criada como rascunho.", "Nova locação", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                errorText.Text = ex.Message;
+                saveButton.IsEnabled = true;
+            }
+        };
+
+        dialog.ShowDialog();
     }
 
     private async void ModuleReloadButton_Click(object sender, RoutedEventArgs e) =>
@@ -177,6 +386,46 @@ public partial class ShellWindow
             Binding = new Binding(bindingPath) { StringFormat = stringFormat },
             Width = new DataGridLength(width, DataGridLengthUnitType.Star)
         });
+    }
+
+    private ComboBox CreateComboBox(IEnumerable<object> items, string? displayMemberPath)
+    {
+        var comboBox = new ComboBox
+        {
+            ItemsSource = items,
+            Margin = new Thickness(0, 6, 0, 12)
+        };
+
+        if (!string.IsNullOrWhiteSpace(displayMemberPath))
+        {
+            comboBox.DisplayMemberPath = displayMemberPath;
+        }
+
+        comboBox.SelectedIndex = comboBox.Items.Count > 0 ? 0 : -1;
+        return comboBox;
+    }
+
+    private static void AddLabeledControl(Panel panel, string label, Control control)
+    {
+        panel.Children.Add(new TextBlock
+        {
+            Text = label,
+            FontWeight = FontWeights.SemiBold
+        });
+        panel.Children.Add(control);
+    }
+
+    private static DateOnly? ToLocacaoDateOnly(DateTime? value) =>
+        value.HasValue ? DateOnly.FromDateTime(value.Value) : null;
+
+    private static int ParseRequiredDay(string? value, string label)
+    {
+        if (!int.TryParse(value, out var day) || day is < 1 or > 31)
+        {
+            throw new InvalidOperationException($"{label} deve ficar entre 1 e 31.");
+        }
+
+        return day;
     }
 
     private ModulePageState CaptureModulePageState() =>
