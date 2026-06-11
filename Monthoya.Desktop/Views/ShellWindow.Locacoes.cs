@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -368,13 +368,32 @@ public partial class ShellWindow
         ModuleDetailsBorder.Visibility = Visibility.Visible;
 
         var root = new StackPanel();
-        root.Children.Add(new TextBlock
+
+        var header = new Grid { Margin = new Thickness(0, 0, 0, 4) };
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var title = new TextBlock
         {
             Text = $"Locação {locacao.Codigo ?? "-"}",
             FontSize = 20,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 0, 0, 4)
-        });
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        Grid.SetColumn(title, 0);
+        header.Children.Add(title);
+
+        var editButton = new Button
+        {
+            Content = "Editar",
+            Style = (Style)FindResource("PrimaryButtonSmall"),
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        editButton.Click += async (_, _) => await ShowEditLocacaoInlineAsync(locacao);
+        Grid.SetColumn(editButton, 1);
+        header.Children.Add(editButton);
+
+        root.Children.Add(header);
 
         if (!string.IsNullOrWhiteSpace(statusMessage))
         {
@@ -401,7 +420,7 @@ public partial class ShellWindow
 
         root.Children.Add(new TextBlock
         {
-            Text = "Edição completa da locação será implementada em uma próxima etapa.",
+            Text = "Use Editar para alterar os dados básicos desta locação.",
             Foreground = System.Windows.Media.Brushes.DimGray,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 10, 0, 0)
@@ -409,7 +428,6 @@ public partial class ShellWindow
 
         ModuleDetailsHost.Content = root;
     }
-
     private static void AddDetailText(Panel panel, string label, string value, double width = 220)
     {
         var field = new StackPanel
@@ -490,5 +508,3 @@ public partial class ShellWindow
         };
     }
 }
-
-
