@@ -489,16 +489,35 @@ public partial class ShellWindow
 
     private static void ConfigureLocacaoDayTextBox(TextBox textBox, TextBlock errorText)
     {
+        textBox.MaxLength = 2;
         textBox.PreviewTextInput += (_, e) =>
         {
-            if (System.Text.RegularExpressions.Regex.IsMatch(e.Text, @"^\d+$"))
+            if (!System.Text.RegularExpressions.Regex.IsMatch(e.Text, @"^\d+$"))
             {
+                e.Handled = true;
+                errorText.Text = "Dias devem ser informados com números de 1 a 31.";
                 return;
             }
 
-            e.Handled = true;
-            errorText.Text = "Dias devem ser informados com números de 1 a 31.";
+            var selectedTextLength = textBox.SelectedText?.Length ?? 0;
+            var nextLength = textBox.Text.Length - selectedTextLength + e.Text.Length;
+            if (nextLength > 2)
+            {
+                e.Handled = true;
+                errorText.Text = "Dias devem ter no máximo 2 dígitos.";
+            }
         };
+        DataObject.AddPastingHandler(textBox, (_, e) =>
+        {
+            var text = e.DataObject.GetDataPresent(DataFormats.Text)
+                ? e.DataObject.GetData(DataFormats.Text) as string ?? string.Empty
+                : string.Empty;
+            if (!System.Text.RegularExpressions.Regex.IsMatch(text, @"^\d{1,2}$"))
+            {
+                e.CancelCommand();
+                errorText.Text = "Cole apenas números de 1 a 31, com no máximo 2 dígitos.";
+            }
+        });
         textBox.LostKeyboardFocus += (_, _) =>
         {
             if (!string.IsNullOrWhiteSpace(textBox.Text) && (!int.TryParse(textBox.Text, out var day) || day is < 1 or > 31))
