@@ -18,59 +18,7 @@ public sealed partial class RentalManagementService
         }
         else
         {
-            pessoa.PessoaJuridica = new PessoaJuridica
-            {
-                NomeEmpresa = pessoa.NomeDisplay,
-                NomeFantasia = TrimOrNull(request.NomeFantasia),
-                Atividade = TrimOrNull(request.Atividade),
-                ReceitaMensal = request.ReceitaMensal,
-                Cnpj = DigitsOrNull(request.Documento),
-                InscricaoEstadual = DigitsOrNull(request.InscricaoEstadual),
-                InscricaoMunicipal = DigitsOrNull(request.InscricaoMunicipal),
-                DataAbertura = request.DataAbertura,
-                EmpresaRua = TrimOrNull(request.Rua),
-                EmpresaNumero = TrimOrNull(request.Numero),
-                EmpresaComplemento = TrimOrNull(request.Complemento),
-                EmpresaBairro = TrimOrNull(request.Bairro),
-                EmpresaCidade = TrimOrNull(request.Cidade),
-                EmpresaEstado = NormalizeState(request.Estado),
-                EmpresaCep = DigitsOrNull(request.Cep),
-                ResponsavelNome = TrimOrNull(request.ResponsavelNome),
-                ResponsavelCargo = TrimOrNull(request.ResponsavelCargo),
-                ResponsavelRua = TrimOrNull(request.ResponsavelRua),
-                ResponsavelNumero = TrimOrNull(request.ResponsavelNumero),
-                ResponsavelComplemento = TrimOrNull(request.ResponsavelComplemento),
-                ResponsavelBairro = TrimOrNull(request.ResponsavelBairro),
-                ResponsavelCidade = TrimOrNull(request.ResponsavelCidade),
-                ResponsavelEstado = NormalizeState(request.ResponsavelEstado),
-                ResponsavelCep = DigitsOrNull(request.ResponsavelCep),
-                ResponsavelEstadoCivil = TrimOrNull(request.ResponsavelEstadoCivil),
-                ResponsavelNacionalidade = TrimOrNull(request.ResponsavelNacionalidade),
-                ResponsavelDataNascimento = request.ResponsavelDataNascimento,
-                ResponsavelEmail = pessoa.Email,
-                ResponsavelTelefone = pessoa.Telefone,
-                ResponsavelRg = DigitsOrNull(request.ResponsavelRg),
-                ResponsavelCpf = DigitsOrNull(request.ResponsavelCpf),
-                ResponsavelProfissao = TrimOrNull(request.ResponsavelProfissao),
-                ResponsavelOndeTrabalha = TrimOrNull(request.ResponsavelOndeTrabalha),
-                ResponsavelEnderecoTrabalho = TrimOrNull(request.ResponsavelEnderecoTrabalho),
-                ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.ResponsavelNomeEmpresaTrabalho),
-                ResponsavelTelefoneEmpresaTrabalho = DigitsOrNull(request.ResponsavelTelefoneEmpresaTrabalho),
-                ResponsavelDadosBancarios = TrimOrNull(request.ResponsavelDadosBancarios),
-                ResponsavelBancoCodigo = DigitsOrNull(request.ResponsavelBancoCodigo),
-                ResponsavelBancoNome = TrimOrNull(request.ResponsavelBancoNome),
-                ResponsavelAgenciaNumero = DigitsOrNull(request.ResponsavelAgenciaNumero),
-                ResponsavelAgenciaDigito = TrimOrNull(request.ResponsavelAgenciaDigito),
-                ResponsavelContaNumero = DigitsOrNull(request.ResponsavelContaNumero),
-                ResponsavelContaDigito = TrimOrNull(request.ResponsavelContaDigito),
-                ResponsavelContaTipo = request.ResponsavelContaTipo,
-                ResponsavelTitularNome = TrimOrNull(request.ResponsavelTitularNome),
-                ResponsavelTitularDocumento = DigitsOrNull(request.ResponsavelTitularDocumento),
-                ResponsavelPixTipo = request.ResponsavelPixTipo,
-                ResponsavelPixChave = NormalizePixChave(request.ResponsavelPixChave, request.ResponsavelPixTipo),
-                ResponsavelRepassePreferencial = request.ResponsavelRepassePreferencial,
-                ResponsavelObservacoes = TrimOrNull(request.ResponsavelObservacoes)
-            };
+            pessoa.PessoaJuridica = CreatePessoaJuridica(request, pessoa);
         }
 
         dbContext.Pessoas.Add(pessoa);
@@ -165,6 +113,64 @@ public sealed partial class RentalManagementService
             ConjugeEmpresaCep = DigitsOrNull(request.ConjugeEmpresaCep)
         };
     }
+
+    private PessoaJuridica CreatePessoaJuridica(CreatePessoaRequest request, Pessoa pessoa)
+    {
+        return new PessoaJuridica
+        {
+            NomeEmpresa = pessoa.NomeDisplay,
+            NomeFantasia = TrimOrNull(request.NomeFantasia),
+            Atividade = TrimOrNull(request.Atividade),
+            ReceitaMensal = request.ReceitaMensal,
+            Cnpj = DigitsOrNull(request.Documento),
+            InscricaoEstadual = DigitsOrNull(request.InscricaoEstadual),
+            InscricaoMunicipal = DigitsOrNull(request.InscricaoMunicipal),
+            DataAbertura = request.DataAbertura,
+            EmpresaRua = TrimOrNull(request.Rua),
+            EmpresaNumero = TrimOrNull(request.Numero),
+            EmpresaComplemento = TrimOrNull(request.Complemento),
+            EmpresaBairro = TrimOrNull(request.Bairro),
+            EmpresaCidade = TrimOrNull(request.Cidade),
+            EmpresaEstado = NormalizeState(request.Estado),
+            EmpresaCep = DigitsOrNull(request.Cep),
+            ResponsavelNome = TrimOrNull(request.ResponsavelNome),
+            ResponsavelCargo = TrimOrNull(request.ResponsavelCargo),
+            ResponsavelRua = TrimOrNull(request.ResponsavelRua),
+            ResponsavelNumero = TrimOrNull(request.ResponsavelNumero),
+            ResponsavelComplemento = TrimOrNull(request.ResponsavelComplemento),
+            ResponsavelBairro = TrimOrNull(request.ResponsavelBairro),
+            ResponsavelCidade = TrimOrNull(request.ResponsavelCidade),
+            ResponsavelEstado = NormalizeState(request.ResponsavelEstado),
+            ResponsavelCep = DigitsOrNull(request.ResponsavelCep),
+            ResponsavelEstadoCivil = TrimOrNull(request.ResponsavelEstadoCivil),
+            ResponsavelNacionalidade = TrimOrNull(request.ResponsavelNacionalidade),
+            ResponsavelDataNascimento = request.ResponsavelDataNascimento,
+            ResponsavelEmail = pessoa.Email,
+            ResponsavelTelefone = pessoa.Telefone,
+            ResponsavelRg = DigitsOrNull(request.ResponsavelRg),
+            ResponsavelCpf = DigitsOrNull(request.ResponsavelCpf),
+            ResponsavelProfissao = TrimOrNull(request.ResponsavelProfissao),
+            ResponsavelOndeTrabalha = TrimOrNull(request.ResponsavelOndeTrabalha),
+            ResponsavelEnderecoTrabalho = TrimOrNull(request.ResponsavelEnderecoTrabalho),
+            ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.ResponsavelNomeEmpresaTrabalho),
+            ResponsavelTelefoneEmpresaTrabalho = DigitsOrNull(request.ResponsavelTelefoneEmpresaTrabalho),
+            ResponsavelDadosBancarios = TrimOrNull(request.ResponsavelDadosBancarios),
+            ResponsavelBancoCodigo = DigitsOrNull(request.ResponsavelBancoCodigo),
+            ResponsavelBancoNome = TrimOrNull(request.ResponsavelBancoNome),
+            ResponsavelAgenciaNumero = DigitsOrNull(request.ResponsavelAgenciaNumero),
+            ResponsavelAgenciaDigito = TrimOrNull(request.ResponsavelAgenciaDigito),
+            ResponsavelContaNumero = DigitsOrNull(request.ResponsavelContaNumero),
+            ResponsavelContaDigito = TrimOrNull(request.ResponsavelContaDigito),
+            ResponsavelContaTipo = request.ResponsavelContaTipo,
+            ResponsavelTitularNome = TrimOrNull(request.ResponsavelTitularNome),
+            ResponsavelTitularDocumento = DigitsOrNull(request.ResponsavelTitularDocumento),
+            ResponsavelPixTipo = request.ResponsavelPixTipo,
+            ResponsavelPixChave = NormalizePixChave(request.ResponsavelPixChave, request.ResponsavelPixTipo),
+            ResponsavelRepassePreferencial = request.ResponsavelRepassePreferencial,
+            ResponsavelObservacoes = TrimOrNull(request.ResponsavelObservacoes)
+        };
+    }
+
     private static void ValidateCreatePessoaRequest(CreatePessoaRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.NomeDisplay))
