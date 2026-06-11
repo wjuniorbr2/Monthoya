@@ -255,7 +255,7 @@ public partial class ShellWindow
 
         comboBox.Loaded += (_, _) =>
         {
-            if (comboBox.Template.FindName("PART_EditableTextBox", comboBox) is not TextBox textBox)
+            if (comboBox.Template?.FindName("PART_EditableTextBox", comboBox) is not TextBox textBox)
             {
                 return;
             }
@@ -490,3 +490,4 @@ public partial class ShellWindow
         };
     }
 }
+
