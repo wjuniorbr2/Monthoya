@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
@@ -20,20 +21,20 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            SetModuleNotice($"NÃ£o foi possÃ­vel carregar os dados para nova locaÃ§Ã£o. {ex.Message}");
+            SetModuleNotice($"Não foi possível carregar os dados para nova locação. {ex.Message}");
             return;
         }
 
         if (imoveis.Count == 0)
         {
-            SetModuleNotice("Cadastre ao menos um imÃ³vel antes de criar uma locaÃ§Ã£o.");
+            SetModuleNotice("Cadastre ao menos um imóvel antes de criar uma locação.");
             return;
         }
 
         var pessoasSelecionaveis = pessoas.OrderBy(x => x.Nome).ToList();
         if (pessoasSelecionaveis.Count == 0)
         {
-            SetModuleNotice("Cadastre ao menos uma pessoa antes de criar uma locaÃ§Ã£o.");
+            SetModuleNotice("Cadastre ao menos uma pessoa antes de criar uma locação.");
             return;
         }
 
@@ -43,14 +44,14 @@ public partial class ShellWindow
         var root = new StackPanel();
         root.Children.Add(new TextBlock
         {
-            Text = "Nova locaÃ§Ã£o",
+            Text = "Nova locação",
             FontSize = 20,
             FontWeight = FontWeights.SemiBold,
             Margin = new Thickness(0, 0, 0, 4)
         });
         root.Children.Add(new TextBlock
         {
-            Text = "Cadastro bÃ¡sico em rascunho. EdiÃ§Ã£o completa, encargos e geraÃ§Ã£o de contrato ficam para uma prÃ³xima etapa.",
+            Text = "Cadastro básico em rascunho. Edição completa, encargos e geração de contrato ficam para uma próxima etapa.",
             Foreground = System.Windows.Media.Brushes.DimGray,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 14)
@@ -92,18 +93,18 @@ public partial class ShellWindow
         ConfigureLocacaoDayTextBox(diaVencimentoBox, errorText);
         ConfigureLocacaoDayTextBox(diaRepasseBox, errorText);
 
-        AddLabeledControl(form, "ImÃ³vel", imovelBox, 320);
-        AddLabeledControl(form, "ProprietÃ¡rio principal", proprietarioBox, 260);
-        AddLabeledControl(form, "LocatÃ¡rio principal", locatarioBox, 260);
-        AddLabeledControl(form, "Tipo de locaÃ§Ã£o", tipoBox, 180);
+        AddLabeledControl(form, "Imóvel", imovelBox, 320);
+        AddLabeledControl(form, "Proprietário principal", proprietarioBox, 260);
+        AddLabeledControl(form, "Locatário principal", locatarioBox, 260);
+        AddLabeledControl(form, "Tipo de locação", tipoBox, 180);
         AddLabeledControl(form, "Valor aluguel inicial", valorBox, 180);
-        AddLabeledControl(form, "Data inÃ­cio locaÃ§Ã£o", dataInicioBox, 180);
-        AddLabeledControl(form, "Data inÃ­cio cobranÃ§a", dataCobrancaBox, 180);
+        AddLabeledControl(form, "Data início locação", dataInicioBox, 180);
+        AddLabeledControl(form, "Data início cobrança", dataCobrancaBox, 180);
         AddLabeledControl(form, "Dia base", diaBaseBox, 120);
-        AddLabeledControl(form, "Dia vencimento locatÃ¡rio", diaVencimentoBox, 170);
-        AddLabeledControl(form, "Dia repasse proprietÃ¡rio", diaRepasseBox, 170);
+        AddLabeledControl(form, "Dia vencimento locatário", diaVencimentoBox, 170);
+        AddLabeledControl(form, "Dia repasse proprietário", diaRepasseBox, 170);
         AddLabeledControl(form, string.Empty, antecipadoBox, 190);
-        AddLabeledControl(form, "ObservaÃ§Ãµes internas", observacoesBox, 520);
+        AddLabeledControl(form, "Observações internas", observacoesBox, 520);
         root.Children.Add(errorText);
 
         dataInicioBox.SelectedDateChanged += (_, _) =>
@@ -133,7 +134,7 @@ public partial class ShellWindow
         };
         var saveButton = new Button
         {
-            Content = "Salvar locaÃ§Ã£o",
+            Content = "Salvar locação",
             Style = (Style)FindResource("PrimaryButtonSmall"),
             Margin = new Thickness(0, 0, 8, 0)
         };
@@ -156,22 +157,22 @@ public partial class ShellWindow
             {
                 if (imovelBox.SelectedItem is not ImovelSummary imovel)
                 {
-                    throw new InvalidOperationException("Selecione o imÃ³vel.");
+                    throw new InvalidOperationException("Selecione o imóvel.");
                 }
 
                 if (proprietarioBox.SelectedItem is not PessoaSummary proprietario)
                 {
-                    throw new InvalidOperationException("Selecione o proprietÃ¡rio.");
+                    throw new InvalidOperationException("Selecione o proprietário.");
                 }
 
                 if (locatarioBox.SelectedItem is not PessoaSummary locatario)
                 {
-                    throw new InvalidOperationException("Selecione o locatÃ¡rio.");
+                    throw new InvalidOperationException("Selecione o locatário.");
                 }
 
                 if (proprietario.Id == locatario.Id)
                 {
-                    throw new InvalidOperationException("A mesma pessoa nÃ£o pode ser proprietÃ¡rio e locatÃ¡rio na mesma locaÃ§Ã£o.");
+                    throw new InvalidOperationException("A mesma pessoa não pode ser proprietário e locatário na mesma locação.");
                 }
 
                 TryApplyBrazilianDate(dataInicioBox, message => errorText.Text = message);
@@ -196,8 +197,8 @@ public partial class ShellWindow
                     DataInicioLocacao: ToLocacaoDateOnly(dataInicioBox.SelectedDate),
                     DataInicioCobranca: ToLocacaoDateOnly(dataCobrancaBox.SelectedDate),
                     DiaBase: ParseRequiredDay(diaBaseBox.Text, "Dia base"),
-                    DiaVencimentoLocatario: ParseRequiredDay(diaVencimentoBox.Text, "Dia vencimento locatÃ¡rio"),
-                    DiaRepasseProprietario: ParseRequiredDay(diaRepasseBox.Text, "Dia repasse proprietÃ¡rio"),
+                    DiaVencimentoLocatario: ParseRequiredDay(diaVencimentoBox.Text, "Dia vencimento locatário"),
+                    DiaRepasseProprietario: ParseRequiredDay(diaRepasseBox.Text, "Dia repasse proprietário"),
                     ValorAluguelInicial: valor,
                     AluguelAntecipado: antecipadoBox.IsChecked == true,
                     ObservacoesInternas: string.IsNullOrWhiteSpace(observacoesBox.Text) ? null : observacoesBox.Text.Trim());
@@ -205,8 +206,8 @@ public partial class ShellWindow
                 var created = await _rentalManagementService.CreateLocacaoAsync(request);
                 await LoadGenericModuleAsync(ShellPage.Locacoes);
                 RestoreDataGridSelection(ModuleGrid, created.Summary.Id);
-                ShowLocacaoDetails(created.Summary, "LocaÃ§Ã£o criada como rascunho.");
-                MessageBox.Show(this, "LocaÃ§Ã£o criada como rascunho.", "Nova locaÃ§Ã£o", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowLocacaoDetails(created.Summary, "Locação criada como rascunho.");
+                MessageBox.Show(this, "Locação criada como rascunho.", "Nova locação", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -290,7 +291,7 @@ public partial class ShellWindow
             ModuleDetailsBorder.Visibility = Visibility.Visible;
             ModuleDetailsHost.Content = new TextBlock
             {
-                Text = "Selecione uma locaÃ§Ã£o na lista ou clique em Nova locaÃ§Ã£o.",
+                Text = "Selecione uma locação na lista ou clique em Nova locação.",
                 Foreground = System.Windows.Media.Brushes.DimGray,
                 TextWrapping = TextWrapping.Wrap
             };
@@ -304,7 +305,7 @@ public partial class ShellWindow
         var root = new StackPanel();
         root.Children.Add(new TextBlock
         {
-            Text = $"LocaÃ§Ã£o {locacao.Codigo ?? "-"}",
+            Text = $"Locação {locacao.Codigo ?? "-"}",
             FontSize = 20,
             FontWeight = FontWeights.SemiBold,
             Margin = new Thickness(0, 0, 0, 4)
@@ -324,18 +325,18 @@ public partial class ShellWindow
         root.Children.Add(details);
         AddDetailText(details, "Status", locacao.Status);
         AddDetailText(details, "Tipo", locacao.TipoLocacao);
-        AddDetailText(details, "ImÃ³vel", locacao.ImovelResumo, 360);
-        AddDetailText(details, "LocatÃ¡rio principal", locacao.LocatarioPrincipalNome);
-        AddDetailText(details, "ProprietÃ¡rio principal", locacao.ProprietarioPrincipalNome);
+        AddDetailText(details, "Imóvel", locacao.ImovelResumo, 360);
+        AddDetailText(details, "Locatário principal", locacao.LocatarioPrincipalNome);
+        AddDetailText(details, "Proprietário principal", locacao.ProprietarioPrincipalNome);
         AddDetailText(details, "Aluguel atual", locacao.ValorAluguelAtual?.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")) ?? "-");
-        AddDetailText(details, "Vencimento locatÃ¡rio", locacao.DiaVencimentoLocatario?.ToString() ?? "-");
-        AddDetailText(details, "InÃ­cio", locacao.DataInicioLocacao?.ToString("dd/MM/yyyy") ?? "-");
+        AddDetailText(details, "Vencimento locatário", locacao.DiaVencimentoLocatario?.ToString() ?? "-");
+        AddDetailText(details, "Início", locacao.DataInicioLocacao?.ToString("dd/MM/yyyy") ?? "-");
         AddDetailText(details, "Fim previsto", locacao.DataFimPrevista?.ToString("dd/MM/yyyy") ?? "-");
         AddDetailText(details, "Alertas", string.IsNullOrWhiteSpace(locacao.AlertasTexto) ? "-" : locacao.AlertasTexto, 360);
 
         root.Children.Add(new TextBlock
         {
-            Text = "EdiÃ§Ã£o completa da locaÃ§Ã£o serÃ¡ implementada em uma prÃ³xima etapa.",
+            Text = "Edição completa da locação será implementada em uma próxima etapa.",
             Foreground = System.Windows.Media.Brushes.DimGray,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 10, 0, 0)
@@ -366,7 +367,7 @@ public partial class ShellWindow
             }
 
             e.Handled = true;
-            errorText.Text = "Digite apenas nÃºmeros, vÃ­rgula ou ponto para valores.";
+            errorText.Text = "Digite apenas números, vírgula ou ponto para valores.";
         };
         DataObject.AddPastingHandler(textBox, (_, e) =>
         {
@@ -379,7 +380,7 @@ public partial class ShellWindow
             }
 
             e.CancelCommand();
-            errorText.Text = "Cole apenas nÃºmeros, vÃ­rgula ou ponto para valores.";
+            errorText.Text = "Cole apenas números, vírgula ou ponto para valores.";
         });
         textBox.LostKeyboardFocus += (_, _) => FormatDecimalTextBox(textBox);
     }
@@ -413,7 +414,7 @@ public partial class ShellWindow
             }
 
             e.Handled = true;
-            errorText.Text = "Dias devem ser informados com nÃºmeros de 1 a 31.";
+            errorText.Text = "Dias devem ser informados com números de 1 a 31.";
         };
         textBox.LostKeyboardFocus += (_, _) =>
         {

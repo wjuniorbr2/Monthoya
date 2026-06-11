@@ -37,7 +37,7 @@ public partial class ShellWindow
 
         if (_activeModulePage == ShellPage.Locacoes && _moduleItems.Count > 0 && filteredItems.Count == 0)
         {
-            SetModuleNotice("Nenhuma locaÃ§Ã£o encontrada para a pesquisa atual.");
+            SetModuleNotice("Nenhuma locação encontrada para a pesquisa atual.");
         }
         else if (_activeModulePage == ShellPage.Locacoes && _moduleItems.Count > 0)
         {
@@ -85,7 +85,7 @@ public partial class ShellWindow
 
             _moduleItems = items.ToList();
             SetModuleNotice(page == ShellPage.Locacoes && _moduleItems.Count == 0
-                ? "Nenhuma locaÃ§Ã£o cadastrada."
+                ? "Nenhuma locação cadastrada."
                 : page == ShellPage.Locacoes ? string.Empty : definition.Notice);
             ApplyModuleFilter();
         }
@@ -93,7 +93,7 @@ public partial class ShellWindow
         {
             _moduleItems = [];
             ModuleGrid.ItemsSource = Array.Empty<object>();
-            SetModuleNotice($"NÃ£o foi possÃ­vel carregar este mÃ³dulo. {ex.Message}");
+            SetModuleNotice($"Não foi possível carregar este módulo. {ex.Message}");
         }
     }
 
@@ -101,7 +101,7 @@ public partial class ShellWindow
     {
         if (_activeModulePage == ShellPage.Configuracoes)
         {
-            MessageBox.Show(this, "Escolha uma das opÃ§Ãµes de configuraÃ§Ã£o abaixo.", "ConfiguraÃ§Ãµes", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, "Escolha uma das opções de configuração abaixo.", "Configurações", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -113,11 +113,11 @@ public partial class ShellWindow
 
         var message = _activeModulePage switch
         {
-            ShellPage.Boletos => "IntegraÃ§Ã£o bancÃ¡ria ainda nÃ£o configurada.",
-            ShellPage.NotasFiscais => "IntegraÃ§Ã£o automÃ¡tica com NFS-e ainda nÃ£o configurada. Use o fluxo manual/semi-manual.",
-            ShellPage.Dimob => "ExportaÃ§Ã£o oficial DIMOB pendente de confirmaÃ§Ã£o do layout vigente da Receita Federal.",
-            ShellPage.Documentos => "Modelos iniciais criados como pendentes de revisÃ£o. A redaÃ§Ã£o final deve ser confirmada com o cliente.",
-            _ => "CRUD completo deste mÃ³dulo serÃ¡ implementado em uma prÃ³xima etapa."
+            ShellPage.Boletos => "Integração bancária ainda não configurada.",
+            ShellPage.NotasFiscais => "Integração automática com NFS-e ainda não configurada. Use o fluxo manual/semi-manual.",
+            ShellPage.Dimob => "Exportação oficial DIMOB pendente de confirmação do layout vigente da Receita Federal.",
+            ShellPage.Documentos => "Modelos iniciais criados como pendentes de revisão. A redação final deve ser confirmada com o cliente.",
+            _ => "CRUD completo deste módulo será implementado em uma próxima etapa."
         };
 
         MessageBox.Show(this, message, "Monthoya", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -156,14 +156,14 @@ public partial class ShellWindow
             var summary = details.Summary;
             MessageBox.Show(
                 this,
-                $"LocaÃ§Ã£o: {summary.Codigo ?? "-"}\nStatus: {summary.Status}\nImÃ³vel: {summary.ImovelResumo}\nLocatÃ¡rio: {summary.LocatarioPrincipalNome}\nProprietÃ¡rio: {summary.ProprietarioPrincipalNome}\n\nO formulÃ¡rio de ediÃ§Ã£o completo serÃ¡ implementado em uma prÃ³xima etapa.",
-                "LocaÃ§Ã£o",
+                $"Locação: {summary.Codigo ?? "-"}\nStatus: {summary.Status}\nImóvel: {summary.ImovelResumo}\nLocatário: {summary.LocatarioPrincipalNome}\nProprietário: {summary.ProprietarioPrincipalNome}\n\nO formulário de edição completo será implementado em uma próxima etapa.",
+                "Locação",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"NÃ£o foi possÃ­vel abrir a locaÃ§Ã£o. {ex.Message}", "LocaÃ§Ã£o", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, $"Não foi possível abrir a locação. {ex.Message}", "Locação", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -177,14 +177,14 @@ public partial class ShellWindow
             return;
         }
 
-        AddModuleTextColumn("CÃ³digo", "Codigo", 0.7);
+        AddModuleTextColumn("Código", "Codigo", 0.7);
         AddModuleTextColumn("Status", "Status", 1);
-        AddModuleTextColumn("ImÃ³vel", "ImovelResumo", 1.8);
-        AddModuleTextColumn("LocatÃ¡rio", "LocatarioPrincipalNome", 1.3);
-        AddModuleTextColumn("ProprietÃ¡rio", "ProprietarioPrincipalNome", 1.3);
+        AddModuleTextColumn("Imóvel", "ImovelResumo", 1.8);
+        AddModuleTextColumn("Locatário", "LocatarioPrincipalNome", 1.3);
+        AddModuleTextColumn("Proprietário", "ProprietarioPrincipalNome", 1.3);
         AddModuleTextColumn("Aluguel", "ValorAluguelAtual", 0.9, "R$ {0:N2}");
         AddModuleTextColumn("Venc.", "DiaVencimentoLocatario", 0.55);
-        AddModuleTextColumn("InÃ­cio", "DataInicioLocacao", 0.8, "dd/MM/yyyy");
+        AddModuleTextColumn("Início", "DataInicioLocacao", 0.8, "dd/MM/yyyy");
         AddModuleTextColumn("Fim previsto", "DataFimPrevista", 0.9, "dd/MM/yyyy");
         AddModuleTextColumn("Alertas", "AlertasTexto", 1.4);
     }
@@ -227,4 +227,3 @@ public partial class ShellWindow
         public static ModulePageState Default { get; } = new("", null);
     }
 }
-
