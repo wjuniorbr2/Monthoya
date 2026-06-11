@@ -28,7 +28,7 @@ public sealed partial class RentalManagementService
         var proprietarioIds = proprietarios.Select(x => x.PessoaId).ToHashSet();
         if (locatarios.Any(x => proprietarioIds.Contains(x.PessoaId)))
         {
-            throw new InvalidOperationException("A mesma pessoa nÃ£o pode ser proprietÃ¡rio e locatÃ¡rio na mesma locaÃ§Ã£o.");
+            throw new InvalidOperationException("A mesma pessoa não pode ser proprietário e locatário na mesma locação.");
         }
 
         if (IsActiveLocacaoStatus(status))
@@ -50,6 +50,17 @@ public sealed partial class RentalManagementService
         var diaBase = request.DiaBase ?? dataInicioCobranca?.Day ?? 1;
         var diaVencimentoLocatario = request.DiaVencimentoLocatario ?? diaBase;
         var diaRepasseProprietario = request.DiaRepasseProprietario ?? diaVencimentoLocatario;
+
+        ValidateDateRange(dataCadastro, "Data de cadastro");
+        ValidateOptionalDateRange(request.DataAssinaturaContrato, "Data de assinatura do contrato");
+        ValidateOptionalDateRange(request.DataInicioLocacao, "Data início locação");
+        ValidateOptionalDateRange(request.DataEntregaChaves, "Data entrega das chaves");
+        ValidateOptionalDateRange(dataInicioCobranca, "Data início cobrança");
+        ValidateOptionalDateRange(request.DataFimPrevista, "Data fim prevista");
+        ValidateOptionalDateRange(request.DataEncerramento, "Data de encerramento");
+        ValidateOptionalDateRange(request.DataDesocupacao, "Data de desocupação");
+        ValidateOptionalDateRange(request.DataBaseReajuste, "Data base do reajuste");
+        ValidateOptionalDateRange(request.ProximaDataReajuste, "Próxima data de reajuste");
 
         ValidateDay(diaBase, "Dia base");
         ValidateDay(diaVencimentoLocatario, "Dia de vencimento do locatário");
@@ -220,6 +231,8 @@ public sealed partial class RentalManagementService
             return;
         }
 
+        ValidateOptionalDateRange(garantia.DataValidade, "Data de validade da garantia");
+
         if (garantia.Valor < 0)
         {
             throw new InvalidOperationException("O valor da garantia não pode ser negativo.");
@@ -267,6 +280,9 @@ public sealed partial class RentalManagementService
                 throw new InvalidOperationException("Informe a descrição do lançamento.");
             }
 
+            ValidateOptionalDateRange(lancamento.Competencia, "Competência do lançamento");
+            ValidateOptionalDateRange(lancamento.DataVencimento, "Data de vencimento do lançamento");
+
             if (lancamento.Valor < 0)
             {
                 throw new InvalidOperationException("O valor do lançamento não pode ser negativo. Use o tipo do lançamento para representar desconto ou reembolso.");
@@ -279,6 +295,22 @@ public sealed partial class RentalManagementService
         if (day is < 1 or > 31)
         {
             throw new InvalidOperationException($"{label} deve ficar entre 1 e 31.");
+        }
+    }
+
+    private static void ValidateOptionalDateRange(DateOnly? date, string label)
+    {
+        if (date.HasValue)
+        {
+            ValidateDateRange(date.Value, label);
+        }
+    }
+
+    private static void ValidateDateRange(DateOnly date, string label)
+    {
+        if (date.Year is < 1900 or > 2100)
+        {
+            throw new InvalidOperationException($"{label} deve ficar entre 1900 e 2100.");
         }
     }
 
