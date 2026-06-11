@@ -28,6 +28,9 @@ public sealed class ChavesSafeRentalManagementService(
     public Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default) => inner.CreateImovelImagemAsync(request, cancellationToken);
     public Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default) => inner.GetImovelImagensAsync(imovelId, cancellationToken);
     public Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default) => inner.GetLocacoesAsync(cancellationToken);
+    public Task<LocacaoDetails> GetLocacaoAsync(Guid id, CancellationToken cancellationToken = default) => inner.GetLocacaoAsync(id, cancellationToken);
+    public Task<LocacaoDetails> CreateLocacaoAsync(CreateLocacaoRequest request, CancellationToken cancellationToken = default) => inner.CreateLocacaoAsync(request, cancellationToken);
+    public Task<LocacaoDetails> UpdateLocacaoAsync(UpdateLocacaoRequest request, CancellationToken cancellationToken = default) => inner.UpdateLocacaoAsync(request, cancellationToken);
     public Task<IReadOnlyList<IndiceReajusteSummary>> GetIndicesReajusteAsync(CancellationToken cancellationToken = default) => inner.GetIndicesReajusteAsync(cancellationToken);
     public Task<IReadOnlyList<FinanceiroSummary>> GetLancamentosFinanceirosAsync(CancellationToken cancellationToken = default) => inner.GetLancamentosFinanceirosAsync(cancellationToken);
     public Task<IReadOnlyList<BoletoSummary>> GetBoletosAsync(CancellationToken cancellationToken = default) => inner.GetBoletosAsync(cancellationToken);

@@ -27,6 +27,9 @@ public interface IRentalManagementService
     Task<ImovelImagemSummary> CreateImovelImagemAsync(CreateImovelImagemRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ImovelImagemSummary>> GetImovelImagensAsync(Guid imovelId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<LocacaoSummary>> GetLocacoesAsync(CancellationToken cancellationToken = default);
+    Task<LocacaoDetails> GetLocacaoAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<LocacaoDetails> CreateLocacaoAsync(CreateLocacaoRequest request, CancellationToken cancellationToken = default);
+    Task<LocacaoDetails> UpdateLocacaoAsync(UpdateLocacaoRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<IndiceReajusteSummary>> GetIndicesReajusteAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<FinanceiroSummary>> GetLancamentosFinanceirosAsync(CancellationToken cancellationToken = default);
     Task<IReadOnlyList<BoletoSummary>> GetBoletosAsync(CancellationToken cancellationToken = default);
@@ -279,6 +282,110 @@ public sealed record CreateVistoriaRequest(
     string? DescricaoGeral,
     string? Observacoes);
 
+public sealed record LocacaoParteRequest(
+    Guid PessoaId,
+    TipoParteLocacao TipoParte,
+    bool IsPrincipal = false,
+    decimal? PercentualParticipacao = null,
+    bool RecebeCobranca = false,
+    bool RecebeRepasse = false,
+    bool RecebeNotificacao = true,
+    decimal? PercentualRepasse = null,
+    string? Observacoes = null);
+
+public sealed record LocacaoGarantiaRequest(
+    TipoGarantiaLocacao TipoGarantia,
+    decimal? Valor = null,
+    DateOnly? DataValidade = null,
+    bool Ativa = true,
+    string? Observacoes = null,
+    string? ObservacoesDocumento = null);
+
+public sealed record LocacaoEncargoRequest(
+    TipoEncargoLocacao TipoEncargo,
+    bool ControladoPelaImobiliaria,
+    bool CobradoComAluguel,
+    bool PagoDiretoPeloLocatario,
+    bool PagoPeloProprietario,
+    decimal? Valor = null,
+    bool Fixo = false,
+    int? NumeroParcelas = null,
+    int? DiaVencimento = null,
+    bool RequerAtualizacao = false,
+    string? Observacoes = null,
+    bool Ativo = true);
+
+public sealed record LocacaoLancamentoRequest(
+    TipoLancamentoLocacao TipoLancamento,
+    string Descricao,
+    decimal Valor,
+    DateOnly? Competencia = null,
+    DateOnly? DataVencimento = null,
+    bool AfetaCobrancaLocatario = false,
+    bool AfetaRepasseProprietario = false,
+    bool RequerAprovacao = false,
+    StatusLancamentoLocacao Status = StatusLancamentoLocacao.Pendente,
+    string? Observacoes = null);
+
+public sealed record CreateLocacaoRequest(
+    Guid ImovelId,
+    IReadOnlyList<LocacaoParteRequest> Partes,
+    string? Codigo = null,
+    TipoLocacao TipoLocacao = TipoLocacao.Residencial,
+    LocacaoStatus? Status = null,
+    Guid? ResponsavelUsuarioId = null,
+    string? ResponsavelNome = null,
+    DateOnly? DataCadastro = null,
+    DateOnly? DataAssinaturaContrato = null,
+    DateOnly? DataInicioLocacao = null,
+    DateOnly? DataEntregaChaves = null,
+    DateOnly? DataInicioCobranca = null,
+    int? DiaBase = null,
+    int? DiaVencimentoLocatario = null,
+    int? DiaRepasseProprietario = null,
+    int? PrazoMeses = null,
+    DateOnly? DataFimPrevista = null,
+    DateOnly? DataEncerramento = null,
+    DateOnly? DataDesocupacao = null,
+    string? MotivoEncerramento = null,
+    decimal ValorAluguelInicial = 0,
+    decimal? ValorAluguelAtual = null,
+    bool AluguelAntecipado = false,
+    bool CalculoProporcionalPrimeiroMes = false,
+    MetodoCalculoProporcional MetodoCalculoProporcional = MetodoCalculoProporcional.DiasCorridos,
+    bool TemDescontoPontualidade = false,
+    TipoDescontoLocacao? TipoDescontoPontualidade = null,
+    decimal? ValorDescontoPontualidade = null,
+    bool DescontoValidoAteVencimento = true,
+    TipoMultaLocacao MultaAtrasoTipo = TipoMultaLocacao.Percentual,
+    decimal? MultaAtrasoValor = null,
+    decimal? JurosMoraPercentualMes = null,
+    int? DiasTolerancia = null,
+    bool CorrecaoMonetariaAtraso = false,
+    string? IndiceCorrecaoAtraso = null,
+    bool TemReajuste = false,
+    Guid? IndiceReajusteId = null,
+    int? PeriodicidadeReajusteMeses = null,
+    DateOnly? DataBaseReajuste = null,
+    DateOnly? ProximaDataReajuste = null,
+    ModoReajusteLocacao ModoReajuste = ModoReajusteLocacao.Manual,
+    bool ReajusteRequerAprovacao = true,
+    decimal? TaxaAdministracaoPercentual = null,
+    decimal? MetaComissaoPrimeiroAluguelPercentual = null,
+    decimal? TaxaContratoPercentual = null,
+    bool TaxaContratoManualOverride = false,
+    bool CobrarTaxaContratoInicio = false,
+    bool CobrarTaxaContratoRenovacao = false,
+    bool CobrarTaxaContratoReajuste = false,
+    ModoCobrancaTaxaContratoLocacao ModoCobrancaTaxaContrato = ModoCobrancaTaxaContratoLocacao.Manual,
+    LocacaoGarantiaRequest? Garantia = null,
+    IReadOnlyList<LocacaoEncargoRequest>? Encargos = null,
+    IReadOnlyList<LocacaoLancamentoRequest>? Lancamentos = null,
+    string? Observacoes = null,
+    string? ObservacoesInternas = null);
+
+public sealed record UpdateLocacaoRequest(Guid Id, CreateLocacaoRequest Locacao);
+
 public sealed record PessoaSummary(
     Guid Id,
     string Nome,
@@ -360,7 +467,119 @@ public sealed record ImovelChaveMovimentoSummary(
     DateTimeOffset? DevolvidoEm,
     string? DevolvidoParaNome,
     string? Observacoes);
-public sealed record LocacaoSummary(Guid Id, string Imovel, string Proprietario, string Locatario, string Fiadores, decimal ValorAluguel, string Status);
+public sealed record LocacaoSummary(
+    Guid Id,
+    string? Codigo,
+    string Status,
+    string TipoLocacao,
+    Guid ImovelId,
+    string ImovelResumo,
+    string LocatarioPrincipalNome,
+    string ProprietarioPrincipalNome,
+    decimal? ValorAluguelAtual,
+    int? DiaVencimentoLocatario,
+    DateOnly? ProximaDataVencimento,
+    DateOnly? DataInicioLocacao,
+    DateOnly? DataFimPrevista,
+    IReadOnlyList<string> Alertas)
+{
+    public int AlertasCount => Alertas.Count;
+    public string AlertasTexto => string.Join("; ", Alertas);
+    public string Imovel => ImovelResumo;
+    public string Proprietario => ProprietarioPrincipalNome;
+    public string Locatario => LocatarioPrincipalNome;
+    public string Fiadores => string.Empty;
+    public decimal ValorAluguel => ValorAluguelAtual ?? 0m;
+}
+
+public sealed record LocacaoDetails(
+    LocacaoSummary Summary,
+    CreateLocacaoRequest Dados,
+    IReadOnlyList<LocacaoParteSummary> Partes,
+    LocacaoGarantiaSummary? Garantia,
+    IReadOnlyList<LocacaoEncargoSummary> Encargos,
+    IReadOnlyList<LocacaoLancamentoSummary> Lancamentos,
+    IReadOnlyList<LocacaoCobrancaSummary> Cobrancas,
+    IReadOnlyList<LocacaoHistoricoSummary> Historicos);
+
+public sealed record LocacaoParteSummary(
+    Guid Id,
+    Guid PessoaId,
+    string PessoaNome,
+    TipoParteLocacao TipoParte,
+    bool IsPrincipal,
+    decimal? PercentualParticipacao,
+    bool RecebeCobranca,
+    bool RecebeRepasse,
+    bool RecebeNotificacao,
+    decimal? PercentualRepasse,
+    string? Observacoes);
+
+public sealed record LocacaoGarantiaSummary(
+    Guid Id,
+    TipoGarantiaLocacao TipoGarantia,
+    decimal? Valor,
+    DateOnly? DataValidade,
+    bool Ativa,
+    string? Observacoes,
+    string? ObservacoesDocumento);
+
+public sealed record LocacaoEncargoSummary(
+    Guid Id,
+    TipoEncargoLocacao TipoEncargo,
+    bool ControladoPelaImobiliaria,
+    bool CobradoComAluguel,
+    bool PagoDiretoPeloLocatario,
+    bool PagoPeloProprietario,
+    decimal? Valor,
+    bool Fixo,
+    int? NumeroParcelas,
+    int? DiaVencimento,
+    bool RequerAtualizacao,
+    string? Observacoes,
+    bool Ativo);
+
+public sealed record LocacaoLancamentoSummary(
+    Guid Id,
+    TipoLancamentoLocacao TipoLancamento,
+    string Descricao,
+    decimal Valor,
+    DateOnly? Competencia,
+    DateOnly? DataVencimento,
+    bool AfetaCobrancaLocatario,
+    bool AfetaRepasseProprietario,
+    bool RequerAprovacao,
+    StatusLancamentoLocacao Status,
+    string? Observacoes);
+
+public sealed record LocacaoCobrancaSummary(
+    Guid Id,
+    TipoCobrancaLocacao TipoCobranca,
+    DateOnly Competencia,
+    DateOnly PeriodoInicio,
+    DateOnly PeriodoFim,
+    DateOnly DataVencimento,
+    StatusCobrancaLocacao Status,
+    decimal ValorTotal,
+    IReadOnlyList<LocacaoCobrancaItemSummary> Itens);
+
+public sealed record LocacaoCobrancaItemSummary(
+    Guid Id,
+    TipoItemCobrancaLocacao TipoItem,
+    string Descricao,
+    decimal Valor,
+    string? ReferenciaId,
+    string? Observacoes);
+
+public sealed record LocacaoHistoricoSummary(
+    Guid Id,
+    DateTimeOffset DataHoraUtc,
+    string? Usuario,
+    string Acao,
+    string? Campo,
+    string? ValorAnterior,
+    string? ValorNovo,
+    string? Motivo);
 public sealed record IndiceReajusteSummary(Guid Id, string Nome, string Codigo, string Tipo, decimal? Percentual, string Ativo);
 public sealed record FinanceiroSummary(Guid Id, string Tipo, string Categoria, string Descricao, decimal Valor, DateOnly DataVencimento, string Status);
 public sealed record BoletoSummary(Guid Id, string Status, decimal Valor, DateOnly DataVencimento, string? BancoProvider);
