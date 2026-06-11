@@ -25,63 +25,7 @@ public sealed partial class RentalManagementService
         }
         else
         {
-            if (pessoa.PessoaFisica is not null)
-            {
-                dbContext.PessoasFisicas.Remove(pessoa.PessoaFisica);
-                pessoa.PessoaFisica = null;
-            }
-
-            pessoa.PessoaJuridica ??= new PessoaJuridica { PessoaId = pessoa.Id };
-            pessoa.PessoaJuridica.NomeEmpresa = pessoa.NomeDisplay;
-            pessoa.PessoaJuridica.NomeFantasia = TrimOrNull(request.Pessoa.NomeFantasia);
-            pessoa.PessoaJuridica.Atividade = TrimOrNull(request.Pessoa.Atividade);
-            pessoa.PessoaJuridica.ReceitaMensal = request.Pessoa.ReceitaMensal;
-            pessoa.PessoaJuridica.Cnpj = DigitsOrNull(request.Pessoa.Documento);
-            pessoa.PessoaJuridica.InscricaoEstadual = DigitsOrNull(request.Pessoa.InscricaoEstadual);
-            pessoa.PessoaJuridica.InscricaoMunicipal = DigitsOrNull(request.Pessoa.InscricaoMunicipal);
-            pessoa.PessoaJuridica.DataAbertura = request.Pessoa.DataAbertura;
-            pessoa.PessoaJuridica.EmpresaRua = TrimOrNull(request.Pessoa.Rua);
-            pessoa.PessoaJuridica.EmpresaNumero = TrimOrNull(request.Pessoa.Numero);
-            pessoa.PessoaJuridica.EmpresaComplemento = TrimOrNull(request.Pessoa.Complemento);
-            pessoa.PessoaJuridica.EmpresaBairro = TrimOrNull(request.Pessoa.Bairro);
-            pessoa.PessoaJuridica.EmpresaCidade = TrimOrNull(request.Pessoa.Cidade);
-            pessoa.PessoaJuridica.EmpresaEstado = NormalizeState(request.Pessoa.Estado);
-            pessoa.PessoaJuridica.EmpresaCep = DigitsOrNull(request.Pessoa.Cep);
-            pessoa.PessoaJuridica.ResponsavelNome = TrimOrNull(request.Pessoa.ResponsavelNome);
-            pessoa.PessoaJuridica.ResponsavelCargo = TrimOrNull(request.Pessoa.ResponsavelCargo);
-            pessoa.PessoaJuridica.ResponsavelRua = TrimOrNull(request.Pessoa.ResponsavelRua);
-            pessoa.PessoaJuridica.ResponsavelNumero = TrimOrNull(request.Pessoa.ResponsavelNumero);
-            pessoa.PessoaJuridica.ResponsavelComplemento = TrimOrNull(request.Pessoa.ResponsavelComplemento);
-            pessoa.PessoaJuridica.ResponsavelBairro = TrimOrNull(request.Pessoa.ResponsavelBairro);
-            pessoa.PessoaJuridica.ResponsavelCidade = TrimOrNull(request.Pessoa.ResponsavelCidade);
-            pessoa.PessoaJuridica.ResponsavelEstado = NormalizeState(request.Pessoa.ResponsavelEstado);
-            pessoa.PessoaJuridica.ResponsavelCep = DigitsOrNull(request.Pessoa.ResponsavelCep);
-            pessoa.PessoaJuridica.ResponsavelEstadoCivil = TrimOrNull(request.Pessoa.ResponsavelEstadoCivil);
-            pessoa.PessoaJuridica.ResponsavelNacionalidade = TrimOrNull(request.Pessoa.ResponsavelNacionalidade);
-            pessoa.PessoaJuridica.ResponsavelDataNascimento = request.Pessoa.ResponsavelDataNascimento;
-            pessoa.PessoaJuridica.ResponsavelTelefone = DigitsOrNull(request.Pessoa.ResponsavelTelefone) ?? pessoa.Telefone;
-            pessoa.PessoaJuridica.ResponsavelEmail = TrimOrNull(request.Pessoa.ResponsavelEmail) ?? pessoa.Email;
-            pessoa.PessoaJuridica.ResponsavelRg = DigitsOrNull(request.Pessoa.ResponsavelRg);
-            pessoa.PessoaJuridica.ResponsavelCpf = DigitsOrNull(request.Pessoa.ResponsavelCpf);
-            pessoa.PessoaJuridica.ResponsavelProfissao = TrimOrNull(request.Pessoa.ResponsavelProfissao);
-            pessoa.PessoaJuridica.ResponsavelOndeTrabalha = TrimOrNull(request.Pessoa.ResponsavelOndeTrabalha);
-            pessoa.PessoaJuridica.ResponsavelEnderecoTrabalho = TrimOrNull(request.Pessoa.ResponsavelEnderecoTrabalho);
-            pessoa.PessoaJuridica.ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.Pessoa.ResponsavelNomeEmpresaTrabalho);
-            pessoa.PessoaJuridica.ResponsavelTelefoneEmpresaTrabalho = DigitsOrNull(request.Pessoa.ResponsavelTelefoneEmpresaTrabalho);
-            pessoa.PessoaJuridica.ResponsavelDadosBancarios = TrimOrNull(request.Pessoa.ResponsavelDadosBancarios);
-            pessoa.PessoaJuridica.ResponsavelBancoCodigo = DigitsOrNull(request.Pessoa.ResponsavelBancoCodigo);
-            pessoa.PessoaJuridica.ResponsavelBancoNome = TrimOrNull(request.Pessoa.ResponsavelBancoNome);
-            pessoa.PessoaJuridica.ResponsavelAgenciaNumero = DigitsOrNull(request.Pessoa.ResponsavelAgenciaNumero);
-            pessoa.PessoaJuridica.ResponsavelAgenciaDigito = TrimOrNull(request.Pessoa.ResponsavelAgenciaDigito);
-            pessoa.PessoaJuridica.ResponsavelContaNumero = DigitsOrNull(request.Pessoa.ResponsavelContaNumero);
-            pessoa.PessoaJuridica.ResponsavelContaDigito = TrimOrNull(request.Pessoa.ResponsavelContaDigito);
-            pessoa.PessoaJuridica.ResponsavelContaTipo = request.Pessoa.ResponsavelContaTipo;
-            pessoa.PessoaJuridica.ResponsavelTitularNome = TrimOrNull(request.Pessoa.ResponsavelTitularNome);
-            pessoa.PessoaJuridica.ResponsavelTitularDocumento = DigitsOrNull(request.Pessoa.ResponsavelTitularDocumento);
-            pessoa.PessoaJuridica.ResponsavelPixTipo = request.Pessoa.ResponsavelPixTipo;
-            pessoa.PessoaJuridica.ResponsavelPixChave = NormalizePixChave(request.Pessoa.ResponsavelPixChave, request.Pessoa.ResponsavelPixTipo);
-            pessoa.PessoaJuridica.ResponsavelRepassePreferencial = request.Pessoa.ResponsavelRepassePreferencial;
-            pessoa.PessoaJuridica.ResponsavelObservacoes = TrimOrNull(request.Pessoa.ResponsavelObservacoes);
+            UpdatePessoaJuridica(pessoa, request);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -177,6 +121,68 @@ public sealed partial class RentalManagementService
         pessoa.PessoaFisica.ConjugeEmpresaCidade = TrimOrNull(request.Pessoa.ConjugeEmpresaCidade);
         pessoa.PessoaFisica.ConjugeEmpresaEstado = NormalizeState(request.Pessoa.ConjugeEmpresaEstado);
         pessoa.PessoaFisica.ConjugeEmpresaCep = DigitsOrNull(request.Pessoa.ConjugeEmpresaCep);
+    }
+
+
+    private void UpdatePessoaJuridica(Pessoa pessoa, UpdatePessoaRequest request)
+    {
+        if (pessoa.PessoaFisica is not null)
+        {
+            dbContext.PessoasFisicas.Remove(pessoa.PessoaFisica);
+            pessoa.PessoaFisica = null;
+        }
+
+        pessoa.PessoaJuridica ??= new PessoaJuridica { PessoaId = pessoa.Id };
+        pessoa.PessoaJuridica.NomeEmpresa = pessoa.NomeDisplay;
+        pessoa.PessoaJuridica.NomeFantasia = TrimOrNull(request.Pessoa.NomeFantasia);
+        pessoa.PessoaJuridica.Atividade = TrimOrNull(request.Pessoa.Atividade);
+        pessoa.PessoaJuridica.ReceitaMensal = request.Pessoa.ReceitaMensal;
+        pessoa.PessoaJuridica.Cnpj = DigitsOrNull(request.Pessoa.Documento);
+        pessoa.PessoaJuridica.InscricaoEstadual = DigitsOrNull(request.Pessoa.InscricaoEstadual);
+        pessoa.PessoaJuridica.InscricaoMunicipal = DigitsOrNull(request.Pessoa.InscricaoMunicipal);
+        pessoa.PessoaJuridica.DataAbertura = request.Pessoa.DataAbertura;
+        pessoa.PessoaJuridica.EmpresaRua = TrimOrNull(request.Pessoa.Rua);
+        pessoa.PessoaJuridica.EmpresaNumero = TrimOrNull(request.Pessoa.Numero);
+        pessoa.PessoaJuridica.EmpresaComplemento = TrimOrNull(request.Pessoa.Complemento);
+        pessoa.PessoaJuridica.EmpresaBairro = TrimOrNull(request.Pessoa.Bairro);
+        pessoa.PessoaJuridica.EmpresaCidade = TrimOrNull(request.Pessoa.Cidade);
+        pessoa.PessoaJuridica.EmpresaEstado = NormalizeState(request.Pessoa.Estado);
+        pessoa.PessoaJuridica.EmpresaCep = DigitsOrNull(request.Pessoa.Cep);
+        pessoa.PessoaJuridica.ResponsavelNome = TrimOrNull(request.Pessoa.ResponsavelNome);
+        pessoa.PessoaJuridica.ResponsavelCargo = TrimOrNull(request.Pessoa.ResponsavelCargo);
+        pessoa.PessoaJuridica.ResponsavelRua = TrimOrNull(request.Pessoa.ResponsavelRua);
+        pessoa.PessoaJuridica.ResponsavelNumero = TrimOrNull(request.Pessoa.ResponsavelNumero);
+        pessoa.PessoaJuridica.ResponsavelComplemento = TrimOrNull(request.Pessoa.ResponsavelComplemento);
+        pessoa.PessoaJuridica.ResponsavelBairro = TrimOrNull(request.Pessoa.ResponsavelBairro);
+        pessoa.PessoaJuridica.ResponsavelCidade = TrimOrNull(request.Pessoa.ResponsavelCidade);
+        pessoa.PessoaJuridica.ResponsavelEstado = NormalizeState(request.Pessoa.ResponsavelEstado);
+        pessoa.PessoaJuridica.ResponsavelCep = DigitsOrNull(request.Pessoa.ResponsavelCep);
+        pessoa.PessoaJuridica.ResponsavelEstadoCivil = TrimOrNull(request.Pessoa.ResponsavelEstadoCivil);
+        pessoa.PessoaJuridica.ResponsavelNacionalidade = TrimOrNull(request.Pessoa.ResponsavelNacionalidade);
+        pessoa.PessoaJuridica.ResponsavelDataNascimento = request.Pessoa.ResponsavelDataNascimento;
+        pessoa.PessoaJuridica.ResponsavelTelefone = DigitsOrNull(request.Pessoa.ResponsavelTelefone) ?? pessoa.Telefone;
+        pessoa.PessoaJuridica.ResponsavelEmail = TrimOrNull(request.Pessoa.ResponsavelEmail) ?? pessoa.Email;
+        pessoa.PessoaJuridica.ResponsavelRg = DigitsOrNull(request.Pessoa.ResponsavelRg);
+        pessoa.PessoaJuridica.ResponsavelCpf = DigitsOrNull(request.Pessoa.ResponsavelCpf);
+        pessoa.PessoaJuridica.ResponsavelProfissao = TrimOrNull(request.Pessoa.ResponsavelProfissao);
+        pessoa.PessoaJuridica.ResponsavelOndeTrabalha = TrimOrNull(request.Pessoa.ResponsavelOndeTrabalha);
+        pessoa.PessoaJuridica.ResponsavelEnderecoTrabalho = TrimOrNull(request.Pessoa.ResponsavelEnderecoTrabalho);
+        pessoa.PessoaJuridica.ResponsavelNomeEmpresaTrabalho = TrimOrNull(request.Pessoa.ResponsavelNomeEmpresaTrabalho);
+        pessoa.PessoaJuridica.ResponsavelTelefoneEmpresaTrabalho = DigitsOrNull(request.Pessoa.ResponsavelTelefoneEmpresaTrabalho);
+        pessoa.PessoaJuridica.ResponsavelDadosBancarios = TrimOrNull(request.Pessoa.ResponsavelDadosBancarios);
+        pessoa.PessoaJuridica.ResponsavelBancoCodigo = DigitsOrNull(request.Pessoa.ResponsavelBancoCodigo);
+        pessoa.PessoaJuridica.ResponsavelBancoNome = TrimOrNull(request.Pessoa.ResponsavelBancoNome);
+        pessoa.PessoaJuridica.ResponsavelAgenciaNumero = DigitsOrNull(request.Pessoa.ResponsavelAgenciaNumero);
+        pessoa.PessoaJuridica.ResponsavelAgenciaDigito = TrimOrNull(request.Pessoa.ResponsavelAgenciaDigito);
+        pessoa.PessoaJuridica.ResponsavelContaNumero = DigitsOrNull(request.Pessoa.ResponsavelContaNumero);
+        pessoa.PessoaJuridica.ResponsavelContaDigito = TrimOrNull(request.Pessoa.ResponsavelContaDigito);
+        pessoa.PessoaJuridica.ResponsavelContaTipo = request.Pessoa.ResponsavelContaTipo;
+        pessoa.PessoaJuridica.ResponsavelTitularNome = TrimOrNull(request.Pessoa.ResponsavelTitularNome);
+        pessoa.PessoaJuridica.ResponsavelTitularDocumento = DigitsOrNull(request.Pessoa.ResponsavelTitularDocumento);
+        pessoa.PessoaJuridica.ResponsavelPixTipo = request.Pessoa.ResponsavelPixTipo;
+        pessoa.PessoaJuridica.ResponsavelPixChave = NormalizePixChave(request.Pessoa.ResponsavelPixChave, request.Pessoa.ResponsavelPixTipo);
+        pessoa.PessoaJuridica.ResponsavelRepassePreferencial = request.Pessoa.ResponsavelRepassePreferencial;
+        pessoa.PessoaJuridica.ResponsavelObservacoes = TrimOrNull(request.Pessoa.ResponsavelObservacoes);
     }
 
     private static void ValidateUpdatePessoaRequest(UpdatePessoaRequest request)
