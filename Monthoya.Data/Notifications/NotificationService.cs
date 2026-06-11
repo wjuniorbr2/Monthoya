@@ -271,7 +271,7 @@ public sealed partial class NotificationService(
             }
 
             await CreateNotificationAsync(
-                "Chave com devoluÃ§Ã£o em atraso",
+                "Chave com devolução em atraso",
                 BuildKeyOverdueBody(movimento, now),
                 recipientIds,
                 NotificationCategory.KeyOverdue,
@@ -321,7 +321,7 @@ public sealed partial class NotificationService(
     {
         return await dbContext.NotificationRecipients
             .SingleOrDefaultAsync(x => x.NotificationMessageId == notificationId && x.UserId == userId, cancellationToken)
-            ?? throw new InvalidOperationException("NotificaÃ§Ã£o nÃ£o encontrada para este usuÃ¡rio.");
+            ?? throw new InvalidOperationException("Notificação não encontrada para este usuário.");
     }
 
 
@@ -331,3 +331,4 @@ public sealed partial class NotificationService(
     private static string? TrimOrNull(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
+

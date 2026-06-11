@@ -175,7 +175,7 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ImovelErrorText.Text = $"NÃ£o foi possÃ­vel carregar o imÃ³vel selecionado: {ex.Message}";
+            ImovelErrorText.Text = $"Não foi possível carregar o imóvel selecionado: {ex.Message}";
         }
     }
 
@@ -203,3 +203,4 @@ public partial class ShellWindow
     }
 
 }
+

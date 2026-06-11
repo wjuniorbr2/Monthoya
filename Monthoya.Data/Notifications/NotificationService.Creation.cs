@@ -27,18 +27,18 @@ public sealed partial class NotificationService
     {
         if (string.IsNullOrWhiteSpace(title))
         {
-            throw new InvalidOperationException("Informe o tÃ­tulo da notificaÃ§Ã£o.");
+            throw new InvalidOperationException("Informe o título da notificação.");
         }
 
         if (string.IsNullOrWhiteSpace(body))
         {
-            throw new InvalidOperationException("Informe a mensagem da notificaÃ§Ã£o.");
+            throw new InvalidOperationException("Informe a mensagem da notificação.");
         }
 
         var recipients = recipientUserIds.Distinct().Where(x => x != Guid.Empty).ToList();
         if (recipients.Count == 0)
         {
-            throw new InvalidOperationException("Selecione pelo menos um destinatÃ¡rio.");
+            throw new InvalidOperationException("Selecione pelo menos um destinatário.");
         }
 
         var users = await dbContext.Users
@@ -47,7 +47,7 @@ public sealed partial class NotificationService
 
         if (users.Count == 0)
         {
-            throw new InvalidOperationException("Nenhum destinatÃ¡rio ativo foi encontrado.");
+            throw new InvalidOperationException("Nenhum destinatário ativo foi encontrado.");
         }
 
         var message = new NotificationMessage
@@ -113,3 +113,4 @@ public sealed partial class NotificationService
     }
 
 }
+

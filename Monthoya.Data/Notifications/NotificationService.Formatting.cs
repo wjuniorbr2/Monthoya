@@ -37,8 +37,8 @@ public sealed partial class NotificationService
             NotificationCategory.ManualMessage => "Mensagem manual",
             NotificationCategory.SystemAlert => "Alerta do sistema",
             NotificationCategory.ScheduledReminder => "Lembrete agendado",
-            NotificationCategory.TaskRequired => "AÃ§Ã£o necessÃ¡ria",
-            NotificationCategory.Info => "InformaÃ§Ã£o",
+            NotificationCategory.TaskRequired => "Ação necessária",
+            NotificationCategory.Info => "Informação",
             NotificationCategory.Warning => "Aviso",
             NotificationCategory.AdminAnnouncement => "Comunicado administrativo",
             NotificationCategory.KeyOverdue => "Chave em atraso",
@@ -51,7 +51,7 @@ public sealed partial class NotificationService
             NotificationPriority.Low => "Baixa",
             NotificationPriority.Normal => "Normal",
             NotificationPriority.High => "Alta",
-            NotificationPriority.Critical => "CrÃ­tica",
+            NotificationPriority.Critical => "Crítica",
             _ => priority.ToString()
         };
 
@@ -77,3 +77,4 @@ public sealed partial class NotificationService
     private static string FormatDateTime(DateTimeOffset? value) =>
         value?.ToLocalTime().ToString("dd/MM/yyyy HH:mm") ?? "-";
 }
+
