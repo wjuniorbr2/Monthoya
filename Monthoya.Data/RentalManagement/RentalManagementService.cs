@@ -67,7 +67,7 @@ public sealed partial class RentalManagementService(
             return new PessoaSummary(
                 x.Id,
                 x.NomeDisplay,
-                x.TipoPessoa == TipoPessoa.Fisica ? "FÃ­sica" : "JurÃ­dica",
+                x.TipoPessoa == TipoPessoa.Fisica ? "Física" : "Jurídica",
                 GetPessoaRolesLabel(isProprietario, isLocatario, isFiador),
                 FormatCpfCnpjForDisplay(x.TipoPessoa, x.Documento),
                 FormatPhoneForDisplay(x.Telefone),
@@ -110,7 +110,7 @@ public sealed partial class RentalManagementService(
         var summary = new PessoaSummary(
             pessoa.Id,
             pessoa.NomeDisplay,
-            pessoa.TipoPessoa == TipoPessoa.Fisica ? "FÃ­sica" : "JurÃ­dica",
+            pessoa.TipoPessoa == TipoPessoa.Fisica ? "Física" : "Jurídica",
             GetPessoaRolesLabel(isProprietario, isLocatario, isFiador),
             FormatCpfCnpjForDisplay(pessoa.TipoPessoa, documento),
             FormatPhoneForDisplay(pessoa.Telefone),
@@ -527,6 +527,7 @@ public sealed partial class RentalManagementService(
 
 
 }
+
 
 
 
