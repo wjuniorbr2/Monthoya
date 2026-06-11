@@ -32,7 +32,7 @@ public sealed partial class RentalManagementService
         imovel.CopelMatricula = TrimOrNull(request.CopelMatricula);
         imovel.IptuInscricaoImobiliaria = TrimOrNull(request.IptuInscricaoImobiliaria);
         imovel.IptuCadastroImovel = TrimOrNull(request.IptuCadastroImovel);
-imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);
+        imovel.ColetaLixo = TrimOrNull(request.ColetaLixo);
         imovel.TipoImovel = TrimOrNull(request.TipoImovel);
         imovel.Descricao = TrimOrNull(request.Descricao);
         imovel.DescricaoInterna = TrimOrNull(request.DescricaoInterna) ?? TrimOrNull(request.Descricao);
