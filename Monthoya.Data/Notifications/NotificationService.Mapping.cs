@@ -8,7 +8,7 @@ public sealed partial class NotificationService
 {
     private static NotificationSummary ToSummary(NotificationRecipient recipient)
     {
-        var message = recipient.NotificationMessage ?? throw new InvalidOperationException("NotificaÃ§Ã£o sem mensagem.");
+        var message = recipient.NotificationMessage ?? throw new InvalidOperationException("Notificação sem mensagem.");
         return new NotificationSummary(
             message.Id,
             message.Title,
@@ -49,10 +49,10 @@ public sealed partial class NotificationService
     {
         if (message.Category == NotificationCategory.KeyOverdue)
         {
-            var code = ExtractBodyValue(message.Body, "CÃ³digo da chave:", "CÃƒÂ³digo da chave:");
-            var property = ExtractBodyValue(message.Body, "ImÃ³vel:", "ImÃƒÂ³vel:");
+            var code = ExtractBodyValue(message.Body, "Código da chave:", "Código da chave:");
+            var property = ExtractBodyValue(message.Body, "Imóvel:", "Imóvel:");
             var street = property.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? property;
-            return $"CÃ³d.: {FallbackDash(code)} | {FallbackDash(street)}";
+            return $"Cód.: {FallbackDash(code)} | {FallbackDash(street)}";
         }
 
         var firstLine = message.Body
@@ -62,3 +62,5 @@ public sealed partial class NotificationService
         return firstLine.Length <= 110 ? firstLine : string.Concat(firstLine.AsSpan(0, 107), "...");
     }
 }
+
+

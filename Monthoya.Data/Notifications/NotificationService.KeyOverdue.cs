@@ -40,22 +40,24 @@ public sealed partial class NotificationService
 
         var lines = new List<string>
         {
-            $"CÃ³digo da chave: {movimento.ChaveCodigo ?? imovel?.ChaveCodigo ?? "-"}",
-            $"ImÃ³vel: {endereco}",
-            $"ProprietÃ¡rio: {imovel?.Proprietario?.NomeDisplay ?? "-"}",
+            $"Código da chave: {movimento.ChaveCodigo ?? imovel?.ChaveCodigo ?? "-"}",
+            $"Imóvel: {endereco}",
+            $"Proprietário: {imovel?.Proprietario?.NomeDisplay ?? "-"}",
             $"Retirado por: {movimento.RetiradoPorNome ?? "-"}",
             $"Telefone: {movimento.RetiradoPorTelefone ?? "-"}",
             $"Retirado em: {FormatDateTime(movimento.RetiradoEm)}",
-            $"PrevisÃ£o de devoluÃ§Ã£o: {FormatDateTime(previsao)}",
+            $"Previsão de devolução: {FormatDateTime(previsao)}",
             $"Tempo em atraso: {atrasoTexto}",
             $"Motivo: {movimento.Motivo ?? "-"}"
         };
 
         if (!string.IsNullOrWhiteSpace(movimento.Observacoes))
         {
-            lines.Add($"ObservaÃƒÂ§ÃƒÂµes: {movimento.Observacoes}");
+            lines.Add($"Observações: {movimento.Observacoes}");
         }
 
         return string.Join(Environment.NewLine, lines);
     }
 }
+
+

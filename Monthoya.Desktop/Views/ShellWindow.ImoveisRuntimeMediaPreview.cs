@@ -81,7 +81,7 @@ public partial class ShellWindow
 
             var removeButton = new Button
             {
-                Content = "Ã—",
+                Content = "×",
                 Width = 22,
                 Height = 22,
                 Padding = new Thickness(0),
@@ -92,7 +92,7 @@ public partial class ShellWindow
                 Background = Brushes.White,
                 BorderBrush = Brushes.LightGray,
                 Foreground = Brushes.DarkRed,
-                ToolTip = "Remover esta mÃ­dia",
+                ToolTip = "Remover esta mídia",
                 Tag = "RemoveImovelMediaButton",
                 DataContext = media,
                 Visibility = _isImovelEditing ? Visibility.Visible : Visibility.Collapsed,
@@ -143,7 +143,7 @@ public partial class ShellWindow
         var previewPath = ResolveMediaPreviewPath(media);
         if (string.IsNullOrWhiteSpace(previewPath))
         {
-            MessageBox.Show(this, "PrÃ©-visualizaÃ§Ã£o disponÃ­vel apenas para imagens locais salvas neste computador.", "PrÃ©-visualizaÃ§Ã£o", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, "Pré-visualização disponível apenas para imagens locais salvas neste computador.", "Pré-visualização", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -155,7 +155,7 @@ public partial class ShellWindow
         e.Handled = true;
         if (!_isImovelEditing)
         {
-            MessageBox.Show(this, "Clique em Editar antes de remover fotos ou arquivos.", "Remover mÃ­dia", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, "Clique em Editar antes de remover fotos ou arquivos.", "Remover mídia", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -167,7 +167,7 @@ public partial class ShellWindow
         var confirm = MessageBox.Show(
             this,
             $"Remover '{media.FileName}' da lista de fotos e arquivos?",
-            "Remover mÃ­dia",
+            "Remover mídia",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
         if (confirm != MessageBoxResult.Yes)
@@ -183,7 +183,7 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ImovelImagemErrorText.Text = $"NÃ£o foi possÃ­vel remover a mÃ­dia: {ex.Message}";
+            ImovelImagemErrorText.Text = $"Não foi possível remover a mídia: {ex.Message}";
         }
     }
 
@@ -194,7 +194,7 @@ public partial class ShellWindow
 
         if (removedPending)
         {
-            ImovelImagemErrorText.Text = "MÃ­dia pendente removida.";
+            ImovelImagemErrorText.Text = "Mídia pendente removida.";
             return;
         }
 
@@ -207,7 +207,7 @@ public partial class ShellWindow
 
         await _rentalManagementService.DeleteImovelImagemRecordAsync(saved.Id);
         _imovelImagens = _imovelImagens.Where(x => x.Id != saved.Id).ToList();
-        ImovelImagemErrorText.Text = "MÃ­dia removida do cadastro.";
+        ImovelImagemErrorText.Text = "Mídia removida do cadastro.";
     }
 
     private void ShowImovelMediaPreviewWindow(ImovelMediaListItem media, string previewPath)
@@ -268,7 +268,7 @@ public partial class ShellWindow
 
         var hintText = new TextBlock
         {
-            Text = "Ctrl + roda do mouse tambÃ©m altera o zoom",
+            Text = "Ctrl + roda do mouse também altera o zoom",
             VerticalAlignment = VerticalAlignment.Center,
             Foreground = Brushes.DimGray,
             Margin = new Thickness(12, 0, 0, 0)
@@ -429,3 +429,5 @@ public partial class ShellWindow
         return null;
     }
 }
+
+
