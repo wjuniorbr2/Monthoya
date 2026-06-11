@@ -278,7 +278,7 @@ public partial class ShellWindow
 
                 comboBox.ItemsSource = filtered;
                 comboBox.IsDropDownOpen = filtered.Count > 0 && comboBox.IsKeyboardFocusWithin;
-                textBox.SelectionStart = textBox.Text.Length;
+                textBox.SelectionStart = (textBox.Text ?? string.Empty).Length;
                 textBox.SelectionLength = 0;
                 isFiltering = false;
             };
@@ -490,4 +490,5 @@ public partial class ShellWindow
         };
     }
 }
+
 
