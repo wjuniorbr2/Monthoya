@@ -39,7 +39,7 @@ public partial class ShellWindow
         });
         root.Children.Add(new TextBlock
         {
-            Text = "Edição básica. Imóvel, proprietário e locatário ficam travados após a criação; alterações desse tipo devem ser tratadas em fluxo próprio.",
+            Text = "Edição básica. Imóvel, proprietário e locatário ficam travados após a criação; mudança dessas partes deve ser feita em fluxo próprio, com histórico.",
             Foreground = System.Windows.Media.Brushes.DimGray,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 14)
@@ -147,9 +147,9 @@ public partial class ShellWindow
         ConfigureLocacaoDayTextBox(diaVencimentoBox, errorText);
         ConfigureLocacaoDayTextBox(diaRepasseBox, errorText);
 
-        AddLabeledControl(form, "Imóvel", imovelBox, 320);
-        AddLabeledControl(form, "Proprietário principal", proprietarioBox, 260);
-        AddLabeledControl(form, "Locatário principal", locatarioBox, 260);
+        AddLabeledControl(form, "Imóvel (travado)", imovelBox, 320);
+        AddLabeledControl(form, "Proprietário principal (travado)", proprietarioBox, 260);
+        AddLabeledControl(form, "Locatário principal (travado)", locatarioBox, 260);
         AddLabeledControl(form, "Tipo de locação", tipoBox, 180);
         AddLabeledControl(form, "Aluguel atual", valorBox, 180);
         AddLabeledControl(form, "Data início locação", dataInicioBox, 180);
@@ -224,6 +224,9 @@ public partial class ShellWindow
                     throw new InvalidOperationException(errorText.Text);
                 }
 
+                ValidateReasonableLocacaoDate(dataInicioBox, "Data início locação");
+                ValidateReasonableLocacaoDate(dataCobrancaBox, "Data início cobrança");
+
                 var valor = ParseNullableDecimal(valorBox.Text)
                     ?? throw new InvalidOperationException("Informe o valor do aluguel.");
 
@@ -273,6 +276,19 @@ public partial class ShellWindow
                 saveButton.IsEnabled = true;
             }
         };
+    }
+
+    private static void ValidateReasonableLocacaoDate(DatePicker datePicker, string label)
+    {
+        if (datePicker.SelectedDate is not DateTime selectedDate)
+        {
+            throw new InvalidOperationException($"Informe {label.ToLowerInvariant()}.");
+        }
+
+        if (selectedDate.Year is < 1900 or > 2100)
+        {
+            throw new InvalidOperationException($"{label} deve ficar entre 1900 e 2100.");
+        }
     }
 
     private static LocacaoParteSummary? FindPrincipalLocacaoParte(LocacaoDetails details, TipoParteLocacao tipoParte) =>
