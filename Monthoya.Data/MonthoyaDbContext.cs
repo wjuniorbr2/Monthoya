@@ -17,6 +17,15 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
     public DbSet<ImovelChaveMovimento> ImovelChaveMovimentos => Set<ImovelChaveMovimento>();
     public DbSet<Locacao> Locacoes => Set<Locacao>();
     public DbSet<LocacaoFiador> LocacaoFiadores => Set<LocacaoFiador>();
+    public DbSet<LocacaoParte> LocacaoPartes => Set<LocacaoParte>();
+    public DbSet<LocacaoGarantia> LocacaoGarantias => Set<LocacaoGarantia>();
+    public DbSet<LocacaoValorHistorico> LocacaoValoresHistoricos => Set<LocacaoValorHistorico>();
+    public DbSet<LocacaoEncargoRecorrente> LocacaoEncargosRecorrentes => Set<LocacaoEncargoRecorrente>();
+    public DbSet<LocacaoLancamento> LocacaoLancamentos => Set<LocacaoLancamento>();
+    public DbSet<LocacaoCobranca> LocacaoCobrancas => Set<LocacaoCobranca>();
+    public DbSet<LocacaoCobrancaItem> LocacaoCobrancaItens => Set<LocacaoCobrancaItem>();
+    public DbSet<LocacaoNotificacaoRegra> LocacaoNotificacaoRegras => Set<LocacaoNotificacaoRegra>();
+    public DbSet<LocacaoHistorico> LocacaoHistoricos => Set<LocacaoHistorico>();
     public DbSet<IndiceReajuste> IndicesReajuste => Set<IndiceReajuste>();
     public DbSet<LancamentoFinanceiro> LancamentosFinanceiros => Set<LancamentoFinanceiro>();
     public DbSet<ContaPagarReceber> ContasPagarReceber => Set<ContaPagarReceber>();
@@ -311,19 +320,45 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
         modelBuilder.Entity<Locacao>(entity =>
         {
             entity.ToTable("locacoes");
+            entity.Property(x => x.Codigo).HasMaxLength(80);
+            entity.Property(x => x.TipoLocacao).HasConversion<int>();
+            entity.Property(x => x.ResponsavelNome).HasMaxLength(220);
+            entity.Property(x => x.MotivoEncerramento).HasMaxLength(2000);
             entity.Property(x => x.ValorAluguel).HasPrecision(18, 2);
+            entity.Property(x => x.ValorAluguelInicial).HasPrecision(18, 2);
+            entity.Property(x => x.ValorAluguelAtual).HasPrecision(18, 2);
+            entity.Property(x => x.MetodoCalculoProporcional).HasConversion<int>();
+            entity.Property(x => x.TipoDescontoPontualidade).HasConversion<int>();
+            entity.Property(x => x.ValorDescontoPontualidade).HasPrecision(18, 2);
+            entity.Property(x => x.MultaAtrasoTipo).HasConversion<int>();
+            entity.Property(x => x.MultaAtrasoValor).HasPrecision(18, 2);
+            entity.Property(x => x.JurosMoraPercentualMes).HasPrecision(8, 4);
+            entity.Property(x => x.IndiceCorrecaoAtraso).HasMaxLength(80);
             entity.Property(x => x.MultaPercentual).HasPrecision(8, 4);
             entity.Property(x => x.JurosPercentual).HasPrecision(8, 4);
             entity.Property(x => x.DescontoAteVencimentoValor).HasPrecision(18, 2);
             entity.Property(x => x.DescontoAteVencimentoPercentual).HasPrecision(8, 4);
+            entity.Property(x => x.DescontoValidoAteVencimento).HasDefaultValue(true);
+            entity.Property(x => x.ModoReajuste).HasConversion<int>().HasDefaultValue(ModoReajusteLocacao.Manual);
+            entity.Property(x => x.ReajusteRequerAprovacao).HasDefaultValue(true);
             entity.Property(x => x.TaxaAdministracaoValor).HasPrecision(18, 2);
             entity.Property(x => x.TaxaAdministracaoPercentual).HasPrecision(8, 4);
+            entity.Property(x => x.MetaComissaoPrimeiroAluguelPercentual).HasPrecision(8, 4);
             entity.Property(x => x.TaxaContratoValor).HasPrecision(18, 2);
+            entity.Property(x => x.TaxaContratoPercentual).HasPrecision(8, 4);
+            entity.Property(x => x.ModoCobrancaTaxaContrato).HasConversion<int>().HasDefaultValue(ModoCobrancaTaxaContratoLocacao.Manual);
+            entity.Property(x => x.DestinoRepasse).HasConversion<int>();
             entity.Property(x => x.TaxaRenovacaoValor).HasPrecision(18, 2);
+            entity.Property(x => x.Status).HasConversion<int>();
+            entity.Property(x => x.ObservacoesInternas).HasMaxLength(4000);
             entity.HasOne(x => x.Imovel).WithMany().HasForeignKey(x => x.ImovelId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Locatario).WithMany().HasForeignKey(x => x.LocatarioId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Proprietario).WithMany().HasForeignKey(x => x.ProprietarioId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.IndiceReajuste).WithMany().HasForeignKey(x => x.IndiceReajusteId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(x => x.ResponsavelUsuario).WithMany().HasForeignKey(x => x.ResponsavelUsuarioId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(x => x.Codigo);
+            entity.HasIndex(x => x.ImovelId);
+            entity.HasIndex(x => new { x.ImovelId, x.Status });
         });
 
         modelBuilder.Entity<LocacaoFiador>(entity =>
@@ -332,6 +367,121 @@ public sealed class MonthoyaDbContext(DbContextOptions<MonthoyaDbContext> option
             entity.HasIndex(x => new { x.LocacaoId, x.FiadorId }).IsUnique();
             entity.HasOne(x => x.Locacao).WithMany(x => x.Fiadores).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(x => x.Fiador).WithMany().HasForeignKey(x => x.FiadorId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<LocacaoParte>(entity =>
+        {
+            entity.ToTable("locacao_partes");
+            entity.Property(x => x.TipoParte).HasConversion<int>();
+            entity.Property(x => x.PercentualParticipacao).HasPrecision(8, 4);
+            entity.Property(x => x.PercentualRepasse).HasPrecision(8, 4);
+            entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.HasOne(x => x.Locacao).WithMany(x => x.Partes).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.Pessoa).WithMany().HasForeignKey(x => x.PessoaId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(x => new { x.LocacaoId, x.PessoaId, x.TipoParte }).IsUnique();
+            entity.HasIndex(x => new { x.LocacaoId, x.TipoParte, x.IsPrincipal });
+        });
+
+        modelBuilder.Entity<LocacaoGarantia>(entity =>
+        {
+            entity.ToTable("locacao_garantias");
+            entity.Property(x => x.TipoGarantia).HasConversion<int>();
+            entity.Property(x => x.Valor).HasPrecision(18, 2);
+            entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.Property(x => x.ObservacoesDocumento).HasMaxLength(2000);
+            entity.HasOne(x => x.Locacao).WithMany(x => x.Garantias).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.LocacaoId, x.Ativa }).IsUnique().HasFilter("\"Ativa\" = TRUE");
+        });
+
+        modelBuilder.Entity<LocacaoValorHistorico>(entity =>
+        {
+            entity.ToTable("locacao_valores_historicos");
+            entity.Property(x => x.ValorAnterior).HasPrecision(18, 2);
+            entity.Property(x => x.ValorNovo).HasPrecision(18, 2);
+            entity.Property(x => x.Motivo).HasMaxLength(2000);
+            entity.Property(x => x.IndiceReajuste).HasMaxLength(80);
+            entity.Property(x => x.PercentualAplicado).HasPrecision(8, 4);
+            entity.Property(x => x.Usuario).HasMaxLength(220);
+            entity.HasOne(x => x.Locacao).WithMany(x => x.ValoresHistoricos).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.LocacaoId, x.DataVigencia });
+        });
+
+        modelBuilder.Entity<LocacaoEncargoRecorrente>(entity =>
+        {
+            entity.ToTable("locacao_encargos_recorrentes");
+            entity.Property(x => x.TipoEncargo).HasConversion<int>();
+            entity.Property(x => x.Valor).HasPrecision(18, 2);
+            entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.HasOne(x => x.Locacao).WithMany(x => x.EncargosRecorrentes).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.LocacaoId, x.TipoEncargo, x.Ativo });
+        });
+
+        modelBuilder.Entity<LocacaoLancamento>(entity =>
+        {
+            entity.ToTable("locacao_lancamentos");
+            entity.Property(x => x.TipoLancamento).HasConversion<int>();
+            entity.Property(x => x.Descricao).HasMaxLength(300).IsRequired();
+            entity.Property(x => x.Valor).HasPrecision(18, 2);
+            entity.Property(x => x.Status).HasConversion<int>();
+            entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.HasOne(x => x.Locacao).WithMany(x => x.Lancamentos).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.LocacaoId, x.Status });
+            entity.HasIndex(x => x.DataVencimento);
+        });
+
+        modelBuilder.Entity<LocacaoCobranca>(entity =>
+        {
+            entity.ToTable("locacao_cobrancas");
+            entity.Property(x => x.TipoCobranca).HasConversion<int>();
+            entity.Property(x => x.Status).HasConversion<int>();
+            entity.Property(x => x.ValorAluguel).HasPrecision(18, 2);
+            entity.Property(x => x.ValorDescontos).HasPrecision(18, 2);
+            entity.Property(x => x.ValorEncargos).HasPrecision(18, 2);
+            entity.Property(x => x.ValorMulta).HasPrecision(18, 2);
+            entity.Property(x => x.ValorJuros).HasPrecision(18, 2);
+            entity.Property(x => x.ValorTotal).HasPrecision(18, 2);
+            entity.HasOne(x => x.Locacao).WithMany(x => x.Cobrancas).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.LocacaoId, x.Competencia });
+            entity.HasIndex(x => new { x.Status, x.DataVencimento });
+        });
+
+        modelBuilder.Entity<LocacaoCobrancaItem>(entity =>
+        {
+            entity.ToTable("locacao_cobranca_itens");
+            entity.Property(x => x.TipoItem).HasConversion<int>();
+            entity.Property(x => x.Descricao).HasMaxLength(300).IsRequired();
+            entity.Property(x => x.Valor).HasPrecision(18, 2);
+            entity.Property(x => x.ReferenciaId).HasMaxLength(120);
+            entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.HasOne(x => x.LocacaoCobranca).WithMany(x => x.Itens).HasForeignKey(x => x.LocacaoCobrancaId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => x.LocacaoCobrancaId);
+        });
+
+        modelBuilder.Entity<LocacaoNotificacaoRegra>(entity =>
+        {
+            entity.ToTable("locacao_notificacao_regras");
+            entity.Property(x => x.TipoNotificacao).HasConversion<int>();
+            entity.Property(x => x.Modo).HasConversion<int>();
+            entity.Property(x => x.DestinatarioTipo).HasConversion<int>();
+            entity.Property(x => x.DestinatarioRole).HasMaxLength(120);
+            entity.Property(x => x.Canal).HasConversion<int>();
+            entity.Property(x => x.Observacoes).HasMaxLength(2000);
+            entity.HasOne(x => x.Locacao).WithMany(x => x.NotificacaoRegras).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.DestinatarioUsuario).WithMany().HasForeignKey(x => x.DestinatarioUsuarioId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasIndex(x => new { x.LocacaoId, x.TipoNotificacao, x.Ativa });
+        });
+
+        modelBuilder.Entity<LocacaoHistorico>(entity =>
+        {
+            entity.ToTable("locacao_historicos");
+            entity.Property(x => x.Usuario).HasMaxLength(220);
+            entity.Property(x => x.Acao).HasMaxLength(120).IsRequired();
+            entity.Property(x => x.Campo).HasMaxLength(120);
+            entity.Property(x => x.ValorAnterior).HasMaxLength(2000);
+            entity.Property(x => x.ValorNovo).HasMaxLength(2000);
+            entity.Property(x => x.Motivo).HasMaxLength(2000);
+            entity.HasOne(x => x.Locacao).WithMany(x => x.Historicos).HasForeignKey(x => x.LocacaoId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(x => new { x.LocacaoId, x.DataHoraUtc });
         });
 
         modelBuilder.Entity<IndiceReajuste>(entity =>

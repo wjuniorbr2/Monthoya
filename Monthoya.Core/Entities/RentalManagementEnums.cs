@@ -14,7 +14,40 @@ public enum ImovelChaveMovimentoTipo { Retirada = 0, Devolucao = 1, Transferenci
 public enum ImovelChaveMovimentoStatus { ComImobiliaria = 0, Retirada = 1, EmAtraso = 2, Perdida = 3, Inativa = 4 }
 public enum ImovelMediaCategory { PropertyPhoto = 0, Document = 1, InspectionPhoto = 2, MaintenancePhoto = 3, Other = 4 }
 public enum ImovelMediaSource { Windows = 0, AndroidStaff = 1, Website = 2, Import = 3 }
-public enum LocacaoStatus { Ativa = 0, Encerrada = 1, Cancelada = 2 }
+public enum LocacaoStatus
+{
+    Ativa = 0,
+    Encerrada = 1,
+    Cancelada = 2,
+    Rascunho = 3,
+    AguardandoDocumentos = 4,
+    AguardandoAnalise = 5,
+    AguardandoContrato = 6,
+    AguardandoAssinatura = 7,
+    AguardandoVistoria = 8,
+    AguardandoEntregaChaves = 9,
+    EmAtraso = 10,
+    EmEncerramento = 11,
+    Reaberta = 12
+}
+public enum TipoLocacao { Residencial = 0, Comercial = 1, Temporada = 2, Outro = 3 }
+public enum TipoGarantiaLocacao { Nenhuma = 0, Fiador = 1, CaucaoDinheiro = 2, CaucaoBem = 3, SeguroFianca = 4, TituloCapitalizacao = 5, CessaoFiduciaria = 6, Outro = 7 }
+public enum MetodoCalculoProporcional { DiasCorridos = 0, MesComercialTrintaDias = 1 }
+public enum TipoDescontoLocacao { ValorFixo = 0, Percentual = 1 }
+public enum TipoMultaLocacao { Percentual = 0, ValorFixo = 1 }
+public enum ModoReajusteLocacao { Automatico = 0, SemiAutomatico = 1, Manual = 2 }
+public enum TipoEncargoLocacao { Iptu = 0, Condominio = 1, ColetaLixo = 2, SeguroIncendio = 3, Agua = 4, Energia = 5, Gas = 6, Outro = 7 }
+public enum TipoLancamentoLocacao { CobrarLocatario = 0, DescontoLocatario = 1, ReembolsoLocatario = 2, DescontoRepasseProprietario = 3, CobrarProprietario = 4, AbsorvidoImobiliaria = 5 }
+public enum StatusLancamentoLocacao { Pendente = 0, Aprovado = 1, Cobrada = 2, Pago = 3, Cancelado = 4 }
+public enum ModoCobrancaTaxaContratoLocacao { Automatico = 0, SemiAutomatico = 1, Manual = 2 }
+public enum TipoCobrancaLocacao { Mensal = 0, PrimeiraProporcional = 1, FinalProporcional = 2, Avulsa = 3, Projecao = 4 }
+public enum StatusCobrancaLocacao { Rascunho = 0, Aberta = 1, Enviada = 2, Paga = 3, Vencida = 4, Cancelada = 5 }
+public enum TipoItemCobrancaLocacao { Aluguel = 0, Desconto = 1, Encargo = 2, Multa = 3, Juros = 4, Lancamento = 5, Outro = 6 }
+public enum TipoParteLocacao { Proprietario = 0, Locatario = 1, Fiador = 2 }
+public enum DestinoRepasseLocacao { PercentualProprietarios = 0, ProprietarioPrincipal = 1, Manual = 2 }
+public enum ModoNotificacaoLocacao { Desabilitada = 0, NotificarApenas = 1, RequerAprovacao = 2, AcaoAutomaticaNotificarResultado = 3 }
+public enum TipoDestinatarioNotificacaoLocacao { ResponsavelLocacao = 0, UsuarioEspecifico = 1, Perfil = 2, Todos = 3 }
+public enum TipoNotificacaoLocacao { Geral = 0, DocumentosPendentes = 1, ContratoPendente = 2, VistoriaPendente = 3, CobrancaPendente = 4, AluguelVencido = 5, RepassePendente = 6, ReajustePendente = 7, EncerramentoProximo = 8, LancamentoPendenteAprovacao = 9 }
 public enum ReajusteTipo { Oficial = 0, Custom = 1 }
 public enum ModeloTaxaAdministracao { FixaMensal = 0, PercentualAluguel = 1, PrimeiroAluguel = 2, TaxaContrato = 3, TaxaRenovacao = 4, SemTaxa = 5, Custom = 6 }
 public enum FinanceiroTipo { Pagar = 0, Receber = 1 }

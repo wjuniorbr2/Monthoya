@@ -96,6 +96,12 @@ public sealed class ImovelImagem : BaseEntity
 
 public sealed class Locacao : BaseEntity
 {
+    public string? Codigo { get; set; }
+    public TipoLocacao TipoLocacao { get; set; } = TipoLocacao.Residencial;
+    public Guid? ResponsavelUsuarioId { get; set; }
+    public AppUser? ResponsavelUsuario { get; set; }
+    public string? ResponsavelNome { get; set; }
+    public DateOnly? DataCadastro { get; set; }
     public Guid ImovelId { get; set; }
     public Imovel? Imovel { get; set; }
     public Guid LocatarioId { get; set; }
@@ -105,11 +111,36 @@ public sealed class Locacao : BaseEntity
     public DateOnly DataInicio { get; set; }
     public DateOnly? DataFim { get; set; }
     public int? PeriodoMeses { get; set; }
+    public DateOnly? DataAssinaturaContrato { get; set; }
+    public DateOnly? DataInicioLocacao { get; set; }
+    public DateOnly? DataEntregaChaves { get; set; }
+    public DateOnly? DataInicioCobranca { get; set; }
     public int DiaBase { get; set; } = 1;
     public int VencimentoLocatarioDia { get; set; } = 10;
     public int? VencimentoProprietarioDia { get; set; }
+    public int? DiaVencimentoLocatario { get; set; }
+    public int? DiaRepasseProprietario { get; set; }
+    public int? PrazoMeses { get; set; }
+    public DateOnly? DataFimPrevista { get; set; }
+    public DateOnly? DataEncerramento { get; set; }
+    public DateOnly? DataDesocupacao { get; set; }
+    public string? MotivoEncerramento { get; set; }
     public decimal ValorAluguel { get; set; }
+    public decimal? ValorAluguelInicial { get; set; }
+    public decimal? ValorAluguelAtual { get; set; }
     public bool AluguelAntecipado { get; set; }
+    public bool CalculoProporcionalPrimeiroMes { get; set; }
+    public MetodoCalculoProporcional MetodoCalculoProporcional { get; set; } = MetodoCalculoProporcional.DiasCorridos;
+    public bool TemDescontoPontualidade { get; set; }
+    public TipoDescontoLocacao? TipoDescontoPontualidade { get; set; }
+    public decimal? ValorDescontoPontualidade { get; set; }
+    public bool DescontoValidoAteVencimento { get; set; } = true;
+    public TipoMultaLocacao MultaAtrasoTipo { get; set; } = TipoMultaLocacao.Percentual;
+    public decimal? MultaAtrasoValor { get; set; }
+    public decimal? JurosMoraPercentualMes { get; set; }
+    public int? DiasTolerancia { get; set; }
+    public bool CorrecaoMonetariaAtraso { get; set; }
+    public string? IndiceCorrecaoAtraso { get; set; }
     public decimal? MultaPercentual { get; set; }
     public decimal? JurosPercentual { get; set; }
     public bool DescontoAteVencimentoAtivo { get; set; }
@@ -118,14 +149,37 @@ public sealed class Locacao : BaseEntity
     public Guid? IndiceReajusteId { get; set; }
     public IndiceReajuste? IndiceReajuste { get; set; }
     public DateOnly? DataProximoReajuste { get; set; }
+    public bool TemReajuste { get; set; }
+    public int? PeriodicidadeReajusteMeses { get; set; }
+    public DateOnly? DataBaseReajuste { get; set; }
+    public DateOnly? ProximaDataReajuste { get; set; }
+    public ModoReajusteLocacao ModoReajuste { get; set; } = ModoReajusteLocacao.Manual;
+    public bool ReajusteRequerAprovacao { get; set; } = true;
     public ModeloTaxaAdministracao ModeloTaxaAdministracao { get; set; } = ModeloTaxaAdministracao.PercentualAluguel;
     public decimal? TaxaAdministracaoValor { get; set; }
     public decimal? TaxaAdministracaoPercentual { get; set; }
+    public decimal? MetaComissaoPrimeiroAluguelPercentual { get; set; }
     public decimal? TaxaContratoValor { get; set; }
+    public decimal? TaxaContratoPercentual { get; set; }
+    public bool TaxaContratoManualOverride { get; set; }
+    public bool CobrarTaxaContratoInicio { get; set; }
+    public bool CobrarTaxaContratoRenovacao { get; set; }
+    public bool CobrarTaxaContratoReajuste { get; set; }
+    public ModoCobrancaTaxaContratoLocacao ModoCobrancaTaxaContrato { get; set; } = ModoCobrancaTaxaContratoLocacao.Manual;
+    public DestinoRepasseLocacao DestinoRepasse { get; set; } = DestinoRepasseLocacao.PercentualProprietarios;
     public decimal? TaxaRenovacaoValor { get; set; }
-    public LocacaoStatus Status { get; set; } = LocacaoStatus.Ativa;
+    public LocacaoStatus Status { get; set; } = LocacaoStatus.Rascunho;
     public string? Observacoes { get; set; }
+    public string? ObservacoesInternas { get; set; }
     public ICollection<LocacaoFiador> Fiadores { get; set; } = new List<LocacaoFiador>();
+    public ICollection<LocacaoParte> Partes { get; set; } = new List<LocacaoParte>();
+    public ICollection<LocacaoGarantia> Garantias { get; set; } = new List<LocacaoGarantia>();
+    public ICollection<LocacaoValorHistorico> ValoresHistoricos { get; set; } = new List<LocacaoValorHistorico>();
+    public ICollection<LocacaoEncargoRecorrente> EncargosRecorrentes { get; set; } = new List<LocacaoEncargoRecorrente>();
+    public ICollection<LocacaoLancamento> Lancamentos { get; set; } = new List<LocacaoLancamento>();
+    public ICollection<LocacaoCobranca> Cobrancas { get; set; } = new List<LocacaoCobranca>();
+    public ICollection<LocacaoNotificacaoRegra> NotificacaoRegras { get; set; } = new List<LocacaoNotificacaoRegra>();
+    public ICollection<LocacaoHistorico> Historicos { get; set; } = new List<LocacaoHistorico>();
 }
 
 public sealed class LocacaoFiador : BaseEntity
@@ -134,6 +188,150 @@ public sealed class LocacaoFiador : BaseEntity
     public Locacao? Locacao { get; set; }
     public Guid FiadorId { get; set; }
     public Pessoa? Fiador { get; set; }
+}
+
+public sealed class LocacaoParte : BaseEntity
+{
+    public Guid LocacaoId { get; set; }
+    public Locacao? Locacao { get; set; }
+    public Guid PessoaId { get; set; }
+    public Pessoa? Pessoa { get; set; }
+    public TipoParteLocacao TipoParte { get; set; }
+    public bool IsPrincipal { get; set; }
+    public decimal? PercentualParticipacao { get; set; }
+    public bool RecebeCobranca { get; set; }
+    public bool RecebeRepasse { get; set; }
+    public bool RecebeNotificacao { get; set; } = true;
+    public decimal? PercentualRepasse { get; set; }
+    public string? Observacoes { get; set; }
+}
+
+public sealed class LocacaoGarantia : BaseEntity
+{
+    public Guid LocacaoId { get; set; }
+    public Locacao? Locacao { get; set; }
+    public TipoGarantiaLocacao TipoGarantia { get; set; } = TipoGarantiaLocacao.Nenhuma;
+    public decimal? Valor { get; set; }
+    public DateOnly? DataValidade { get; set; }
+    public bool Ativa { get; set; } = true;
+    public string? Observacoes { get; set; }
+    public string? ObservacoesDocumento { get; set; }
+}
+
+public sealed class LocacaoValorHistorico : BaseEntity
+{
+    public Guid LocacaoId { get; set; }
+    public Locacao? Locacao { get; set; }
+    public DateOnly DataVigencia { get; set; }
+    public decimal? ValorAnterior { get; set; }
+    public decimal ValorNovo { get; set; }
+    public string? Motivo { get; set; }
+    public string? IndiceReajuste { get; set; }
+    public decimal? PercentualAplicado { get; set; }
+    public string? Usuario { get; set; }
+    public DateTimeOffset CriadoEmUtc { get; set; } = DateTimeOffset.UtcNow;
+}
+
+public sealed class LocacaoEncargoRecorrente : BaseEntity
+{
+    public Guid LocacaoId { get; set; }
+    public Locacao? Locacao { get; set; }
+    public TipoEncargoLocacao TipoEncargo { get; set; } = TipoEncargoLocacao.Outro;
+    public bool ControladoPelaImobiliaria { get; set; }
+    public bool CobradoComAluguel { get; set; }
+    public bool PagoDiretoPeloLocatario { get; set; }
+    public bool PagoPeloProprietario { get; set; }
+    public decimal? Valor { get; set; }
+    public bool Fixo { get; set; }
+    public int? NumeroParcelas { get; set; }
+    public int? DiaVencimento { get; set; }
+    public bool RequerAtualizacao { get; set; }
+    public string? Observacoes { get; set; }
+    public bool Ativo { get; set; } = true;
+}
+
+public sealed class LocacaoLancamento : BaseEntity
+{
+    public Guid LocacaoId { get; set; }
+    public Locacao? Locacao { get; set; }
+    public TipoLancamentoLocacao TipoLancamento { get; set; } = TipoLancamentoLocacao.CobrarLocatario;
+    public string Descricao { get; set; } = string.Empty;
+    public decimal Valor { get; set; }
+    public DateOnly? Competencia { get; set; }
+    public DateOnly? DataVencimento { get; set; }
+    public bool AfetaCobrancaLocatario { get; set; }
+    public bool AfetaRepasseProprietario { get; set; }
+    public bool RequerAprovacao { get; set; }
+    public StatusLancamentoLocacao Status { get; set; } = StatusLancamentoLocacao.Pendente;
+    public string? Observacoes { get; set; }
+    public DateTimeOffset CriadoEmUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? AprovadoEmUtc { get; set; }
+    public DateTimeOffset? CanceladoEmUtc { get; set; }
+}
+
+public sealed class LocacaoCobranca : BaseEntity
+{
+    public Guid LocacaoId { get; set; }
+    public Locacao? Locacao { get; set; }
+    public TipoCobrancaLocacao TipoCobranca { get; set; } = TipoCobrancaLocacao.Mensal;
+    public DateOnly Competencia { get; set; }
+    public DateOnly PeriodoInicio { get; set; }
+    public DateOnly PeriodoFim { get; set; }
+    public DateOnly DataVencimento { get; set; }
+    public StatusCobrancaLocacao Status { get; set; } = StatusCobrancaLocacao.Rascunho;
+    public decimal ValorAluguel { get; set; }
+    public decimal ValorDescontos { get; set; }
+    public decimal ValorEncargos { get; set; }
+    public decimal ValorMulta { get; set; }
+    public decimal ValorJuros { get; set; }
+    public decimal ValorTotal { get; set; }
+    public DateTimeOffset CriadoEmUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? EnviadoEmUtc { get; set; }
+    public DateTimeOffset? PagoEmUtc { get; set; }
+    public DateTimeOffset? CanceladoEmUtc { get; set; }
+    public ICollection<LocacaoCobrancaItem> Itens { get; set; } = new List<LocacaoCobrancaItem>();
+}
+
+public sealed class LocacaoCobrancaItem : BaseEntity
+{
+    public Guid LocacaoCobrancaId { get; set; }
+    public LocacaoCobranca? LocacaoCobranca { get; set; }
+    public TipoItemCobrancaLocacao TipoItem { get; set; } = TipoItemCobrancaLocacao.Outro;
+    public string Descricao { get; set; } = string.Empty;
+    public decimal Valor { get; set; }
+    public string? ReferenciaId { get; set; }
+    public string? Observacoes { get; set; }
+}
+
+public sealed class LocacaoNotificacaoRegra : BaseEntity
+{
+    public Guid LocacaoId { get; set; }
+    public Locacao? Locacao { get; set; }
+    public TipoNotificacaoLocacao TipoNotificacao { get; set; } = TipoNotificacaoLocacao.Geral;
+    public ModoNotificacaoLocacao Modo { get; set; } = ModoNotificacaoLocacao.NotificarApenas;
+    public TipoDestinatarioNotificacaoLocacao DestinatarioTipo { get; set; } = TipoDestinatarioNotificacaoLocacao.ResponsavelLocacao;
+    public Guid? DestinatarioUsuarioId { get; set; }
+    public AppUser? DestinatarioUsuario { get; set; }
+    public string? DestinatarioRole { get; set; }
+    public int? DiasAntes { get; set; }
+    public int? DiasDepois { get; set; }
+    public bool RepetirAteResolver { get; set; }
+    public NotificationChannel Canal { get; set; } = NotificationChannel.InApp;
+    public bool Ativa { get; set; } = true;
+    public string? Observacoes { get; set; }
+}
+
+public sealed class LocacaoHistorico : BaseEntity
+{
+    public Guid LocacaoId { get; set; }
+    public Locacao? Locacao { get; set; }
+    public DateTimeOffset DataHoraUtc { get; set; } = DateTimeOffset.UtcNow;
+    public string? Usuario { get; set; }
+    public string Acao { get; set; } = string.Empty;
+    public string? Campo { get; set; }
+    public string? ValorAnterior { get; set; }
+    public string? ValorNovo { get; set; }
+    public string? Motivo { get; set; }
 }
 
 public sealed class IndiceReajuste : BaseEntity
