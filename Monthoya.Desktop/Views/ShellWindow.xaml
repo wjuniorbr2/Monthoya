@@ -1507,7 +1507,7 @@
                                 <Button x:Name="ModulePrimaryActionButton" Style="{StaticResource SecondaryButton}" Click="ModulePrimaryActionButton_Click" />
                             </StackPanel>
                         </DockPanel>
-                        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0,18,0,18">
+                        <Border x:Name="ModuleNoticeBorder" Grid.Row="1" Style="{StaticResource CardBorder}" Margin="0,18,0,18">
                             <TextBlock x:Name="ModuleNoticeText" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" />
                         </Border>
                         <TextBox x:Name="ModuleSearchBox"
