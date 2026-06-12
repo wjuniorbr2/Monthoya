@@ -13,104 +13,107 @@ public sealed partial class RentalManagementService
     {
         if (request.ImovelId == Guid.Empty)
         {
-            throw new InvalidOperationException("Selecione o imÃ³vel da locaÃ§Ã£o.");
+            throw new InvalidOperationException("Selecione o imóvel da locação.");
         }
 
         var imovelExists = await dbContext.Imoveis.AnyAsync(x => x.Id == request.ImovelId, cancellationToken);
         if (!imovelExists)
         {
-            throw new InvalidOperationException("ImÃ³vel nÃ£o encontrado.");
+            throw new InvalidOperationException("Imóvel não encontrado.");
         }
 
-        var status = request.Status ?? LocacaoStatus.Rascunho;
-        var proprietarios = request.Partes.Where(x => x.TipoParte == TipoParteLocacao.Proprietario).ToList();
-        var locatarios = request.Partes.Where(x => x.TipoParte == TipoParteLocacao.Locatario).ToList();
+        var codigo = await ValidateAndNormalizeLocacaoCodigoAsync(request.Codigo, currentLocacaoId, cancellationToken);
+        var normalizedRequest = request with { Codigo = codigo };
+
+        var status = normalizedRequest.Status ?? LocacaoStatus.Rascunho;
+        var proprietarios = normalizedRequest.Partes.Where(x => x.TipoParte == TipoParteLocacao.Proprietario).ToList();
+        var locatarios = normalizedRequest.Partes.Where(x => x.TipoParte == TipoParteLocacao.Locatario).ToList();
         var proprietarioIds = proprietarios.Select(x => x.PessoaId).ToHashSet();
         if (locatarios.Any(x => proprietarioIds.Contains(x.PessoaId)))
         {
-            throw new InvalidOperationException("A mesma pessoa nÃ£o pode ser proprietÃ¡rio e locatÃ¡rio na mesma locaÃ§Ã£o.");
+            throw new InvalidOperationException("A mesma pessoa não pode ser proprietário e locatário na mesma locação.");
         }
 
         if (IsActiveLocacaoStatus(status))
         {
             var hasActiveLocacaoForImovel = await dbContext.Locacoes.AnyAsync(
-                x => x.ImovelId == request.ImovelId &&
+                x => x.ImovelId == normalizedRequest.ImovelId &&
                      x.Id != currentLocacaoId &&
                      (x.Status == LocacaoStatus.Ativa || x.Status == LocacaoStatus.EmAtraso || x.Status == LocacaoStatus.EmEncerramento || x.Status == LocacaoStatus.Reaberta),
                 cancellationToken);
 
             if (hasActiveLocacaoForImovel)
             {
-                throw new InvalidOperationException("Este imÃ³vel jÃ¡ possui uma locaÃ§Ã£o ativa.");
+                throw new InvalidOperationException("Este imóvel já possui uma locação ativa.");
             }
         }
 
-        var dataCadastro = request.DataCadastro ?? DateOnly.FromDateTime(DateTime.UtcNow);
-        var dataInicioCobranca = request.DataInicioCobranca ?? request.DataInicioLocacao;
-        var diaBase = request.DiaBase ?? dataInicioCobranca?.Day ?? 1;
-        var diaVencimentoLocatario = request.DiaVencimentoLocatario ?? diaBase;
-        var diaRepasseProprietario = request.DiaRepasseProprietario ?? diaVencimentoLocatario;
+        var dataCadastro = normalizedRequest.DataCadastro ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        var dataInicioCobranca = normalizedRequest.DataInicioCobranca ?? normalizedRequest.DataInicioLocacao;
+        var diaBase = normalizedRequest.DiaBase ?? dataInicioCobranca?.Day ?? 1;
+        var diaVencimentoLocatario = normalizedRequest.DiaVencimentoLocatario ?? diaBase;
+        var diaRepasseProprietario = normalizedRequest.DiaRepasseProprietario ?? diaVencimentoLocatario;
 
         ValidateDateRange(dataCadastro, "Data de cadastro");
-        ValidateOptionalDateRange(request.DataAssinaturaContrato, "Data de assinatura do contrato");
-        ValidateOptionalDateRange(request.DataInicioLocacao, "Data inÃ­cio locaÃ§Ã£o");
-        ValidateOptionalDateRange(request.DataEntregaChaves, "Data entrega das chaves");
-        ValidateOptionalDateRange(dataInicioCobranca, "Data inÃ­cio cobranÃ§a");
-        ValidateOptionalDateRange(request.DataFimPrevista, "Data fim prevista");
-        ValidateOptionalDateRange(request.DataEncerramento, "Data de encerramento");
-        ValidateOptionalDateRange(request.DataDesocupacao, "Data de desocupaÃ§Ã£o");
-        ValidateOptionalDateRange(request.DataBaseReajuste, "Data base do reajuste");
-        ValidateOptionalDateRange(request.ProximaDataReajuste, "PrÃ³xima data de reajuste");
+        ValidateOptionalDateRange(normalizedRequest.DataAssinaturaContrato, "Data de assinatura do contrato");
+        ValidateOptionalDateRange(normalizedRequest.DataInicioLocacao, "Data início locação");
+        ValidateOptionalDateRange(normalizedRequest.DataEntregaChaves, "Data entrega das chaves");
+        ValidateOptionalDateRange(dataInicioCobranca, "Data início cobrança");
+        ValidateOptionalDateRange(normalizedRequest.DataFimPrevista, "Data fim prevista");
+        ValidateOptionalDateRange(normalizedRequest.DataEncerramento, "Data de encerramento");
+        ValidateOptionalDateRange(normalizedRequest.DataDesocupacao, "Data de desocupação");
+        ValidateOptionalDateRange(normalizedRequest.DataBaseReajuste, "Data base do reajuste");
+        ValidateOptionalDateRange(normalizedRequest.ProximaDataReajuste, "Próxima data de reajuste");
 
         ValidateDay(diaBase, "Dia base");
-        ValidateDay(diaVencimentoLocatario, "Dia de vencimento do locatÃ¡rio");
-        ValidateDay(diaRepasseProprietario, "Dia de repasse ao proprietÃ¡rio");
+        ValidateDay(diaVencimentoLocatario, "Dia de vencimento do locatário");
+        ValidateDay(diaRepasseProprietario, "Dia de repasse ao proprietário");
 
-        if (request.ValorAluguelInicial < 0)
+        if (normalizedRequest.ValorAluguelInicial < 0)
         {
-            throw new InvalidOperationException("O valor inicial do aluguel nÃ£o pode ser negativo.");
+            throw new InvalidOperationException("O valor inicial do aluguel não pode ser negativo.");
         }
 
-        var valorAluguelAtual = request.ValorAluguelAtual ?? request.ValorAluguelInicial;
+        var valorAluguelAtual = normalizedRequest.ValorAluguelAtual ?? normalizedRequest.ValorAluguelInicial;
         if (valorAluguelAtual < 0)
         {
-            throw new InvalidOperationException("O valor atual do aluguel nÃ£o pode ser negativo.");
+            throw new InvalidOperationException("O valor atual do aluguel não pode ser negativo.");
         }
 
-        var taxaAdministracao = request.TaxaAdministracaoPercentual ?? DefaultTaxaAdministracaoPercentual;
-        var metaComissao = request.MetaComissaoPrimeiroAluguelPercentual ?? DefaultMetaComissaoPrimeiroAluguelPercentual;
+        var taxaAdministracao = normalizedRequest.TaxaAdministracaoPercentual ?? DefaultTaxaAdministracaoPercentual;
+        var metaComissao = normalizedRequest.MetaComissaoPrimeiroAluguelPercentual ?? DefaultMetaComissaoPrimeiroAluguelPercentual;
         if (taxaAdministracao < 0)
         {
-            throw new InvalidOperationException("A taxa de administraÃ§Ã£o nÃ£o pode ser negativa.");
+            throw new InvalidOperationException("A taxa de administração não pode ser negativa.");
         }
 
         if (metaComissao < 0)
         {
-            throw new InvalidOperationException("A meta de comissÃ£o do primeiro aluguel nÃ£o pode ser negativa.");
+            throw new InvalidOperationException("A meta de comissão do primeiro aluguel não pode ser negativa.");
         }
 
-        var taxaContrato = request.TaxaContratoManualOverride
-            ? request.TaxaContratoPercentual ?? 0m
+        var taxaContrato = normalizedRequest.TaxaContratoManualOverride
+            ? normalizedRequest.TaxaContratoPercentual ?? 0m
             : Math.Max(0m, metaComissao - taxaAdministracao);
         if (taxaContrato < 0)
         {
-            throw new InvalidOperationException("A taxa de contrato nÃ£o pode ser negativa.");
+            throw new InvalidOperationException("A taxa de contrato não pode ser negativa.");
         }
 
-        var partes = NormalizePartes(request.Partes);
+        var partes = NormalizePartes(normalizedRequest.Partes);
         if (partes.Count == 0)
         {
-            throw new InvalidOperationException("Informe ao menos um proprietÃ¡rio e um locatÃ¡rio para salvar a locaÃ§Ã£o.");
+            throw new InvalidOperationException("Informe ao menos um proprietário e um locatário para salvar a locação.");
         }
 
         await ValidatePessoasExistAsync(partes, cancellationToken);
         ValidatePartes(partes, status);
-        ValidateGarantia(request.Garantia, request.AluguelAntecipado, status);
-        ValidateEncargos(request.Encargos);
-        ValidateLancamentos(request.Lancamentos);
+        ValidateGarantia(normalizedRequest.Garantia, normalizedRequest.AluguelAntecipado, status);
+        ValidateEncargos(normalizedRequest.Encargos);
+        ValidateLancamentos(normalizedRequest.Lancamentos);
 
         return new LocacaoValidationResult(
-            request,
+            normalizedRequest,
             status,
             dataCadastro,
             dataInicioCobranca,
@@ -122,6 +125,58 @@ public sealed partial class RentalManagementService
             metaComissao,
             taxaContrato,
             partes);
+    }
+
+    private async Task<string> ValidateAndNormalizeLocacaoCodigoAsync(
+        string? codigo,
+        Guid? currentLocacaoId,
+        CancellationToken cancellationToken)
+    {
+        string normalizedCodigo;
+        if (string.IsNullOrWhiteSpace(codigo))
+        {
+            normalizedCodigo = await GetNextAvailableLocacaoCodigoAsync(currentLocacaoId, cancellationToken);
+        }
+        else
+        {
+            if (!int.TryParse(codigo.Trim(), out var parsedCodigo) || parsedCodigo < 1)
+            {
+                throw new InvalidOperationException("O código da locação deve ser um número maior ou igual a 1.");
+            }
+
+            normalizedCodigo = parsedCodigo.ToString();
+        }
+
+        var duplicateExists = await dbContext.Locacoes.AnyAsync(
+            x => x.Id != currentLocacaoId && x.Codigo == normalizedCodigo,
+            cancellationToken);
+        if (duplicateExists)
+        {
+            throw new InvalidOperationException($"Já existe uma locação com o código {normalizedCodigo}.");
+        }
+
+        return normalizedCodigo;
+    }
+
+    private async Task<string> GetNextAvailableLocacaoCodigoAsync(Guid? currentLocacaoId, CancellationToken cancellationToken)
+    {
+        var codigos = await dbContext.Locacoes
+            .Where(x => x.Id != currentLocacaoId && x.Codigo != null && x.Codigo != string.Empty)
+            .Select(x => x.Codigo!)
+            .ToListAsync(cancellationToken);
+
+        var usedCodes = codigos
+            .Select(x => int.TryParse(x.Trim(), out var parsed) && parsed > 0 ? parsed : 0)
+            .Where(x => x > 0)
+            .ToHashSet();
+
+        var candidate = 1;
+        while (usedCodes.Contains(candidate))
+        {
+            candidate++;
+        }
+
+        return candidate.ToString();
     }
 
     private static List<LocacaoParteRequest> NormalizePartes(IReadOnlyList<LocacaoParteRequest> partes)
@@ -180,7 +235,7 @@ public sealed partial class RentalManagementService
         var missingIds = pessoaIds.Except(foundIds).ToList();
         if (missingIds.Count > 0)
         {
-            throw new InvalidOperationException("Uma ou mais pessoas vinculadas Ã  locaÃ§Ã£o nÃ£o foram encontradas.");
+            throw new InvalidOperationException("Uma ou mais pessoas vinculadas à locação não foram encontradas.");
         }
     }
 
@@ -194,29 +249,29 @@ public sealed partial class RentalManagementService
             .FirstOrDefault(x => x.Select(parte => parte.TipoParte).Distinct().Count() > 1);
         if (pessoaComMaisDeUmPapel is not null)
         {
-            throw new InvalidOperationException("A mesma pessoa nÃ£o pode ocupar mais de um papel na mesma locaÃ§Ã£o.");
+            throw new InvalidOperationException("A mesma pessoa não pode ocupar mais de um papel na mesma locação.");
         }
 
         if (proprietarios.Count == 0)
         {
-            throw new InvalidOperationException("Informe ao menos um proprietÃ¡rio para a locaÃ§Ã£o.");
+            throw new InvalidOperationException("Informe ao menos um proprietário para a locação.");
         }
 
         if (locatarios.Count == 0)
         {
-            throw new InvalidOperationException("Informe ao menos um locatÃ¡rio para a locaÃ§Ã£o.");
+            throw new InvalidOperationException("Informe ao menos um locatário para a locação.");
         }
 
         if (IsActiveLocacaoStatus(status))
         {
             if (!proprietarios.Any(x => x.IsPrincipal))
             {
-                throw new InvalidOperationException("Defina o proprietÃ¡rio principal antes de ativar a locaÃ§Ã£o.");
+                throw new InvalidOperationException("Defina o proprietário principal antes de ativar a locação.");
             }
 
             if (!locatarios.Any(x => x.IsPrincipal))
             {
-                throw new InvalidOperationException("Defina o locatÃ¡rio principal antes de ativar a locaÃ§Ã£o.");
+                throw new InvalidOperationException("Defina o locatário principal antes de ativar a locação.");
             }
         }
 
@@ -224,7 +279,7 @@ public sealed partial class RentalManagementService
         {
             if (parte.PercentualParticipacao < 0 || parte.PercentualRepasse < 0)
             {
-                throw new InvalidOperationException("Percentuais da locaÃ§Ã£o nÃ£o podem ser negativos.");
+                throw new InvalidOperationException("Percentuais da locação não podem ser negativos.");
             }
         }
 
@@ -233,7 +288,7 @@ public sealed partial class RentalManagementService
             var total = proprietarios.Sum(x => x.PercentualParticipacao!.Value);
             if (Math.Abs(total - 100m) > 0.01m)
             {
-                throw new InvalidOperationException("A participaÃ§Ã£o dos proprietÃ¡rios deve somar 100% quando todos os percentuais forem informados.");
+                throw new InvalidOperationException("A participação dos proprietários deve somar 100% quando todos os percentuais forem informados.");
             }
         }
     }
@@ -249,13 +304,13 @@ public sealed partial class RentalManagementService
 
         if (garantia.Valor < 0)
         {
-            throw new InvalidOperationException("O valor da garantia nÃ£o pode ser negativo.");
+            throw new InvalidOperationException("O valor da garantia não pode ser negativo.");
         }
 
         var hasActiveGuarantee = garantia.Ativa && garantia.TipoGarantia != TipoGarantiaLocacao.Nenhuma;
         if (IsActiveLocacaoStatus(status) && aluguelAntecipado && hasActiveGuarantee)
         {
-            throw new InvalidOperationException("NÃ£o Ã© permitido ativar locaÃ§Ã£o com aluguel antecipado e garantia ativa.");
+            throw new InvalidOperationException("Não é permitido ativar locação com aluguel antecipado e garantia ativa.");
         }
     }
 
@@ -270,7 +325,7 @@ public sealed partial class RentalManagementService
         {
             if (encargo.Valor < 0)
             {
-                throw new InvalidOperationException("O valor do encargo nÃ£o pode ser negativo.");
+                throw new InvalidOperationException("O valor do encargo não pode ser negativo.");
             }
 
             if (encargo.DiaVencimento.HasValue)
@@ -291,15 +346,15 @@ public sealed partial class RentalManagementService
         {
             if (string.IsNullOrWhiteSpace(lancamento.Descricao))
             {
-                throw new InvalidOperationException("Informe a descriÃ§Ã£o do lanÃ§amento.");
+                throw new InvalidOperationException("Informe a descrição do lançamento.");
             }
 
-            ValidateOptionalDateRange(lancamento.Competencia, "CompetÃªncia do lanÃ§amento");
-            ValidateOptionalDateRange(lancamento.DataVencimento, "Data de vencimento do lanÃ§amento");
+            ValidateOptionalDateRange(lancamento.Competencia, "Competência do lançamento");
+            ValidateOptionalDateRange(lancamento.DataVencimento, "Data de vencimento do lançamento");
 
             if (lancamento.Valor < 0)
             {
-                throw new InvalidOperationException("O valor do lanÃ§amento nÃ£o pode ser negativo. Use o tipo do lanÃ§amento para representar desconto ou reembolso.");
+                throw new InvalidOperationException("O valor do lançamento não pode ser negativo. Use o tipo do lançamento para representar desconto ou reembolso.");
             }
         }
     }
