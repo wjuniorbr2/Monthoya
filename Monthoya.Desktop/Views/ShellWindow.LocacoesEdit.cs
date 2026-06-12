@@ -87,6 +87,15 @@ public partial class ShellWindow
         tipoBox.SelectedItem = dados.TipoLocacao;
 
         var culture = CultureInfo.GetCultureInfo("pt-BR");
+        var codigoBox = new TextBox
+        {
+            Text = !string.IsNullOrWhiteSpace(dados.Codigo)
+                ? dados.Codigo
+                : !string.IsNullOrWhiteSpace(details.Summary.Codigo)
+                    ? details.Summary.Codigo
+                    : await GetNextAvailableLocacaoCodeAsync(details.Summary.Id),
+            Margin = new Thickness(0, 6, 0, 12)
+        };
         var valorAtual = dados.ValorAluguelAtual ?? details.Summary.ValorAluguelAtual ?? dados.ValorAluguelInicial;
         var valorBox = new TextBox
         {
@@ -140,6 +149,7 @@ public partial class ShellWindow
             Margin = new Thickness(0, 0, 0, 10)
         };
 
+        ConfigureLocacaoCodeTextBox(codigoBox, errorText);
         ConfigureLocacaoDecimalTextBox(valorBox, errorText);
         ConfigureLocacaoDatePicker(dataInicioBox, errorText);
         ConfigureLocacaoDatePicker(dataCobrancaBox, errorText);
@@ -147,6 +157,7 @@ public partial class ShellWindow
         ConfigureLocacaoDayTextBox(diaVencimentoBox, errorText);
         ConfigureLocacaoDayTextBox(diaRepasseBox, errorText);
 
+        AddLabeledControl(form, "Código", codigoBox, 120);
         AddLabeledControl(form, "Imóvel (travado)", imovelBox, 320);
         AddLabeledControl(form, "Proprietário principal (travado)", proprietarioBox, 260);
         AddLabeledControl(form, "Locatário principal (travado)", locatarioBox, 260);
@@ -232,6 +243,7 @@ public partial class ShellWindow
                 {
                     ImovelId = imovel.Id,
                     Partes = dados.Partes,
+                    Codigo = string.IsNullOrWhiteSpace(codigoBox.Text) ? null : codigoBox.Text.Trim(),
                     TipoLocacao = tipoBox.SelectedItem is TipoLocacao tipo ? tipo : dados.TipoLocacao,
                     DataInicioLocacao = ToLocacaoDateOnly(dataInicioBox.SelectedDate),
                     DataInicioCobranca = ToLocacaoDateOnly(dataCobrancaBox.SelectedDate),
