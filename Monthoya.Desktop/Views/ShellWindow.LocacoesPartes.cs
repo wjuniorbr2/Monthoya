@@ -154,6 +154,14 @@ public partial class ShellWindow
                 RecebeNotificacao: true));
         }
 
+        var duplicatedSameRole = requests
+            .GroupBy(x => new { x.PessoaId, x.TipoParte })
+            .FirstOrDefault(x => x.Count() > 1);
+        if (duplicatedSameRole is not null)
+        {
+            throw new InvalidOperationException($"A mesma pessoa não pode ser {GetTipoParteLowerLabel(duplicatedSameRole.Key.TipoParte)} duas vezes na mesma locação.");
+        }
+
         if (requests.Count(x => x.TipoParte == TipoParteLocacao.Locatario) == 1)
         {
             var index = requests.FindIndex(x => x.TipoParte == TipoParteLocacao.Locatario);
@@ -195,6 +203,15 @@ public partial class ShellWindow
             TipoParteLocacao.Locatario => "Locatário",
             TipoParteLocacao.Fiador => "Fiador",
             _ => "Participante"
+        };
+
+    private static string GetTipoParteLowerLabel(TipoParteLocacao tipoParte) =>
+        tipoParte switch
+        {
+            TipoParteLocacao.Proprietario => "proprietário",
+            TipoParteLocacao.Locatario => "locatário",
+            TipoParteLocacao.Fiador => "fiador",
+            _ => "participante"
         };
 
     private sealed record LocacaoParteEditorRow(
