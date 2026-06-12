@@ -28,7 +28,7 @@ public partial class ShellWindow
 
         var title = new TextBlock
         {
-            Text = $"Locação {locacao.Codigo ?? "-"}",
+            Text = $"LocaÃ§Ã£o {locacao.Codigo ?? "-"}",
             FontSize = 20,
             FontWeight = FontWeights.SemiBold,
             VerticalAlignment = VerticalAlignment.Center
@@ -36,15 +36,34 @@ public partial class ShellWindow
         Grid.SetColumn(title, 0);
         header.Children.Add(title);
 
+        var actionButtons = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+
         var editButton = new Button
         {
             Content = "Editar",
             Style = (Style)FindResource("PrimaryButtonSmall"),
-            VerticalAlignment = VerticalAlignment.Center
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0)
         };
         editButton.Click += async (_, _) => await ShowEditLocacaoInlineAsync(locacao);
-        Grid.SetColumn(editButton, 1);
-        header.Children.Add(editButton);
+        actionButtons.Children.Add(editButton);
+
+        var removeButton = new Button
+        {
+            Content = "Remover",
+            Style = (Style)FindResource("SecondaryButton"),
+            VerticalAlignment = VerticalAlignment.Center,
+            IsEnabled = !string.Equals(locacao.Status, "Cancelada", StringComparison.OrdinalIgnoreCase)
+        };
+        removeButton.Click += async (_, _) => await CancelLocacaoWithPasswordAsync(locacao);
+        actionButtons.Children.Add(removeButton);
+
+        Grid.SetColumn(actionButtons, 1);
+        header.Children.Add(actionButtons);
 
         root.Children.Add(header);
 
@@ -62,24 +81,24 @@ public partial class ShellWindow
         root.Children.Add(details);
         AddDetailText(details, "Status", locacao.Status);
         AddDetailText(details, "Tipo", locacao.TipoLocacao);
-        AddDetailText(details, "Imóvel", locacao.ImovelResumo, 360);
-        AddDetailText(details, "Locatário principal", locacao.LocatarioPrincipalNome);
-        AddDetailText(details, "Proprietário principal", locacao.ProprietarioPrincipalNome);
+        AddDetailText(details, "ImÃ³vel", locacao.ImovelResumo, 360);
+        AddDetailText(details, "LocatÃ¡rio principal", locacao.LocatarioPrincipalNome);
+        AddDetailText(details, "ProprietÃ¡rio principal", locacao.ProprietarioPrincipalNome);
         AddDetailText(details, "Aluguel atual", locacao.ValorAluguelAtual?.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")) ?? "-");
-        AddDetailText(details, "Vencimento locatário", locacao.DiaVencimentoLocatario?.ToString() ?? "-");
-        AddDetailText(details, "Início", locacao.DataInicioLocacao?.ToString("dd/MM/yyyy") ?? "-");
+        AddDetailText(details, "Vencimento locatÃ¡rio", locacao.DiaVencimentoLocatario?.ToString() ?? "-");
+        AddDetailText(details, "InÃ­cio", locacao.DataInicioLocacao?.ToString("dd/MM/yyyy") ?? "-");
         AddDetailText(details, "Fim previsto", locacao.DataFimPrevista?.ToString("dd/MM/yyyy") ?? "-");
         AddDetailText(details, "Alertas", string.IsNullOrWhiteSpace(locacao.AlertasTexto) ? "-" : locacao.AlertasTexto, 360);
         if (locacaoDetails is not null)
         {
-            AddDetailText(details, "Proprietários", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Proprietario), 360);
-            AddDetailText(details, "Locatários", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Locatario), 360);
+            AddDetailText(details, "ProprietÃ¡rios", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Proprietario), 360);
+            AddDetailText(details, "LocatÃ¡rios", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Locatario), 360);
             AddDetailText(details, "Fiadores", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Fiador), 360);
         }
 
         root.Children.Add(new TextBlock
         {
-            Text = "Use Editar para alterar os dados básicos desta locação.",
+            Text = "Use Editar para alterar os dados bÃ¡sicos desta locaÃ§Ã£o.",
             Foreground = System.Windows.Media.Brushes.DimGray,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 10, 0, 0)
