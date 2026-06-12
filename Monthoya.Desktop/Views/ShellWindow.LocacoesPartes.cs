@@ -89,10 +89,20 @@ public partial class ShellWindow
         };
 
         var row = new LocacaoParteEditorRow(tipoParte, rowPanel, pessoaBox, principalBox, percentualBox);
+        principalBox.Checked += (_, _) => UncheckOtherPrincipalLocacaoPartes(rows, row, tipoParte);
         removeButton.Click += (_, _) =>
         {
+            var wasPrincipal = row.PrincipalBox.IsChecked == true;
             rows.Remove(row);
             rowsPanel.Children.Remove(rowPanel);
+            if (wasPrincipal)
+            {
+                var replacement = rows.FirstOrDefault(x => x.TipoParte == tipoParte);
+                if (replacement is not null)
+                {
+                    replacement.PrincipalBox.IsChecked = true;
+                }
+            }
         };
 
         AddInlineField(rowPanel, GetTipoParteLabel(tipoParte), pessoaBox, 300);
@@ -100,6 +110,17 @@ public partial class ShellWindow
         rowPanel.Children.Add(removeButton);
         rows.Add(row);
         rowsPanel.Children.Add(rowPanel);
+    }
+
+    private static void UncheckOtherPrincipalLocacaoPartes(
+        IReadOnlyList<LocacaoParteEditorRow> rows,
+        LocacaoParteEditorRow selectedRow,
+        TipoParteLocacao tipoParte)
+    {
+        foreach (var row in rows.Where(x => x.TipoParte == tipoParte && !ReferenceEquals(x, selectedRow)))
+        {
+            row.PrincipalBox.IsChecked = false;
+        }
     }
 
     private static void AddInlineField(Panel panel, string label, Control control, double width)
