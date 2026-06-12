@@ -160,7 +160,10 @@ public sealed partial class RentalManagementService
         }
 
         var duplicateExists = await dbContext.Locacoes.AnyAsync(
-            x => x.Id != currentLocacaoId && x.Codigo == normalizedCodigo,
+            x => x.Id != currentLocacaoId &&
+                 x.Codigo == normalizedCodigo &&
+                 x.Status != LocacaoStatus.Cancelada &&
+                 x.Status != LocacaoStatus.Encerrada,
             cancellationToken);
         if (duplicateExists)
         {
@@ -173,7 +176,11 @@ public sealed partial class RentalManagementService
     private async Task<string> GetNextAvailableLocacaoCodigoAsync(Guid? currentLocacaoId, CancellationToken cancellationToken)
     {
         var codigos = await dbContext.Locacoes
-            .Where(x => x.Id != currentLocacaoId && x.Codigo != null && x.Codigo != string.Empty)
+            .Where(x => x.Id != currentLocacaoId &&
+                        x.Codigo != null &&
+                        x.Codigo != string.Empty &&
+                        x.Status != LocacaoStatus.Cancelada &&
+                        x.Status != LocacaoStatus.Encerrada)
             .Select(x => x.Codigo!)
             .ToListAsync(cancellationToken);
 
