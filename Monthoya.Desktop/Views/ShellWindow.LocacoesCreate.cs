@@ -59,7 +59,7 @@ public partial class ShellWindow
         });
         root.Children.Add(new TextBlock
         {
-            Text = "Cadastro básico em rascunho. O proprietário vem do imóvel selecionado. Informe aqui locatários, fiadores e dados básicos da locação.",
+            Text = "Cadastro básico da locação ativa. O proprietário vem do imóvel selecionado. Informe aqui locatários, fiadores e dados básicos da locação.",
             Foreground = System.Windows.Media.Brushes.DimGray,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 14)
@@ -215,7 +215,7 @@ public partial class ShellWindow
                     Partes: partes,
                     Codigo: string.IsNullOrWhiteSpace(codigoBox.Text) ? null : codigoBox.Text.Trim(),
                     TipoLocacao: tipoBox.SelectedItem is TipoLocacao tipo ? tipo : TipoLocacao.Residencial,
-                    Status: LocacaoStatus.Rascunho,
+                    Status: LocacaoStatus.Ativa,
                     DataInicioLocacao: ToLocacaoDateOnly(dataInicioBox.SelectedDate),
                     DataInicioCobranca: ToLocacaoDateOnly(dataCobrancaBox.SelectedDate),
                     DiaBase: ParseRequiredDay(diaBaseBox.Text, "Dia base"),
@@ -228,8 +228,8 @@ public partial class ShellWindow
                 var created = await _rentalManagementService.CreateLocacaoAsync(request);
                 await LoadGenericModuleAsync(ShellPage.Locacoes);
                 RestoreDataGridSelection(ModuleGrid, created.Summary.Id);
-                ShowLocacaoDetails(created.Summary, "Locação criada como rascunho.");
-                MessageBox.Show(this, "Locação criada como rascunho.", "Nova locação", MessageBoxButton.OK, MessageBoxImage.Information);
+                ShowLocacaoDetails(created.Summary, "Locação criada como ativa.");
+                MessageBox.Show(this, "Locação criada como ativa.", "Nova locação", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
