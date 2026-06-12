@@ -211,6 +211,57 @@ public class LocacaoServiceTests
         Assert.Contains("100", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task CreateLocacao_MarksImovelAsLocado()
+    {
+        await using var dbContext = CreateDbContext();
+        var seed = await SeedRentalActorsAsync(dbContext);
+        var service = new RentalManagementService(dbContext);
+
+        await service.CreateLocacaoAsync(CreateRequest(seed));
+
+        var status = await dbContext.Imoveis
+            .Where(x => x.Id == seed.ImovelId)
+            .Select(x => x.Status)
+            .SingleAsync();
+        Assert.Equal(ImovelStatus.Locado, status);
+    }
+
+    [Fact]
+    public async Task CancelLocacao_ReleasesImovelAndRemovesUnusedTenantAndFiadorRoles()
+    {
+        await using var dbContext = CreateDbContext();
+        var seed = await SeedRentalActorsWithoutRolesAsync(dbContext);
+        var fiador = await AddPessoaAsync(dbContext, "Fiador Teste");
+        var service = new RentalManagementService(dbContext);
+
+        var created = await service.CreateLocacaoAsync(CreateRequest(seed) with
+        {
+            Partes =
+            [
+                new LocacaoParteRequest(seed.OwnerId, TipoParteLocacao.Proprietario, PercentualParticipacao: 100m, RecebeRepasse: true),
+                new LocacaoParteRequest(seed.TenantId, TipoParteLocacao.Locatario, RecebeCobranca: true),
+                new LocacaoParteRequest(fiador.Id, TipoParteLocacao.Fiador, IsPrincipal: true, RecebeNotificacao: true)
+            ]
+        });
+
+        Assert.Equal(ImovelStatus.Locado, await GetImovelStatusAsync(dbContext, seed.ImovelId));
+        Assert.True(await HasRoleAsync(dbContext, seed.TenantId, PessoaRoleTipo.Locatario));
+        Assert.True(await HasRoleAsync(dbContext, fiador.Id, PessoaRoleTipo.Fiador));
+
+        await service.UpdateLocacaoAsync(new UpdateLocacaoRequest(
+            created.Summary.Id,
+            created.Dados with
+            {
+                Status = LocacaoStatus.Cancelada,
+                DataEncerramento = DateOnly.FromDateTime(DateTime.Today)
+            }));
+
+        Assert.Equal(ImovelStatus.Disponivel, await GetImovelStatusAsync(dbContext, seed.ImovelId));
+        Assert.False(await HasRoleAsync(dbContext, seed.TenantId, PessoaRoleTipo.Locatario));
+        Assert.False(await HasRoleAsync(dbContext, fiador.Id, PessoaRoleTipo.Fiador));
+    }
+
     private static MonthoyaDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<MonthoyaDbContext>()
@@ -283,6 +334,12 @@ public class LocacaoServiceTests
 
     private static Task<int> CountRoleAsync(MonthoyaDbContext dbContext, Guid pessoaId, PessoaRoleTipo role) =>
         dbContext.PessoaRoles.CountAsync(x => x.PessoaId == pessoaId && x.Role == role);
+
+    private static Task<ImovelStatus> GetImovelStatusAsync(MonthoyaDbContext dbContext, Guid imovelId) =>
+        dbContext.Imoveis
+            .Where(x => x.Id == imovelId)
+            .Select(x => x.Status)
+            .SingleAsync();
 
     private static CreateLocacaoRequest CreateRequest(
         RentalSeed seed,
