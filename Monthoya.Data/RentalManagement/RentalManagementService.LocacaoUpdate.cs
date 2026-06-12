@@ -29,6 +29,7 @@ public sealed partial class RentalManagementService
 
         ApplyLocacaoRequest(locacao, normalized);
         await EnsurePessoaRolesForLocacaoPartesAsync(normalized.Partes, cancellationToken);
+        await SyncImovelStatusForLocacaoAsync(normalized.Request.ImovelId, normalized.Status, request.Id, cancellationToken);
         locacao.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
         if (oldRent != normalized.ValorAluguelAtual)
@@ -53,6 +54,9 @@ public sealed partial class RentalManagementService
 
         try
         {
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await RecalculatePessoaRolesForLocacaoPartesAsync(normalized.Partes, cancellationToken);
+            await SyncImovelStatusForLocacaoAsync(normalized.Request.ImovelId, normalized.Status, request.Id, cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException ex)
