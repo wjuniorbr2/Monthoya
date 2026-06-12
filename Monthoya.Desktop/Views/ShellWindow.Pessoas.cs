@@ -126,6 +126,7 @@ public partial class ShellWindow
         PessoaProprietarioBox.IsChecked = pessoa?.IsProprietario == true;
         PessoaLocatarioBox.IsChecked = pessoa?.IsLocatario == true;
         PessoaFiadorBox.IsChecked = pessoa?.IsFiador == true;
+        PessoaDeactivateButton.Content = pessoa?.Status == "Inativo" ? "Reativar" : "Remover";
         UpdatePessoaDocumentoEditorAvailability();
     }
 
@@ -298,10 +299,14 @@ public partial class ShellWindow
             return;
         }
 
+        var selectedPessoa = PessoasGrid.SelectedItem as PessoaSummary;
+        var isCurrentlyInactive = selectedPessoa?.Status == "Inativo";
         var confirmed = await ConfirmDestructiveActionWithPasswordAsync(
-            "Remover pessoa",
-            "Remover esta pessoa apenas altera o status para inativo. A pessoa não aparecerá nas listas padrão. Deseja continuar?",
-            "Remover pessoa");
+            isCurrentlyInactive ? "Reativar pessoa" : "Remover pessoa",
+            isCurrentlyInactive
+                ? "Reativar esta pessoa fará com que ela volte a aparecer nas listas padrão. Deseja continuar?"
+                : "Remover esta pessoa apenas altera o status para inativo. A pessoa não aparecerá nas listas padrão. Deseja continuar?",
+            isCurrentlyInactive ? "Reativar pessoa" : "Remover pessoa");
         if (!confirmed)
         {
             return;
@@ -309,15 +314,13 @@ public partial class ShellWindow
 
         try
         {
-            await _rentalManagementService.SetPessoaActiveAsync(_selectedPessoaId.Value, false);
-            _selectedPessoaId = null;
-            _selectedPessoaDetails = null;
-            ClearPessoaForm();
-            SetPessoaDocumentoSelection(null);
-            SetPessoaEditMode(true, isNew: true);
-            SaveActiveTabState();
+            await _rentalManagementService.SetPessoaActiveAsync(_selectedPessoaId.Value, isActive: isCurrentlyInactive);
+            var selectedId = _selectedPessoaId.Value;
             await LoadPessoasAsync();
-            PessoaErrorText.Text = "Pessoa removida com sucesso.";
+            RestoreDataGridSelection(PessoasGrid, selectedId);
+            PessoaErrorText.Text = isCurrentlyInactive
+                ? "Pessoa reativada com sucesso."
+                : "Pessoa removida com sucesso.";
         }
         catch (Exception ex)
         {
