@@ -56,7 +56,7 @@ public class LocacaoServiceTests
         var request = CreateRequest(seed, status: LocacaoStatus.Ativa) with { Partes = [] };
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateLocacaoAsync(request));
-        Assert.Contains("proprietÃ¡rio", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("proprietário", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public class LocacaoServiceTests
         await service.CreateLocacaoAsync(activeRequest);
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateLocacaoAsync(activeRequest));
-        Assert.Contains("jÃ¡ possui uma locaÃ§Ã£o ativa", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("já possui uma locação ativa", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -181,7 +181,7 @@ public class LocacaoServiceTests
     {
         await using var dbContext = CreateDbContext();
         var seed = await SeedRentalActorsAsync(dbContext);
-        var secondOwner = await AddPessoaAsync(dbContext, "ProprietÃ¡rio Dois");
+        var secondOwner = await AddPessoaAsync(dbContext, "Proprietário Dois");
         var service = new RentalManagementService(dbContext);
 
         var request = CreateRequest(seed) with
@@ -211,12 +211,12 @@ public class LocacaoServiceTests
     {
         var owner = new Pessoa
         {
-            NomeDisplay = "ProprietÃ¡rio Teste",
+            NomeDisplay = "Proprietário Teste",
             Roles = [new PessoaRole { Role = PessoaRoleTipo.Proprietario }]
         };
         var tenant = new Pessoa
         {
-            NomeDisplay = "LocatÃ¡rio Teste",
+            NomeDisplay = "Locatário Teste",
             Roles = [new PessoaRole { Role = PessoaRoleTipo.Locatario }]
         };
         var imovel = new Imovel
@@ -225,7 +225,7 @@ public class LocacaoServiceTests
             Proprietario = owner,
             Rua = "Rua Teste",
             Numero = "123",
-            Cidade = "ParanavaÃ­",
+            Cidade = "Paranavaí",
             Estado = "PR"
         };
 
@@ -238,15 +238,15 @@ public class LocacaoServiceTests
 
     private static async Task<RentalSeed> SeedRentalActorsWithoutRolesAsync(MonthoyaDbContext dbContext)
     {
-        var owner = new Pessoa { NomeDisplay = "ProprietÃ¡rio Teste" };
-        var tenant = new Pessoa { NomeDisplay = "LocatÃ¡rio Teste" };
+        var owner = new Pessoa { NomeDisplay = "Proprietário Teste" };
+        var tenant = new Pessoa { NomeDisplay = "Locatário Teste" };
         var imovel = new Imovel
         {
             ProprietarioId = owner.Id,
             Proprietario = owner,
             Rua = "Rua Teste",
             Numero = "123",
-            Cidade = "ParanavaÃ­",
+            Cidade = "Paranavaí",
             Estado = "PR"
         };
 
