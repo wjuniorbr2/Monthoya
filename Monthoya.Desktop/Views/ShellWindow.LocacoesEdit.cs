@@ -214,8 +214,6 @@ public partial class ShellWindow
             try
             {
                 var imovel = imovelAtual;
-                var proprietario = proprietarioPessoa;
-                var locatario = locatarioPessoa;
 
                 TryApplyBrazilianDate(dataInicioBox, message => errorText.Text = message);
                 TryApplyBrazilianDate(dataCobrancaBox, message => errorText.Text = message);
@@ -230,27 +228,10 @@ public partial class ShellWindow
                 var valor = ParseNullableDecimal(valorBox.Text)
                     ?? throw new InvalidOperationException("Informe o valor do aluguel.");
 
-                var partes = dados.Partes
-                    .Where(x => x.TipoParte != TipoParteLocacao.Proprietario && x.TipoParte != TipoParteLocacao.Locatario)
-                    .ToList();
-
-                partes.Add(new LocacaoParteRequest(
-                    proprietario.Id,
-                    TipoParteLocacao.Proprietario,
-                    IsPrincipal: true,
-                    PercentualParticipacao: 100m,
-                    RecebeRepasse: true));
-
-                partes.Add(new LocacaoParteRequest(
-                    locatario.Id,
-                    TipoParteLocacao.Locatario,
-                    IsPrincipal: true,
-                    RecebeCobranca: true));
-
                 var updatedRequest = dados with
                 {
                     ImovelId = imovel.Id,
-                    Partes = partes,
+                    Partes = dados.Partes,
                     TipoLocacao = tipoBox.SelectedItem is TipoLocacao tipo ? tipo : dados.TipoLocacao,
                     DataInicioLocacao = ToLocacaoDateOnly(dataInicioBox.SelectedDate),
                     DataInicioCobranca = ToLocacaoDateOnly(dataCobrancaBox.SelectedDate),

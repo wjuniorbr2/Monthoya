@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
 namespace Monthoya.Data.RentalManagement;
@@ -25,6 +26,19 @@ public sealed partial class RentalManagementService
 
         ApplyImovelRequest(imovel, request.Imovel, proprietario.Id);
         imovel.UpdatedAtUtc = DateTimeOffset.UtcNow;
+
+        var hasOwnerRole = await dbContext.PessoaRoles
+            .AnyAsync(x => x.PessoaId == proprietario.Id && x.Role == PessoaRoleTipo.Proprietario, cancellationToken);
+
+        if (!hasOwnerRole)
+        {
+            dbContext.PessoaRoles.Add(new PessoaRole
+            {
+                PessoaId = proprietario.Id,
+                Role = PessoaRoleTipo.Proprietario
+            });
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
 
         return (await GetImoveisCoreAsync(cancellationToken)).Single(x => x.Id == imovel.Id);

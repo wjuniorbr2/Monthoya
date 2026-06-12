@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
@@ -31,6 +31,23 @@ public sealed partial class RentalManagementService
             })
             .ToListAsync(cancellationToken);
 
+        var pessoaRoles = await dbContext.PessoaRoles
+            .AsNoTracking()
+            .Select(x => new { x.PessoaId, x.Role })
+            .ToListAsync(cancellationToken);
+        var proprietarioRoleSet = pessoaRoles
+            .Where(x => x.Role == PessoaRoleTipo.Proprietario)
+            .Select(x => x.PessoaId)
+            .ToHashSet();
+        var locatarioRoleSet = pessoaRoles
+            .Where(x => x.Role == PessoaRoleTipo.Locatario)
+            .Select(x => x.PessoaId)
+            .ToHashSet();
+        var fiadorRoleSet = pessoaRoles
+            .Where(x => x.Role == PessoaRoleTipo.Fiador)
+            .Select(x => x.PessoaId)
+            .ToHashSet();
+
         var proprietarioSet = (await dbContext.Imoveis
             .AsNoTracking()
             .Where(x => x.Status != ImovelStatus.Inativo)
@@ -54,9 +71,9 @@ public sealed partial class RentalManagementService
 
         return pessoas.Select(x =>
         {
-            var isProprietario = proprietarioSet.Contains(x.Id);
-            var isLocatario = locatarioSet.Contains(x.Id);
-            var isFiador = fiadorSet.Contains(x.Id);
+            var isProprietario = proprietarioRoleSet.Contains(x.Id) || proprietarioSet.Contains(x.Id);
+            var isLocatario = locatarioRoleSet.Contains(x.Id) || locatarioSet.Contains(x.Id);
+            var isFiador = fiadorRoleSet.Contains(x.Id) || fiadorSet.Contains(x.Id);
 
             return new PessoaSummary(
                 x.Id,
@@ -87,6 +104,11 @@ public sealed partial class RentalManagementService
             return null;
         }
 
+        var pessoaRoles = await dbContext.PessoaRoles
+            .AsNoTracking()
+            .Where(x => x.PessoaId == pessoa.Id)
+            .Select(x => x.Role)
+            .ToListAsync(cancellationToken);
         var isProprietario = await dbContext.Imoveis
             .AsNoTracking()
             .AnyAsync(x => x.Status != ImovelStatus.Inativo && x.ProprietarioId == pessoa.Id, cancellationToken);
@@ -96,6 +118,10 @@ public sealed partial class RentalManagementService
         var isFiador = await dbContext.LocacaoFiadores
             .AsNoTracking()
             .AnyAsync(x => x.FiadorId == pessoa.Id && x.Locacao != null && x.Locacao.Status == LocacaoStatus.Ativa, cancellationToken);
+
+        isProprietario = isProprietario || pessoaRoles.Contains(PessoaRoleTipo.Proprietario);
+        isLocatario = isLocatario || pessoaRoles.Contains(PessoaRoleTipo.Locatario);
+        isFiador = isFiador || pessoaRoles.Contains(PessoaRoleTipo.Fiador);
 
         var documento = pessoa.TipoPessoa == TipoPessoa.Fisica
             ? pessoa.PessoaFisica?.Cpf
