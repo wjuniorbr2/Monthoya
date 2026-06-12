@@ -16,10 +16,17 @@ public partial class ShellWindow
         var root = new StackPanel { Margin = new Thickness(0, 2, 0, 12) };
         root.Children.Add(new TextBlock
         {
-            Text = "Participantes",
+            Text = "Locatários e fiadores",
             FontSize = 16,
             FontWeight = FontWeights.SemiBold,
-            Margin = new Thickness(0, 4, 0, 8)
+            Margin = new Thickness(0, 4, 0, 4)
+        });
+        root.Children.Add(new TextBlock
+        {
+            Text = "O proprietário vem do imóvel selecionado. Aqui informe apenas locatários e fiadores.",
+            Foreground = System.Windows.Media.Brushes.DimGray,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 8)
         });
 
         var rowsPanel = new StackPanel();
@@ -31,12 +38,10 @@ public partial class ShellWindow
             Margin = new Thickness(0, 0, 0, 8)
         };
 
-        AddParteButton(buttons, "Adicionar proprietário", () => AddLocacaoParteRow(rowsPanel, pessoas, rows, TipoParteLocacao.Proprietario, errorText));
         AddParteButton(buttons, "Adicionar locatário", () => AddLocacaoParteRow(rowsPanel, pessoas, rows, TipoParteLocacao.Locatario, errorText));
         AddParteButton(buttons, "Adicionar fiador", () => AddLocacaoParteRow(rowsPanel, pessoas, rows, TipoParteLocacao.Fiador, errorText));
         root.Children.Add(buttons);
 
-        AddLocacaoParteRow(rowsPanel, pessoas, rows, TipoParteLocacao.Proprietario, errorText);
         AddLocacaoParteRow(rowsPanel, pessoas, rows, TipoParteLocacao.Locatario, errorText);
         return root;
     }
@@ -71,12 +76,10 @@ public partial class ShellWindow
         };
         var percentualBox = new TextBox
         {
-            Text = tipoParte == TipoParteLocacao.Proprietario && rows.All(x => x.TipoParte != TipoParteLocacao.Proprietario) ? "100,00" : string.Empty,
             Width = 80,
             Margin = new Thickness(0, 6, 12, 0),
-            Visibility = tipoParte == TipoParteLocacao.Proprietario ? Visibility.Visible : Visibility.Collapsed
+            Visibility = Visibility.Collapsed
         };
-        ConfigureLocacaoDecimalTextBox(percentualBox, errorText);
 
         var removeButton = new Button
         {
@@ -93,11 +96,6 @@ public partial class ShellWindow
         };
 
         AddInlineField(rowPanel, GetTipoParteLabel(tipoParte), pessoaBox, 300);
-        if (tipoParte == TipoParteLocacao.Proprietario)
-        {
-            AddInlineField(rowPanel, "Participação", percentualBox, 100);
-        }
-
         rowPanel.Children.Add(principalBox);
         rowPanel.Children.Add(removeButton);
         rows.Add(row);
@@ -126,28 +124,13 @@ public partial class ShellWindow
                 throw new InvalidOperationException("Selecione a pessoa em todas as linhas de participantes ou remova a linha vazia.");
             }
 
-            var percentual = row.TipoParte == TipoParteLocacao.Proprietario
-                ? ParseNullableDecimal(row.PercentualBox.Text)
-                : null;
-
             requests.Add(new LocacaoParteRequest(
                 pessoa.Id,
                 row.TipoParte,
                 IsPrincipal: row.PrincipalBox.IsChecked == true,
-                PercentualParticipacao: percentual,
                 RecebeCobranca: row.TipoParte == TipoParteLocacao.Locatario,
-                RecebeRepasse: row.TipoParte == TipoParteLocacao.Proprietario,
+                RecebeRepasse: false,
                 RecebeNotificacao: true));
-        }
-
-        if (requests.Count(x => x.TipoParte == TipoParteLocacao.Proprietario) == 1)
-        {
-            var index = requests.FindIndex(x => x.TipoParte == TipoParteLocacao.Proprietario);
-            requests[index] = requests[index] with
-            {
-                IsPrincipal = true,
-                PercentualParticipacao = requests[index].PercentualParticipacao ?? 100m
-            };
         }
 
         if (requests.Count(x => x.TipoParte == TipoParteLocacao.Locatario) == 1)
