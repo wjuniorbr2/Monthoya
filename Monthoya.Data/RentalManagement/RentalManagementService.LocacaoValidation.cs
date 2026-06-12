@@ -16,10 +16,25 @@ public sealed partial class RentalManagementService
             throw new InvalidOperationException("Selecione o imóvel da locação.");
         }
 
-        var imovelExists = await dbContext.Imoveis.AnyAsync(x => x.Id == request.ImovelId, cancellationToken);
-        if (!imovelExists)
+        var imovel = await dbContext.Imoveis
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == request.ImovelId, cancellationToken);
+        if (imovel is null)
         {
             throw new InvalidOperationException("Imóvel não encontrado.");
+        }
+
+        if (currentLocacaoId is null)
+        {
+            if (imovel.Status != ImovelStatus.Disponivel)
+            {
+                throw new InvalidOperationException("Somente imóveis com status Disponível podem receber nova locação.");
+            }
+
+            if (imovel.Finalidade == ImovelFinalidade.Venda)
+            {
+                throw new InvalidOperationException("Somente imóveis com finalidade Locação ou Ambos podem receber nova locação.");
+            }
         }
 
         var codigo = await ValidateAndNormalizeLocacaoCodigoAsync(request.Codigo, currentLocacaoId, cancellationToken);
@@ -34,17 +49,18 @@ public sealed partial class RentalManagementService
             throw new InvalidOperationException("A mesma pessoa não pode ser proprietário e locatário na mesma locação.");
         }
 
-        if (IsActiveLocacaoStatus(status))
+        if (IsBlockingLocacaoStatus(status))
         {
-            var hasActiveLocacaoForImovel = await dbContext.Locacoes.AnyAsync(
+            var hasBlockingLocacaoForImovel = await dbContext.Locacoes.AnyAsync(
                 x => x.ImovelId == normalizedRequest.ImovelId &&
                      x.Id != currentLocacaoId &&
-                     (x.Status == LocacaoStatus.Ativa || x.Status == LocacaoStatus.EmAtraso || x.Status == LocacaoStatus.EmEncerramento || x.Status == LocacaoStatus.Reaberta),
+                     x.Status != LocacaoStatus.Cancelada &&
+                     x.Status != LocacaoStatus.Encerrada,
                 cancellationToken);
 
-            if (hasActiveLocacaoForImovel)
+            if (hasBlockingLocacaoForImovel)
             {
-                throw new InvalidOperationException("Este imóvel já possui uma locação ativa.");
+                throw new InvalidOperationException("Este imóvel já possui uma locação em aberto.");
             }
         }
 
@@ -385,6 +401,9 @@ public sealed partial class RentalManagementService
 
     private static bool IsActiveLocacaoStatus(LocacaoStatus status) =>
         status is LocacaoStatus.Ativa or LocacaoStatus.EmAtraso or LocacaoStatus.EmEncerramento or LocacaoStatus.Reaberta;
+
+    private static bool IsBlockingLocacaoStatus(LocacaoStatus status) =>
+        status is not LocacaoStatus.Cancelada and not LocacaoStatus.Encerrada;
 
     private sealed record LocacaoValidationResult(
         CreateLocacaoRequest Request,
