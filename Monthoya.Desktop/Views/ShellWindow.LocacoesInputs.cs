@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using Monthoya.Core.Services;
 
 namespace Monthoya.Desktop.Views;
 
@@ -120,6 +121,33 @@ public partial class ShellWindow
         panel.Children.Add(fieldPanel);
     }
 
+    private async Task<string> GetNextAvailableLocacaoCodeAsync(Guid? currentLocacaoId = null)
+    {
+        IReadOnlyList<LocacaoSummary> locacoes;
+        try
+        {
+            locacoes = await _rentalManagementService.GetLocacoesAsync();
+        }
+        catch
+        {
+            locacoes = _moduleItems.OfType<LocacaoSummary>().ToList();
+        }
+
+        var usedCodes = locacoes
+            .Where(x => !currentLocacaoId.HasValue || x.Id != currentLocacaoId.Value)
+            .Select(x => int.TryParse(x.Codigo?.Trim(), out var parsed) && parsed > 0 ? parsed : 0)
+            .Where(x => x > 0)
+            .ToHashSet();
+
+        var candidate = 1;
+        while (usedCodes.Contains(candidate))
+        {
+            candidate++;
+        }
+
+        return candidate.ToString();
+    }
+
     private static DateOnly? ToLocacaoDateOnly(DateTime? value) =>
         value.HasValue ? DateOnly.FromDateTime(value.Value) : null;
 
@@ -131,6 +159,40 @@ public partial class ShellWindow
         }
 
         return day;
+    }
+
+    private void ConfigureLocacaoCodeTextBox(TextBox textBox, TextBlock errorText)
+    {
+        textBox.PreviewTextInput += (_, e) =>
+        {
+            if (System.Text.RegularExpressions.Regex.IsMatch(e.Text, @"^\d+$"))
+            {
+                return;
+            }
+
+            e.Handled = true;
+            errorText.Text = "O código da locação deve usar apenas números.";
+        };
+        DataObject.AddPastingHandler(textBox, (_, e) =>
+        {
+            var text = e.DataObject.GetDataPresent(DataFormats.Text)
+                ? e.DataObject.GetData(DataFormats.Text) as string ?? string.Empty
+                : string.Empty;
+            if (System.Text.RegularExpressions.Regex.IsMatch(text, @"^\d+$"))
+            {
+                return;
+            }
+
+            e.CancelCommand();
+            errorText.Text = "Cole apenas números no código da locação.";
+        });
+        textBox.LostKeyboardFocus += (_, _) =>
+        {
+            if (!string.IsNullOrWhiteSpace(textBox.Text) && (!int.TryParse(textBox.Text, out var code) || code < 1))
+            {
+                errorText.Text = "O código da locação deve ser um número maior ou igual a 1.";
+            }
+        };
     }
 
     private void ConfigureLocacaoDecimalTextBox(TextBox textBox, TextBlock errorText)
