@@ -11,11 +11,13 @@ public partial class ShellWindow
     {
         IReadOnlyList<ImovelSummary> imoveis;
         IReadOnlyList<PessoaSummary> pessoas;
+        IReadOnlyList<LocacaoSummary> locacoes;
 
         try
         {
             imoveis = await _rentalManagementService.GetImoveisAsync();
             pessoas = await _rentalManagementService.GetPessoasAsync();
+            locacoes = await _rentalManagementService.GetLocacoesAsync();
         }
         catch (Exception ex)
         {
@@ -23,9 +25,17 @@ public partial class ShellWindow
             return;
         }
 
+        var imoveisIndisponiveis = locacoes
+            .Where(IsLocacaoBloqueiaNovaLocacao)
+            .Select(x => x.ImovelId)
+            .ToHashSet();
+        imoveis = imoveis
+            .Where(x => IsImovelDisponivelParaNovaLocacao(x, imoveisIndisponiveis))
+            .ToList();
+
         if (imoveis.Count == 0)
         {
-            SetModuleNotice("Cadastre ao menos um imóvel antes de criar uma locação.");
+            SetModuleNotice("Não há imóveis disponíveis para nova locação. Use imóveis com finalidade Locação/Ambos, status Disponível e sem locação em aberto.");
             return;
         }
 
@@ -227,5 +237,26 @@ public partial class ShellWindow
                 saveButton.IsEnabled = true;
             }
         };
+    }
+
+    private static bool IsLocacaoBloqueiaNovaLocacao(LocacaoSummary locacao) =>
+        !locacao.Status.Contains("Cancelada", StringComparison.OrdinalIgnoreCase)
+        && !locacao.Status.Contains("Encerrada", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsImovelDisponivelParaNovaLocacao(ImovelSummary imovel, ISet<Guid> imoveisIndisponiveis)
+    {
+        if (imoveisIndisponiveis.Contains(imovel.Id))
+        {
+            return false;
+        }
+
+        var finalidade = imovel.Finalidade ?? string.Empty;
+        var status = imovel.Status ?? string.Empty;
+        var aceitaLocacao = finalidade.Contains("Locação", StringComparison.OrdinalIgnoreCase)
+            || finalidade.Contains("Locacao", StringComparison.OrdinalIgnoreCase)
+            || finalidade.Contains("Ambos", StringComparison.OrdinalIgnoreCase);
+        var disponivel = status.Contains("Dispon", StringComparison.OrdinalIgnoreCase);
+
+        return aceitaLocacao && disponivel;
     }
 }
