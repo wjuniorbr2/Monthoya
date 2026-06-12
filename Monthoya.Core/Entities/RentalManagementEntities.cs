@@ -1,4 +1,4 @@
-﻿namespace Monthoya.Core.Entities;
+namespace Monthoya.Core.Entities;
 
 
 
@@ -34,6 +34,19 @@ public string? ColetaLixo { get; set; }
     public int? Suites { get; set; }
     public int? Banheiros { get; set; }
     public int? VagasGaragem { get; set; }
+    public int? Salas { get; set; }
+    public int? Cozinhas { get; set; }
+    public int? Copas { get; set; }
+    public int? Despensas { get; set; }
+    public int? Lavanderias { get; set; }
+    public int? AreasServico { get; set; }
+    public int? Lavabos { get; set; }
+    public int? Sacadas { get; set; }
+    public int? Churrasqueiras { get; set; }
+    public int? Piscinas { get; set; }
+    public int? Quintais { get; set; }
+    public int? HallsEntrada { get; set; }
+    public int? Estendais { get; set; }
     public decimal? AreaConstruida { get; set; }
     public decimal? AreaTerreno { get; set; }
     public bool? Mobiliado { get; set; }

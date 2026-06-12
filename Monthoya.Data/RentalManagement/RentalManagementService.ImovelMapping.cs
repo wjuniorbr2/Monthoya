@@ -1,4 +1,4 @@
-﻿using Monthoya.Core.Entities;
+using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
 namespace Monthoya.Data.RentalManagement;
@@ -49,6 +49,19 @@ public sealed partial class RentalManagementService
         imovel.Suites = request.Suites;
         imovel.Banheiros = request.Banheiros;
         imovel.VagasGaragem = request.VagasGaragem;
+        imovel.Salas = request.Salas;
+        imovel.Cozinhas = request.Cozinhas;
+        imovel.Copas = request.Copas;
+        imovel.Despensas = request.Despensas;
+        imovel.Lavanderias = request.Lavanderias;
+        imovel.AreasServico = request.AreasServico;
+        imovel.Lavabos = request.Lavabos;
+        imovel.Sacadas = request.Sacadas;
+        imovel.Churrasqueiras = request.Churrasqueiras;
+        imovel.Piscinas = request.Piscinas;
+        imovel.Quintais = request.Quintais;
+        imovel.HallsEntrada = request.HallsEntrada;
+        imovel.Estendais = request.Estendais;
         imovel.AreaConstruida = request.AreaConstruida;
         imovel.AreaTerreno = request.AreaTerreno;
         imovel.Mobiliado = request.Mobiliado;

@@ -228,11 +228,11 @@ public partial class ShellWindow
 
         var isCurrentlyInactive = _selectedImovelDetails.Dados.Status == ImovelStatus.Inativo;
         var confirmed = await ConfirmDestructiveActionWithPasswordAsync(
-            isCurrentlyInactive ? "Reativar imóvel" : "Remover imóvel",
+            isCurrentlyInactive ? "Reativar im\u00F3vel" : "Remover im\u00F3vel",
             isCurrentlyInactive
-                ? "Reativar este imóvel fará com que ele volte a aparecer nas listas padrão. Deseja continuar?"
-                : "Remover este imóvel apenas altera o status para inativo. Ele não aparecerá nas listas padrão. Deseja continuar?",
-            isCurrentlyInactive ? "Reativar imóvel" : "Remover imóvel");
+                ? "Reativar este im\u00F3vel far\u00E1 com que ele volte a aparecer nas listas padr\u00E3o. Deseja continuar?"
+                : "Remover este im\u00F3vel apenas altera o status para inativo. Ele n\u00E3o aparecer\u00E1 nas listas padr\u00E3o. Deseja continuar?",
+            isCurrentlyInactive ? "Reativar im\u00F3vel" : "Remover im\u00F3vel");
         if (!confirmed)
         {
             return;
@@ -245,21 +245,20 @@ public partial class ShellWindow
             await LoadImoveisAsync();
             RestoreDataGridSelection(ImoveisGrid, selectedId);
             ImovelErrorText.Text = isCurrentlyInactive
-                ? "Imóvel reativado com sucesso."
-                : "Imóvel removido com sucesso.";
+                ? "Im\u00F3vel reativado com sucesso."
+                : "Im\u00F3vel removido com sucesso.";
         }
         catch (Exception ex)
         {
             ImovelErrorText.Text = ex.Message;
         }
     }
-
     private async void SaveImovelVistoriaButton_Click(object sender, RoutedEventArgs e)
     {
         ImovelVistoriaErrorText.Text = string.Empty;
         if (!_selectedImovelId.HasValue)
         {
-            ImovelVistoriaErrorText.Text = "Selecione ou salve o imóvel antes de adicionar vistorias.";
+            ImovelVistoriaErrorText.Text = "Selecione ou salve o im\u00F3vel antes de adicionar vistorias.";
             return;
         }
 
@@ -322,14 +321,13 @@ public partial class ShellWindow
     private static string GetImovelMediaCategoryLabel(ImovelMediaCategory category) =>
         category switch
         {
-            ImovelMediaCategory.PropertyPhoto => "Foto pública do imóvel",
+            ImovelMediaCategory.PropertyPhoto => "Foto p\u00FAblica do im\u00F3vel",
             ImovelMediaCategory.Document => "Documento",
             ImovelMediaCategory.InspectionPhoto => "Foto de vistoria",
-            ImovelMediaCategory.MaintenancePhoto => "Foto de manutenção",
+            ImovelMediaCategory.MaintenancePhoto => "Foto de manuten\u00E7\u00E3o",
             ImovelMediaCategory.Other => "Foto privada",
             _ => category.ToString()
         };
-
     private static string? GetImagePreviewPath(string? path) =>
         !string.IsNullOrWhiteSpace(path)
         && Path.IsPathRooted(path)
@@ -429,12 +427,11 @@ public partial class ShellWindow
     private static string GetImovelFinalidadeLabel(ImovelFinalidade finalidade) =>
         finalidade switch
         {
-            ImovelFinalidade.Locacao => "Locação",
+            ImovelFinalidade.Locacao => "Loca\u00E7\u00E3o",
             ImovelFinalidade.Venda => "Venda",
             ImovelFinalidade.Ambos => "Ambos",
             _ => finalidade.ToString()
         };
-
     private sealed record PendingImovelMedia(
         string StoragePath,
         string? Caption,

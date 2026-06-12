@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -175,7 +175,7 @@ public partial class ShellWindow
         }
         catch (Exception ex)
         {
-            ImovelErrorText.Text = $"Não foi possível carregar o imóvel selecionado: {ex.Message}";
+            ImovelErrorText.Text = $"N\u00E3o foi poss\u00EDvel carregar o im\u00F3vel selecionado: {ex.Message}";
         }
     }
 

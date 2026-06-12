@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
@@ -34,7 +34,7 @@ public partial class ShellWindow
             Rua: ImovelRuaBox.Text,
             Numero: ImovelNumeroBox.Text,
             Bairro: ImovelBairroBox.Text,
-            Cidade: string.IsNullOrWhiteSpace(ImovelCidadeBox.Text) ? "Paranavaí" : ImovelCidadeBox.Text,
+            Cidade: string.IsNullOrWhiteSpace(ImovelCidadeBox.Text) ? "ParanavaÃ­" : ImovelCidadeBox.Text,
             Estado: string.IsNullOrWhiteSpace(ImovelEstadoBox.Text) ? "PR" : ImovelEstadoBox.Text,
             ValorAluguel: valorAluguel,
             Finalidade: finalidade,
@@ -58,6 +58,19 @@ public partial class ShellWindow
             Suites: ParseNullableInt(ImovelSuitesBox.Text),
             Banheiros: ParseNullableInt(ImovelBanheirosBox.Text),
             VagasGaragem: ParseNullableInt(ImovelVagasBox.Text),
+            Lavabos: ParseNullableInt(ImovelLavabosBox.Text),
+            Salas: ParseNullableInt(ImovelSalasBox.Text),
+            Cozinhas: ParseNullableInt(ImovelCozinhasBox.Text),
+            Copas: ParseNullableInt(ImovelCopasBox.Text),
+            Despensas: ParseNullableInt(ImovelDespensasBox.Text),
+            Lavanderias: ParseNullableInt(ImovelLavanderiasBox.Text),
+            AreasServico: ParseNullableInt(ImovelAreasServicoBox.Text),
+            Sacadas: ParseNullableInt(ImovelSacadasBox.Text),
+            Churrasqueiras: ParseNullableInt(ImovelChurrasqueirasBox.Text),
+            Piscinas: ParseNullableInt(ImovelPiscinasBox.Text),
+            Quintais: ParseNullableInt(ImovelQuintaisBox.Text),
+            HallsEntrada: ParseNullableInt(ImovelHallsEntradaBox.Text),
+            Estendais: ParseNullableInt(ImovelEstendaisBox.Text),
             AreaConstruida: ParseNullableDecimal(ImovelAreaConstruidaBox.Text),
             AreaTerreno: ParseNullableDecimal(ImovelAreaTerrenoBox.Text),
             Mobiliado: ImovelMobiliadoBox.IsChecked,

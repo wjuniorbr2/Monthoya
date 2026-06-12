@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows;
 using System.IO;
 using System.Windows.Controls;
@@ -123,6 +123,7 @@ public partial class ShellWindow
 
     private void SetImovelForm(CreateImovelRequest dados)
     {
+        ImovelErrorText.Text = string.Empty;
         ImovelProprietarioBox.SelectedValue = dados.ProprietarioId;
         ImovelFinalidadeBox.SelectedValue = dados.Finalidade;
         ImovelRuaBox.Text = dados.Rua;
@@ -149,6 +150,7 @@ public partial class ShellWindow
         ImovelSuitesBox.Text = dados.Suites?.ToString(CultureInfo.GetCultureInfo("pt-BR")) ?? string.Empty;
         ImovelBanheirosBox.Text = dados.Banheiros?.ToString(CultureInfo.GetCultureInfo("pt-BR")) ?? string.Empty;
         ImovelVagasBox.Text = dados.VagasGaragem?.ToString(CultureInfo.GetCultureInfo("pt-BR")) ?? string.Empty;
+        SetRealImovelAmbienteFields(dados);
         ImovelAreaConstruidaBox.Text = FormatNullableDecimal(dados.AreaConstruida);
         ImovelAreaTerrenoBox.Text = FormatNullableDecimal(dados.AreaTerreno);
         ImovelMobiliadoBox.IsChecked = dados.Mobiliado;
@@ -237,6 +239,19 @@ public partial class ShellWindow
         yield return ImovelSuitesBox;
         yield return ImovelBanheirosBox;
         yield return ImovelVagasBox;
+        yield return ImovelLavabosBox;
+        yield return ImovelSalasBox;
+        yield return ImovelCozinhasBox;
+        yield return ImovelCopasBox;
+        yield return ImovelDespensasBox;
+        yield return ImovelLavanderiasBox;
+        yield return ImovelAreasServicoBox;
+        yield return ImovelSacadasBox;
+        yield return ImovelChurrasqueirasBox;
+        yield return ImovelPiscinasBox;
+        yield return ImovelQuintaisBox;
+        yield return ImovelHallsEntradaBox;
+        yield return ImovelEstendaisBox;
         yield return ImovelAreaConstruidaBox;
         yield return ImovelAreaTerrenoBox;
         yield return ImovelDescricaoBox;
@@ -286,6 +301,7 @@ public partial class ShellWindow
 
     private void ClearImovelForm()
     {
+        ImovelErrorText.Text = string.Empty;
         ImovelFormTitleText.Text = "Criar novo";
         SetActiveImovelTabLabel("Criar novo");
         ImovelProprietarioBox.SelectedIndex = -1;
@@ -295,7 +311,7 @@ public partial class ShellWindow
         ImovelNumeroBox.Clear();
         ImovelComplementoBox.Clear();
         ImovelBairroBox.Clear();
-        ImovelCidadeBox.Text = "Paranavaí";
+        ImovelCidadeBox.Text = "ParanavaÃ­";
         ImovelEstadoBox.Text = "PR";
         ImovelCepBox.Clear();
         ImovelTipoBox.SelectedIndex = -1;
@@ -315,6 +331,7 @@ public partial class ShellWindow
         ImovelSuitesBox.Clear();
         ImovelBanheirosBox.Clear();
         ImovelVagasBox.Clear();
+        ClearRealImovelAmbienteFields();
         ImovelAreaConstruidaBox.Clear();
         ImovelAreaTerrenoBox.Clear();
         ImovelMobiliadoBox.IsChecked = false;

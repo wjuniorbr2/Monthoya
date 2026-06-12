@@ -42,7 +42,20 @@ public partial class ShellWindow
         AttachImovelIntegerInput(ImovelQuartosBox);
         AttachImovelIntegerInput(ImovelSuitesBox);
         AttachImovelIntegerInput(ImovelBanheirosBox);
+        AttachImovelIntegerInput(ImovelLavabosBox);
         AttachImovelIntegerInput(ImovelVagasBox);
+        AttachImovelIntegerInput(ImovelSalasBox);
+        AttachImovelIntegerInput(ImovelCozinhasBox);
+        AttachImovelIntegerInput(ImovelCopasBox);
+        AttachImovelIntegerInput(ImovelDespensasBox);
+        AttachImovelIntegerInput(ImovelLavanderiasBox);
+        AttachImovelIntegerInput(ImovelAreasServicoBox);
+        AttachImovelIntegerInput(ImovelSacadasBox);
+        AttachImovelIntegerInput(ImovelChurrasqueirasBox);
+        AttachImovelIntegerInput(ImovelPiscinasBox);
+        AttachImovelIntegerInput(ImovelQuintaisBox);
+        AttachImovelIntegerInput(ImovelHallsEntradaBox);
+        AttachImovelIntegerInput(ImovelEstendaisBox);
     }
 
     private void AttachImovelDecimalInput(TextBox textBox)
@@ -67,7 +80,7 @@ public partial class ShellWindow
         }
 
         e.Handled = true;
-        ImovelErrorText.Text = "Campos de quantidade devem aceitar apenas números inteiros.";
+        ImovelErrorText.Text = "Campos de quantidade devem aceitar apenas nÃºmeros inteiros.";
     }
 
     private void ImovelIntegerTextBox_OnPaste(object sender, DataObjectPastingEventArgs e)
@@ -84,7 +97,7 @@ public partial class ShellWindow
         }
 
         e.CancelCommand();
-        ImovelErrorText.Text = "Cole apenas números inteiros em campos de quantidade.";
+        ImovelErrorText.Text = "Cole apenas nÃºmeros inteiros em campos de quantidade.";
     }
 
     private void ImovelIntegerTextBox_LostKeyboardFocus(object sender, KeyboardFocusChangedEventArgs e)
@@ -97,7 +110,7 @@ public partial class ShellWindow
         if (!int.TryParse(textBox.Text, out var value) || value < 0)
         {
             textBox.Clear();
-            ImovelErrorText.Text = "Campos de quantidade devem ficar com número inteiro maior ou igual a zero.";
+            ImovelErrorText.Text = "Campos de quantidade devem ficar com nÃºmero inteiro maior ou igual a zero.";
         }
     }
 }

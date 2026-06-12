@@ -1,4 +1,4 @@
-﻿using Monthoya.Core.Entities;
+using Monthoya.Core.Entities;
 
 namespace Monthoya.Core.Services;
 
@@ -219,6 +219,19 @@ string? ColetaLixo = null,
     int? Suites = null,
     int? Banheiros = null,
     int? VagasGaragem = null,
+    int? Salas = null,
+    int? Cozinhas = null,
+    int? Copas = null,
+    int? Despensas = null,
+    int? Lavanderias = null,
+    int? AreasServico = null,
+    int? Lavabos = null,
+    int? Sacadas = null,
+    int? Churrasqueiras = null,
+    int? Piscinas = null,
+    int? Quintais = null,
+    int? HallsEntrada = null,
+    int? Estendais = null,
     decimal? AreaConstruida = null,
     decimal? AreaTerreno = null,
     bool? Mobiliado = null,
