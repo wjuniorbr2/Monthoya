@@ -58,6 +58,18 @@ public partial class ShellWindow
         var form = new WrapPanel();
         root.Children.Add(form);
 
+        var errorText = new TextBlock
+        {
+            Foreground = System.Windows.Media.Brushes.Firebrick,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 10)
+        };
+
+        var codigoBox = new TextBox
+        {
+            Text = await GetNextAvailableLocacaoCodeAsync(),
+            Margin = new Thickness(0, 6, 0, 12)
+        };
         var imovelBox = CreateComboBox(imoveis, nameof(ImovelSummary.Endereco));
         var imovelProprietarioBox = new TextBox
         {
@@ -81,13 +93,8 @@ public partial class ShellWindow
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 6, 0, 12)
         };
-        var errorText = new TextBlock
-        {
-            Foreground = System.Windows.Media.Brushes.Firebrick,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 0, 0, 10)
-        };
 
+        ConfigureLocacaoCodeTextBox(codigoBox, errorText);
         ConfigureLocacaoDecimalTextBox(valorBox, errorText);
         ConfigureLocacaoDatePicker(dataInicioBox, errorText);
         ConfigureLocacaoDatePicker(dataCobrancaBox, errorText);
@@ -102,6 +109,7 @@ public partial class ShellWindow
                 : "Selecione um imóvel.";
         };
 
+        AddLabeledControl(form, "Código", codigoBox, 120);
         AddLabeledControl(form, "Imóvel", imovelBox, 320);
         AddLabeledControl(form, "Proprietário(s) do imóvel", imovelProprietarioBox, 260);
         AddLabeledControl(form, "Tipo de locação", tipoBox, 180);
@@ -195,6 +203,7 @@ public partial class ShellWindow
                 var request = new CreateLocacaoRequest(
                     ImovelId: imovel.Id,
                     Partes: partes,
+                    Codigo: string.IsNullOrWhiteSpace(codigoBox.Text) ? null : codigoBox.Text.Trim(),
                     TipoLocacao: tipoBox.SelectedItem is TipoLocacao tipo ? tipo : TipoLocacao.Residencial,
                     Status: LocacaoStatus.Rascunho,
                     DataInicioLocacao: ToLocacaoDateOnly(dataInicioBox.SelectedDate),
