@@ -70,7 +70,20 @@ public class LocacaoServiceTests
         await service.CreateLocacaoAsync(activeRequest);
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateLocacaoAsync(activeRequest));
-        Assert.Contains("já possui uma locação ativa", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("já possui uma locação em aberto", error.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CreateLocacao_CannotCreateSecondDraftRentalForSameProperty()
+    {
+        await using var dbContext = CreateDbContext();
+        var seed = await SeedRentalActorsAsync(dbContext);
+        var service = new RentalManagementService(dbContext);
+
+        await service.CreateLocacaoAsync(CreateRequest(seed));
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateLocacaoAsync(CreateRequest(seed)));
+        Assert.Contains("já possui uma locação em aberto", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
