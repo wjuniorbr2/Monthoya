@@ -55,6 +55,11 @@ public sealed class ChavesSafeRentalManagementService(
         var imovel = await dbContext.Imoveis.SingleOrDefaultAsync(x => x.Id == request.ImovelId, cancellationToken)
             ?? throw new InvalidOperationException("Imóvel não encontrado.");
 
+        if (imovel.ChavePosse != ImovelChavePosse.Imobiliaria)
+        {
+            throw new InvalidOperationException("A chave deste imóvel não está na imobiliária. Não é possível registrar retirada.");
+        }
+
         var alreadyTaken = await dbContext.ImovelChaveMovimentos.AnyAsync(x => x.ImovelId == request.ImovelId && !x.DevolvidoEm.HasValue, cancellationToken);
         if (alreadyTaken) throw new InvalidOperationException("Esta chave já está retirada.");
 
