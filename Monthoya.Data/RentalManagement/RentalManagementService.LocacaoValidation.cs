@@ -24,6 +24,17 @@ public sealed partial class RentalManagementService
             throw new InvalidOperationException("Imóvel não encontrado.");
         }
 
+        var hasAnyOpenLocacaoForImovel = await dbContext.Locacoes.AnyAsync(
+            x => x.ImovelId == request.ImovelId &&
+                 x.Id != currentLocacaoId &&
+                 x.Status != LocacaoStatus.Cancelada &&
+                 x.Status != LocacaoStatus.Encerrada,
+            cancellationToken);
+        if (hasAnyOpenLocacaoForImovel)
+        {
+            throw new InvalidOperationException("Este imóvel já possui uma locação em aberto.");
+        }
+
         if (currentLocacaoId is null)
         {
             if (imovel.Status != ImovelStatus.Disponivel)
@@ -47,21 +58,6 @@ public sealed partial class RentalManagementService
         if (locatarios.Any(x => proprietarioIds.Contains(x.PessoaId)))
         {
             throw new InvalidOperationException("A mesma pessoa não pode ser proprietário e locatário na mesma locação.");
-        }
-
-        if (IsBlockingLocacaoStatus(status))
-        {
-            var hasBlockingLocacaoForImovel = await dbContext.Locacoes.AnyAsync(
-                x => x.ImovelId == normalizedRequest.ImovelId &&
-                     x.Id != currentLocacaoId &&
-                     x.Status != LocacaoStatus.Cancelada &&
-                     x.Status != LocacaoStatus.Encerrada,
-                cancellationToken);
-
-            if (hasBlockingLocacaoForImovel)
-            {
-                throw new InvalidOperationException("Este imóvel já possui uma locação em aberto.");
-            }
         }
 
         var dataCadastro = normalizedRequest.DataCadastro ?? DateOnly.FromDateTime(DateTime.UtcNow);
