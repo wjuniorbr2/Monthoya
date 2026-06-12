@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows;
 using System.IO;
 using System.Windows.Controls;
@@ -220,29 +220,33 @@ public partial class ShellWindow
 
     private async void DeactivateImovelButton_Click(object sender, RoutedEventArgs e)
     {
+        ImovelErrorText.Text = string.Empty;
         if (!_selectedImovelId.HasValue || _selectedImovelDetails is null)
         {
             return;
         }
 
-        var confirm = MessageBox.Show(
-            this,
-            "Remover este imóvel apenas altera o status para inativo. Deseja continuar?",
-            "Remover imóvel",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-        if (confirm != MessageBoxResult.Yes)
+        var isCurrentlyInactive = _selectedImovelDetails.Dados.Status == ImovelStatus.Inativo;
+        var confirmed = await ConfirmDestructiveActionWithPasswordAsync(
+            isCurrentlyInactive ? "Reativar imóvel" : "Remover imóvel",
+            isCurrentlyInactive
+                ? "Reativar este imóvel fará com que ele volte a aparecer nas listas padrão. Deseja continuar?"
+                : "Remover este imóvel apenas altera o status para inativo. Ele não aparecerá nas listas padrão. Deseja continuar?",
+            isCurrentlyInactive ? "Reativar imóvel" : "Remover imóvel");
+        if (!confirmed)
         {
             return;
         }
 
         try
         {
-            var isCurrentlyInactive = _selectedImovelDetails.Dados.Status == ImovelStatus.Inativo;
             await _rentalManagementService.SetImovelActiveAsync(_selectedImovelId.Value, isCurrentlyInactive);
             var selectedId = _selectedImovelId.Value;
             await LoadImoveisAsync();
             RestoreDataGridSelection(ImoveisGrid, selectedId);
+            ImovelErrorText.Text = isCurrentlyInactive
+                ? "Imóvel reativado com sucesso."
+                : "Imóvel removido com sucesso.";
         }
         catch (Exception ex)
         {
@@ -330,7 +334,7 @@ public partial class ShellWindow
         !string.IsNullOrWhiteSpace(path)
         && Path.IsPathRooted(path)
         && File.Exists(path)
-        && IsImageFile(path)
+            && IsImageFile(path)
             ? path
             : null;
 
@@ -450,7 +454,3 @@ public partial class ShellWindow
         string? PreviewPath,
         string FileKind);
 }
-
-
-
-
