@@ -28,6 +28,7 @@ public sealed partial class RentalManagementService
         var oldRent = locacao.ValorAluguelAtual ?? locacao.ValorAluguelInicial ?? locacao.ValorAluguel;
 
         ApplyLocacaoRequest(locacao, normalized);
+        await EnsurePessoaRolesForLocacaoPartesAsync(normalized.Partes, cancellationToken);
         locacao.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
         if (oldRent != normalized.ValorAluguelAtual)

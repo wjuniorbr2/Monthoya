@@ -145,6 +145,11 @@ public sealed partial class RentalManagementService
             .Where(x => x.parte.TipoParte == tipoParte)
             .ToList();
 
+        if (indexes.Count == 0)
+        {
+            return;
+        }
+
         if (indexes.Count == 1 && !indexes[0].parte.IsPrincipal)
         {
             partes[indexes[0].index] = indexes[0].parte with { IsPrincipal = true };
@@ -154,6 +159,7 @@ public sealed partial class RentalManagementService
         var firstPrimary = indexes.FirstOrDefault(x => x.parte.IsPrincipal);
         if (firstPrimary is null)
         {
+            partes[indexes[0].index] = indexes[0].parte with { IsPrincipal = true };
             return;
         }
 
@@ -182,6 +188,14 @@ public sealed partial class RentalManagementService
     {
         var proprietarios = partes.Where(x => x.TipoParte == TipoParteLocacao.Proprietario).ToList();
         var locatarios = partes.Where(x => x.TipoParte == TipoParteLocacao.Locatario).ToList();
+
+        var pessoaComMaisDeUmPapel = partes
+            .GroupBy(x => x.PessoaId)
+            .FirstOrDefault(x => x.Select(parte => parte.TipoParte).Distinct().Count() > 1);
+        if (pessoaComMaisDeUmPapel is not null)
+        {
+            throw new InvalidOperationException("A mesma pessoa não pode ocupar mais de um papel na mesma locação.");
+        }
 
         if (proprietarios.Count == 0)
         {

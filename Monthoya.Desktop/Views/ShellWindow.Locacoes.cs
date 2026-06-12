@@ -61,8 +61,6 @@ public partial class ShellWindow
         root.Children.Add(form);
 
         var imovelBox = CreateComboBox(imoveis, nameof(ImovelSummary.Endereco));
-        var proprietarioBox = CreateComboBox(pessoasSelecionaveis, nameof(PessoaSummary.Nome));
-        var locatarioBox = CreateComboBox(pessoasSelecionaveis, nameof(PessoaSummary.Nome));
         var tipoBox = CreateComboBox(Enum.GetValues<TipoLocacao>().Cast<object>().ToList(), null);
         tipoBox.SelectedItem = TipoLocacao.Residencial;
         var valorBox = new TextBox { Margin = new Thickness(0, 6, 0, 12) };
@@ -94,8 +92,6 @@ public partial class ShellWindow
         ConfigureLocacaoDayTextBox(diaRepasseBox, errorText);
 
         AddLabeledControl(form, "Imóvel", imovelBox, 320);
-        AddLabeledControl(form, "Proprietário principal", proprietarioBox, 260);
-        AddLabeledControl(form, "Locatário principal", locatarioBox, 260);
         AddLabeledControl(form, "Tipo de locação", tipoBox, 180);
         AddLabeledControl(form, "Valor aluguel inicial", valorBox, 180);
         AddLabeledControl(form, "Data início locação", dataInicioBox, 180);
@@ -105,6 +101,8 @@ public partial class ShellWindow
         AddLabeledControl(form, "Dia repasse proprietário", diaRepasseBox, 170);
         AddLabeledControl(form, string.Empty, antecipadoBox, 190);
         AddLabeledControl(form, "Observações internas", observacoesBox, 520);
+        var parteRows = new List<LocacaoParteEditorRow>();
+        root.Children.Add(CreateLocacaoPartesEditor(pessoasSelecionaveis, errorText, parteRows));
         root.Children.Add(errorText);
 
         dataInicioBox.SelectedDateChanged += (_, _) =>
@@ -160,21 +158,6 @@ public partial class ShellWindow
                     throw new InvalidOperationException("Selecione o imóvel.");
                 }
 
-                if (proprietarioBox.SelectedItem is not PessoaSummary proprietario)
-                {
-                    throw new InvalidOperationException("Selecione o proprietário.");
-                }
-
-                if (locatarioBox.SelectedItem is not PessoaSummary locatario)
-                {
-                    throw new InvalidOperationException("Selecione o locatário.");
-                }
-
-                if (proprietario.Id == locatario.Id)
-                {
-                    throw new InvalidOperationException("A mesma pessoa não pode ser proprietário e locatário na mesma locação.");
-                }
-
                 TryApplyBrazilianDate(dataInicioBox, message => errorText.Text = message);
                 TryApplyBrazilianDate(dataCobrancaBox, message => errorText.Text = message);
                 if (!string.IsNullOrWhiteSpace(errorText.Text))
@@ -184,14 +167,11 @@ public partial class ShellWindow
 
                 var valor = ParseNullableDecimal(valorBox.Text)
                     ?? throw new InvalidOperationException("Informe o valor inicial do aluguel.");
+                var partes = BuildLocacaoParteRequests(parteRows);
 
                 var request = new CreateLocacaoRequest(
                     ImovelId: imovel.Id,
-                    Partes:
-                    [
-                        new LocacaoParteRequest(proprietario.Id, TipoParteLocacao.Proprietario, IsPrincipal: true, PercentualParticipacao: 100m, RecebeRepasse: true),
-                        new LocacaoParteRequest(locatario.Id, TipoParteLocacao.Locatario, IsPrincipal: true, RecebeCobranca: true)
-                    ],
+                    Partes: partes,
                     TipoLocacao: tipoBox.SelectedItem is TipoLocacao tipo ? tipo : TipoLocacao.Residencial,
                     Status: LocacaoStatus.Rascunho,
                     DataInicioLocacao: ToLocacaoDateOnly(dataInicioBox.SelectedDate),
@@ -363,9 +343,18 @@ public partial class ShellWindow
         }
     }
 
-    private void ShowLocacaoDetails(LocacaoSummary locacao, string? statusMessage = null)
+    private async void ShowLocacaoDetails(LocacaoSummary locacao, string? statusMessage = null)
     {
         ModuleDetailsBorder.Visibility = Visibility.Visible;
+        LocacaoDetails? locacaoDetails = null;
+        try
+        {
+            locacaoDetails = await _rentalManagementService.GetLocacaoAsync(locacao.Id);
+        }
+        catch
+        {
+            // Keep the summary visible if details cannot be loaded right now.
+        }
 
         var root = new StackPanel();
 
@@ -417,6 +406,12 @@ public partial class ShellWindow
         AddDetailText(details, "Início", locacao.DataInicioLocacao?.ToString("dd/MM/yyyy") ?? "-");
         AddDetailText(details, "Fim previsto", locacao.DataFimPrevista?.ToString("dd/MM/yyyy") ?? "-");
         AddDetailText(details, "Alertas", string.IsNullOrWhiteSpace(locacao.AlertasTexto) ? "-" : locacao.AlertasTexto, 360);
+        if (locacaoDetails is not null)
+        {
+            AddDetailText(details, "Proprietários", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Proprietario), 360);
+            AddDetailText(details, "Locatários", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Locatario), 360);
+            AddDetailText(details, "Fiadores", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Fiador), 360);
+        }
 
         root.Children.Add(new TextBlock
         {
