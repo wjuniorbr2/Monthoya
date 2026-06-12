@@ -14,6 +14,7 @@ public sealed partial class RentalManagementService
         ApplyLocacaoRequest(locacao, normalized);
         ApplyLocacaoChildren(locacao, normalized);
         await EnsurePessoaRolesForLocacaoPartesAsync(normalized.Partes, cancellationToken);
+        await SyncImovelStatusForLocacaoAsync(normalized.Request.ImovelId, normalized.Status, currentLocacaoId: null, cancellationToken);
         locacao.ValoresHistoricos.Add(new LocacaoValorHistorico
         {
             DataVigencia = request.DataInicioLocacao ?? normalized.DataInicioCobranca ?? normalized.DataCadastro,
