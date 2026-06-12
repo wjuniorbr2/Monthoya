@@ -1,4 +1,4 @@
-﻿using System.Text.RegularExpressions;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using Monthoya.Core.Entities;
@@ -292,51 +292,36 @@ public partial class ShellWindow
 
     private async void DeactivatePessoaButton_Click(object sender, RoutedEventArgs e)
     {
+        PessoaErrorText.Text = string.Empty;
         if (!_selectedPessoaId.HasValue)
         {
             return;
         }
 
-        var confirm = MessageBox.Show(
-            "Remover esta pessoa apenas altera o status para inativo. Deseja continuar?",
-            "Confirmar remoção",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
-        if (confirm != MessageBoxResult.Yes)
+        var confirmed = await ConfirmDestructiveActionWithPasswordAsync(
+            "Remover pessoa",
+            "Remover esta pessoa apenas altera o status para inativo. A pessoa não aparecerá nas listas padrão. Deseja continuar?",
+            "Remover pessoa");
+        if (!confirmed)
         {
             return;
         }
 
-        var password = PromptPassword("Digite sua senha para confirmar a remoção.");
-        if (password is null)
+        try
         {
-            return;
+            await _rentalManagementService.SetPessoaActiveAsync(_selectedPessoaId.Value, false);
+            _selectedPessoaId = null;
+            _selectedPessoaDetails = null;
+            ClearPessoaForm();
+            SetPessoaDocumentoSelection(null);
+            SetPessoaEditMode(true, isNew: true);
+            SaveActiveTabState();
+            await LoadPessoasAsync();
+            PessoaErrorText.Text = "Pessoa removida com sucesso.";
         }
-
-        if (!await _userService.VerifyPasswordAsync(_currentUser.Id, password))
+        catch (Exception ex)
         {
-            PessoaErrorText.Text = "Senha incorreta. A pessoa não foi removida.";
-            return;
+            PessoaErrorText.Text = ex.Message;
         }
-
-        await _rentalManagementService.SetPessoaActiveAsync(_selectedPessoaId.Value, false);
-        _selectedPessoaId = null;
-        _selectedPessoaDetails = null;
-        ClearPessoaForm();
-        SetPessoaDocumentoSelection(null);
-        SetPessoaEditMode(true, isNew: true);
-        SaveActiveTabState();
-        await LoadPessoasAsync();
     }
-
-
 }
-
-
-
-
-
-
-
-
-
