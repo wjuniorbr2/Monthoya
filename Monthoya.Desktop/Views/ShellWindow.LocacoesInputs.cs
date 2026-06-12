@@ -135,6 +135,7 @@ public partial class ShellWindow
 
         var usedCodes = locacoes
             .Where(x => !currentLocacaoId.HasValue || x.Id != currentLocacaoId.Value)
+            .Where(x => !IsFinalizedLocacaoStatus(x.Status))
             .Select(x => int.TryParse(x.Codigo?.Trim(), out var parsed) && parsed > 0 ? parsed : 0)
             .Where(x => x > 0)
             .ToHashSet();
@@ -147,6 +148,10 @@ public partial class ShellWindow
 
         return candidate.ToString();
     }
+
+    private static bool IsFinalizedLocacaoStatus(string? status) =>
+        (status ?? string.Empty).Contains("Cancelada", StringComparison.OrdinalIgnoreCase)
+        || (status ?? string.Empty).Contains("Encerrada", StringComparison.OrdinalIgnoreCase);
 
     private static DateOnly? ToLocacaoDateOnly(DateTime? value) =>
         value.HasValue ? DateOnly.FromDateTime(value.Value) : null;
