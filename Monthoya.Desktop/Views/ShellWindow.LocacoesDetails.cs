@@ -28,7 +28,7 @@ public partial class ShellWindow
 
         var title = new TextBlock
         {
-            Text = $"LocaÃ§Ã£o {locacao.Codigo ?? "-"}",
+            Text = $"Locação {locacao.Codigo ?? "-"}",
             FontSize = 20,
             FontWeight = FontWeights.SemiBold,
             VerticalAlignment = VerticalAlignment.Center
@@ -81,24 +81,24 @@ public partial class ShellWindow
         root.Children.Add(details);
         AddDetailText(details, "Status", locacao.Status);
         AddDetailText(details, "Tipo", locacao.TipoLocacao);
-        AddDetailText(details, "ImÃ³vel", locacao.ImovelResumo, 360);
-        AddDetailText(details, "LocatÃ¡rio principal", locacao.LocatarioPrincipalNome);
-        AddDetailText(details, "ProprietÃ¡rio principal", locacao.ProprietarioPrincipalNome);
+        AddDetailText(details, "Imóvel", locacao.ImovelResumo, 360);
+        AddDetailText(details, "Locatário principal", locacao.LocatarioPrincipalNome);
+        AddDetailText(details, "Proprietário principal", locacao.ProprietarioPrincipalNome);
         AddDetailText(details, "Aluguel atual", locacao.ValorAluguelAtual?.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")) ?? "-");
-        AddDetailText(details, "Vencimento locatÃ¡rio", locacao.DiaVencimentoLocatario?.ToString() ?? "-");
-        AddDetailText(details, "InÃ­cio", locacao.DataInicioLocacao?.ToString("dd/MM/yyyy") ?? "-");
+        AddDetailText(details, "Vencimento locatário", locacao.DiaVencimentoLocatario?.ToString() ?? "-");
+        AddDetailText(details, "Início", locacao.DataInicioLocacao?.ToString("dd/MM/yyyy") ?? "-");
         AddDetailText(details, "Fim previsto", locacao.DataFimPrevista?.ToString("dd/MM/yyyy") ?? "-");
         AddDetailText(details, "Alertas", string.IsNullOrWhiteSpace(locacao.AlertasTexto) ? "-" : locacao.AlertasTexto, 360);
         if (locacaoDetails is not null)
         {
-            AddDetailText(details, "ProprietÃ¡rios", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Proprietario), 360);
-            AddDetailText(details, "LocatÃ¡rios", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Locatario), 360);
+            AddDetailText(details, "Proprietários", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Proprietario), 360);
+            AddDetailText(details, "Locatários", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Locatario), 360);
             AddDetailText(details, "Fiadores", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Fiador), 360);
         }
 
         root.Children.Add(new TextBlock
         {
-            Text = "Use Editar para alterar os dados bÃ¡sicos desta locaÃ§Ã£o.",
+            Text = "Use Editar para alterar os dados básicos desta locação.",
             Foreground = System.Windows.Media.Brushes.DimGray,
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 10, 0, 0)
