@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using Monthoya.Core.Entities;
@@ -19,6 +20,10 @@ public partial class ShellWindow
         {
             // Keep the summary visible if details cannot be loaded right now.
         }
+
+        var dados = locacaoDetails?.Dados;
+        var partes = locacaoDetails?.Partes ?? Array.Empty<LocacaoParteSummary>();
+        var culture = CultureInfo.GetCultureInfo("pt-BR");
 
         var root = new StackPanel();
 
@@ -66,6 +71,13 @@ public partial class ShellWindow
         header.Children.Add(actionButtons);
 
         root.Children.Add(header);
+        root.Children.Add(new TextBlock
+        {
+            Text = "Visualização da locação. Os campos ficam bloqueados até clicar em Editar.",
+            Foreground = System.Windows.Media.Brushes.DimGray,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 14)
+        });
 
         if (!string.IsNullOrWhiteSpace(statusMessage))
         {
@@ -77,45 +89,107 @@ public partial class ShellWindow
             });
         }
 
-        var details = new WrapPanel();
-        root.Children.Add(details);
-        AddDetailText(details, "Status", locacao.Status);
-        AddDetailText(details, "Tipo", locacao.TipoLocacao);
-        AddDetailText(details, "Imóvel", locacao.ImovelResumo, 360);
-        AddDetailText(details, "Locatário principal", locacao.LocatarioPrincipalNome);
-        AddDetailText(details, "Proprietário principal", locacao.ProprietarioPrincipalNome);
-        AddDetailText(details, "Aluguel atual", locacao.ValorAluguelAtual?.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")) ?? "-");
-        AddDetailText(details, "Vencimento locatário", locacao.DiaVencimentoLocatario?.ToString() ?? "-");
-        AddDetailText(details, "Início", locacao.DataInicioLocacao?.ToString("dd/MM/yyyy") ?? "-");
-        AddDetailText(details, "Fim previsto", locacao.DataFimPrevista?.ToString("dd/MM/yyyy") ?? "-");
-        AddDetailText(details, "Alertas", string.IsNullOrWhiteSpace(locacao.AlertasTexto) ? "-" : locacao.AlertasTexto, 360);
-        if (locacaoDetails is not null)
-        {
-            AddDetailText(details, "Proprietários", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Proprietario), 360);
-            AddDetailText(details, "Locatários", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Locatario), 360);
-            AddDetailText(details, "Fiadores", FormatLocacaoPartes(locacaoDetails.Partes, TipoParteLocacao.Fiador), 360);
-        }
+        var form = new WrapPanel();
+        root.Children.Add(form);
 
-        root.Children.Add(new TextBlock
-        {
-            Text = "Use Editar para alterar os dados básicos desta locação.",
-            Foreground = System.Windows.Media.Brushes.DimGray,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, 10, 0, 0)
-        });
+        AddLabeledControl(form, "Código", CreateReadOnlyTextBox(locacao.Codigo ?? "-"), 120);
+        AddLabeledControl(form, "Status", CreateReadOnlyTextBox(locacao.Status), 150);
+        AddLabeledControl(form, "Imóvel", CreateReadOnlyTextBox(locacao.ImovelResumo), 320);
+        AddLabeledControl(form, "Proprietário(s) do imóvel", CreateReadOnlyTextBox(FormatLocacaoPartes(partes, TipoParteLocacao.Proprietario)), 300);
+        AddLabeledControl(form, "Tipo de locação", CreateReadOnlyTextBox(locacao.TipoLocacao), 180);
+        AddLabeledControl(form, "Aluguel atual", CreateReadOnlyTextBox((locacao.ValorAluguelAtual ?? dados?.ValorAluguelAtual ?? dados?.ValorAluguelInicial)?.ToString("N2", culture) ?? "-"), 180);
+        AddLabeledControl(form, "Data início locação", CreateReadOnlyTextBox(FormatDate(dados?.DataInicioLocacao ?? locacao.DataInicioLocacao)), 180);
+        AddLabeledControl(form, "Data início cobrança", CreateReadOnlyTextBox(FormatDate(dados?.DataInicioCobranca)), 180);
+        AddLabeledControl(form, "Dia base", CreateReadOnlyTextBox((dados?.DiaBase ?? locacao.DiaVencimentoLocatario)?.ToString() ?? "-"), 120);
+        AddLabeledControl(form, "Dia vencimento locatário", CreateReadOnlyTextBox((dados?.DiaVencimentoLocatario ?? locacao.DiaVencimentoLocatario)?.ToString() ?? "-"), 170);
+        AddLabeledControl(form, "Dia repasse proprietário", CreateReadOnlyTextBox(dados?.DiaRepasseProprietario?.ToString() ?? "-"), 170);
+        AddLabeledControl(form, string.Empty, CreateReadOnlyCheckBox("Aluguel antecipado", dados?.AluguelAntecipado == true), 190);
+        AddLabeledControl(form, "Observações internas", CreateReadOnlyTextBox(dados?.ObservacoesInternas, height: 70, acceptsReturn: true), 520);
+
+        AddReadOnlyLocacaoPartesSection(root, partes);
 
         ModuleDetailsHost.Content = root;
     }
 
-    private static void AddDetailText(Panel panel, string label, string value, double width = 220)
+    private void AddReadOnlyLocacaoPartesSection(Panel root, IReadOnlyList<LocacaoParteSummary> partes)
     {
-        var field = new StackPanel
+        root.Children.Add(new TextBlock
         {
-            Width = width,
-            Margin = new Thickness(0, 0, 18, 12)
-        };
-        field.Children.Add(new TextBlock { Text = label, FontWeight = FontWeights.SemiBold });
-        field.Children.Add(new TextBlock { Text = string.IsNullOrWhiteSpace(value) ? "-" : value, TextWrapping = TextWrapping.Wrap });
-        panel.Children.Add(field);
+            Text = "Locatários e fiadores",
+            FontSize = 16,
+            FontWeight = FontWeights.SemiBold,
+            Margin = new Thickness(0, 8, 0, 4)
+        });
+        root.Children.Add(new TextBlock
+        {
+            Text = "O proprietário vem do imóvel selecionado. Locatários e fiadores ficam bloqueados na visualização.",
+            Foreground = System.Windows.Media.Brushes.DimGray,
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 8)
+        });
+
+        var rowsPanel = new StackPanel();
+        root.Children.Add(rowsPanel);
+
+        AddReadOnlyParteRows(rowsPanel, partes, TipoParteLocacao.Locatario);
+        AddReadOnlyParteRows(rowsPanel, partes, TipoParteLocacao.Fiador);
     }
+
+    private void AddReadOnlyParteRows(Panel rowsPanel, IReadOnlyList<LocacaoParteSummary> partes, TipoParteLocacao tipoParte)
+    {
+        var selected = partes
+            .Where(x => x.TipoParte == tipoParte)
+            .OrderByDescending(x => x.IsPrincipal)
+            .ThenBy(x => x.PessoaNome)
+            .ToList();
+
+        if (selected.Count == 0)
+        {
+            var emptyRow = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
+            AddInlineField(emptyRow, GetTipoParteLabel(tipoParte), CreateReadOnlyTextBox("-"), 300);
+            emptyRow.Children.Add(CreateReadOnlyCheckBox("Principal", false));
+            rowsPanel.Children.Add(emptyRow);
+            return;
+        }
+
+        foreach (var parte in selected)
+        {
+            var rowPanel = new WrapPanel { Margin = new Thickness(0, 0, 0, 6) };
+            AddInlineField(rowPanel, GetTipoParteLabel(tipoParte), CreateReadOnlyTextBox(parte.PessoaNome), 300);
+            rowPanel.Children.Add(CreateReadOnlyCheckBox("Principal", parte.IsPrincipal));
+            rowsPanel.Children.Add(rowPanel);
+        }
+    }
+
+    private static TextBox CreateReadOnlyTextBox(string? value, double? height = null, bool acceptsReturn = false)
+    {
+        var box = new TextBox
+        {
+            Text = string.IsNullOrWhiteSpace(value) ? "-" : value,
+            IsReadOnly = true,
+            IsTabStop = false,
+            AcceptsReturn = acceptsReturn,
+            TextWrapping = acceptsReturn ? TextWrapping.Wrap : TextWrapping.NoWrap,
+            Margin = new Thickness(0, 6, 0, 12)
+        };
+
+        if (height.HasValue)
+        {
+            box.Height = height.Value;
+        }
+
+        return box;
+    }
+
+    private static CheckBox CreateReadOnlyCheckBox(string text, bool isChecked) =>
+        new()
+        {
+            Content = text,
+            IsChecked = isChecked,
+            IsEnabled = false,
+            Margin = new Thickness(0, 28, 12, 0)
+        };
+
+    private static string FormatDate(DateOnly? date) =>
+        date?.ToString("dd/MM/yyyy", CultureInfo.GetCultureInfo("pt-BR")) ?? "-";
 }
