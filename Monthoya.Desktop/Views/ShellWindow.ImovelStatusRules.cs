@@ -40,7 +40,6 @@ public partial class ShellWindow
 
         ImovelStatusBox.DropDownOpened += (_, _) => RefreshImovelStatusOptions();
         ImoveisGrid.SelectionChanged += (_, _) => ScheduleRefreshImovelStatusOptions();
-        NewImovelButton.Click += (_, _) => ScheduleRefreshImovelStatusOptions();
         ImovelEditButton.Click += (_, _) => ScheduleRefreshImovelStatusOptions();
         CancelImovelEditButton.Click += (_, _) => ScheduleRefreshImovelStatusOptions();
         SaveImovelButton.Click += (_, _) => ScheduleRefreshImovelStatusOptions();
