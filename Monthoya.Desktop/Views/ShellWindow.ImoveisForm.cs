@@ -14,7 +14,9 @@ public partial class ShellWindow
             : ImovelFinalidade.Locacao;
         var status = ImovelStatusBox.SelectedValue is ImovelStatus selectedStatus
             ? selectedStatus
-            : ImovelStatus.Disponivel;
+            : _selectedImovelDetails?.Dados.Status is ImovelStatus currentStatus && IsSystemManagedImovelStatus(currentStatus)
+                ? currentStatus
+                : ImovelStatus.Disponivel;
         var chavePosse = ImovelChavePosseBox.SelectedValue is ImovelChavePosse selectedChavePosse
             ? selectedChavePosse
             : ImovelChavePosse.NaoCadastrada;
@@ -34,7 +36,7 @@ public partial class ShellWindow
             Rua: ImovelRuaBox.Text,
             Numero: ImovelNumeroBox.Text,
             Bairro: ImovelBairroBox.Text,
-            Cidade: string.IsNullOrWhiteSpace(ImovelCidadeBox.Text) ? "ParanavaÃ­" : ImovelCidadeBox.Text,
+            Cidade: string.IsNullOrWhiteSpace(ImovelCidadeBox.Text) ? "Paranava\u00ED" : ImovelCidadeBox.Text,
             Estado: string.IsNullOrWhiteSpace(ImovelEstadoBox.Text) ? "PR" : ImovelEstadoBox.Text,
             ValorAluguel: valorAluguel,
             Finalidade: finalidade,
@@ -94,5 +96,3 @@ public partial class ShellWindow
             ChaveObservacoes: ImovelChaveObservacoesBox.Text);
     }
 }
-
-
