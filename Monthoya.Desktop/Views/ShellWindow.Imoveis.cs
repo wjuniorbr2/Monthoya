@@ -98,12 +98,7 @@ public partial class ShellWindow
         var publicacaoFilter = ImoveisPublicacaoFilterBox.SelectedValue as string ?? "todos";
         ImoveisGrid.ItemsSource = _imoveis
             .Where(x => ContainsSearch(query, x.Endereco, x.Bairro, x.Proprietario, x.TipoImovel, x.Finalidade, x.Status))
-            .Where(x => statusFilter switch
-            {
-                "ativos" => !string.Equals(x.Status, "Inativo", StringComparison.OrdinalIgnoreCase),
-                "todos" => true,
-                _ => NormalizeSearch(x.Status).Contains(NormalizeSearch(statusFilter), StringComparison.OrdinalIgnoreCase)
-            })
+            .Where(x => MatchesImovelStatusFilter(x.Status, statusFilter))
             .Where(x => !finalidadeFilter.HasValue || string.Equals(x.Finalidade, GetImovelFinalidadeLabel(finalidadeFilter.Value), StringComparison.OrdinalIgnoreCase))
             .Where(x => publicacaoFilter switch
             {
