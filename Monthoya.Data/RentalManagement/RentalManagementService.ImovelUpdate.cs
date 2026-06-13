@@ -11,32 +11,36 @@ public sealed partial class RentalManagementService
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         if (request.Id == Guid.Empty)
         {
-            throw new InvalidOperationException("Selecione o imóvel para editar.");
+            throw new InvalidOperationException("Selecione o imÃƒÂ³vel para editar.");
         }
 
         ValidateImovelRequest(request.Imovel);
 
         var proprietario = await dbContext.Pessoas
             .SingleOrDefaultAsync(x => x.Id == request.Imovel.ProprietarioId, cancellationToken)
-            ?? throw new InvalidOperationException("Proprietário não encontrado.");
+            ?? throw new InvalidOperationException("ProprietÃƒÂ¡rio nÃƒÂ£o encontrado.");
 
         var imovel = await dbContext.Imoveis
             .SingleOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
-            ?? throw new InvalidOperationException("Imóvel não encontrado.");
+            ?? throw new InvalidOperationException("ImÃƒÂ³vel nÃƒÂ£o encontrado.");
 
+        var oldProprietarioId = imovel.ProprietarioId;
         ApplyImovelRequest(imovel, request.Imovel, proprietario.Id);
         imovel.UpdatedAtUtc = DateTimeOffset.UtcNow;
 
-        var hasOwnerRole = await dbContext.PessoaRoles
-            .AnyAsync(x => x.PessoaId == proprietario.Id && x.Role == PessoaRoleTipo.Proprietario, cancellationToken);
+        await SyncPessoaProprietarioRoleForImovelAsync(
+            proprietario.Id,
+            imovel.Id,
+            imovel.Status != ImovelStatus.Inativo,
+            cancellationToken);
 
-        if (!hasOwnerRole)
+        if (oldProprietarioId != proprietario.Id)
         {
-            dbContext.PessoaRoles.Add(new PessoaRole
-            {
-                PessoaId = proprietario.Id,
-                Role = PessoaRoleTipo.Proprietario
-            });
+            await SyncPessoaProprietarioRoleForImovelAsync(
+                oldProprietarioId,
+                imovel.Id,
+                currentImovelCountsAsActive: false,
+                cancellationToken);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);

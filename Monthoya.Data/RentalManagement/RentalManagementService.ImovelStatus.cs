@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Monthoya.Core.Entities;
 using Monthoya.Core.Services;
 
@@ -14,6 +14,11 @@ public sealed partial class RentalManagementService
 
         imovel.Status = isActive ? ImovelStatus.Disponivel : ImovelStatus.Inativo;
         imovel.UpdatedAtUtc = DateTimeOffset.UtcNow;
+        await SyncPessoaProprietarioRoleForImovelAsync(
+            imovel.ProprietarioId,
+            imovel.Id,
+            imovel.Status != ImovelStatus.Inativo,
+            cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 }

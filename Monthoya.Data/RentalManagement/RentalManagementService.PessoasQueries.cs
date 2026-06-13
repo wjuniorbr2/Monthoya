@@ -71,14 +71,14 @@ public sealed partial class RentalManagementService
 
         return pessoas.Select(x =>
         {
-            var isProprietario = proprietarioRoleSet.Contains(x.Id) || proprietarioSet.Contains(x.Id);
+            var isProprietario = proprietarioSet.Contains(x.Id);
             var isLocatario = locatarioRoleSet.Contains(x.Id) || locatarioSet.Contains(x.Id);
             var isFiador = fiadorRoleSet.Contains(x.Id) || fiadorSet.Contains(x.Id);
 
             return new PessoaSummary(
                 x.Id,
                 x.NomeDisplay,
-                x.TipoPessoa == TipoPessoa.Fisica ? "Física" : "Jurídica",
+                x.TipoPessoa == TipoPessoa.Fisica ? "FÃ­sica" : "JurÃ­dica",
                 GetPessoaRolesLabel(isProprietario, isLocatario, isFiador),
                 FormatCpfCnpjForDisplay(x.TipoPessoa, x.Documento),
                 FormatPhoneForDisplay(x.Telefone),
@@ -119,7 +119,7 @@ public sealed partial class RentalManagementService
             .AsNoTracking()
             .AnyAsync(x => x.FiadorId == pessoa.Id && x.Locacao != null && x.Locacao.Status == LocacaoStatus.Ativa, cancellationToken);
 
-        isProprietario = isProprietario || pessoaRoles.Contains(PessoaRoleTipo.Proprietario);
+
         isLocatario = isLocatario || pessoaRoles.Contains(PessoaRoleTipo.Locatario);
         isFiador = isFiador || pessoaRoles.Contains(PessoaRoleTipo.Fiador);
 
@@ -130,7 +130,7 @@ public sealed partial class RentalManagementService
         var summary = new PessoaSummary(
             pessoa.Id,
             pessoa.NomeDisplay,
-            pessoa.TipoPessoa == TipoPessoa.Fisica ? "Física" : "Jurídica",
+            pessoa.TipoPessoa == TipoPessoa.Fisica ? "FÃ­sica" : "JurÃ­dica",
             GetPessoaRolesLabel(isProprietario, isLocatario, isFiador),
             FormatCpfCnpjForDisplay(pessoa.TipoPessoa, documento),
             FormatPhoneForDisplay(pessoa.Telefone),

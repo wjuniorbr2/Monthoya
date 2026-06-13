@@ -11,34 +11,28 @@ public sealed partial class RentalManagementService
         await using var operation = await DbContextOperationGate.EnterAsync(cancellationToken);
         if (request.ProprietarioId == Guid.Empty)
         {
-            throw new InvalidOperationException("Selecione um proprietário.");
+            throw new InvalidOperationException("Selecione um proprietÃ¡rio.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Rua))
         {
-            throw new InvalidOperationException("Informe a rua do imóvel.");
+            throw new InvalidOperationException("Informe a rua do imÃ³vel.");
         }
 
         var proprietario = await dbContext.Pessoas
             .SingleOrDefaultAsync(x => x.Id == request.ProprietarioId, cancellationToken)
-            ?? throw new InvalidOperationException("Proprietário não encontrado.");
+            ?? throw new InvalidOperationException("ProprietÃ¡rio nÃ£o encontrado.");
 
         var imovel = new Imovel();
         ApplyImovelRequest(imovel, request, proprietario.Id);
 
         dbContext.Imoveis.Add(imovel);
 
-        var hasOwnerRole = await dbContext.PessoaRoles
-            .AnyAsync(x => x.PessoaId == proprietario.Id && x.Role == PessoaRoleTipo.Proprietario, cancellationToken);
-
-        if (!hasOwnerRole)
-        {
-            dbContext.PessoaRoles.Add(new PessoaRole
-            {
-                PessoaId = proprietario.Id,
-                Role = PessoaRoleTipo.Proprietario
-            });
-        }
+        await SyncPessoaProprietarioRoleForImovelAsync(
+            proprietario.Id,
+            imovel.Id,
+            imovel.Status != ImovelStatus.Inativo,
+            cancellationToken);
 
         await dbContext.SaveChangesAsync(cancellationToken);
 
